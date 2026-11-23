@@ -60,7 +60,9 @@ the game version is unsupported.
 
 1. **File ▸ New Project**
 2. **Project name**: `phoenix_strings`
-3. **Creation location**: `C:\Users\mahak\WolvenKit` — *not* the game folder
+3. **Creation location**: anywhere that is **not inside the game folder** —
+   `C:\Users\mahak\WolvenKit` or, say, `G:\Cyberpunk2077\Modding` (a sibling of
+   `G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty`, which is fine)
 4. **Mod name**: `phoenix_strings` ← this is the name of the archive you will get
 5. Author: `mahak` (optional), version: `1.0` (optional)
 6. **Finish**
@@ -82,13 +84,13 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
    `source\archive` ▸ **New Folder** → `phoenix`, then right-click `phoenix` ▸ **New
    Folder** → `aston_valkyrie`, then drag `en-us.json` into it.
    Final path on disk:
-   `…\phoenix_strings\source\archive\phoenix\aston_valkyrie\en-us.json`
+   `<Creation location>\phoenix_strings\source\archive\phoenix\aston_valkyrie\en-us.json`
    That path — `phoenix\aston_valkyrie\en-us.json` — is exactly the string in
    `Phoenix_aston_cheats\archive\pc\mod\phoenix_aston_valkyrie.archive.xl`. If you put
    the file somewhere else, the name will silently not appear.
 5. Replace the `entries` list. **The easiest editor is Notepad, not WolvenKit's** —
    the project files are ordinary files on disk
-   (`…\phoenix_strings\source\archive\phoenix\aston_valkyrie\en-us.json`):
+   (`<Creation location>\phoenix_strings\source\archive\phoenix\aston_valkyrie\en-us.json`):
    right-click the file in Explorer ▸ *Open with* ▸ *Notepad*, then follow 5a–5c.
    (If WolvenKit shows the file as editable text in the middle pane, you can type there
    instead — same result. If it shows a property *tree* (`RootChunk` / `root` /
@@ -139,7 +141,8 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
 
 1. Toolbar → **Pack** (*Pack Mod* / *Pack Project* — the hammer/pak icon).
 2. Wait for the log line that packing finished.
-3. Output: `C:\Users\mahak\WolvenKit\phoenix_strings\packed\archive\pc\mod\phoenix_strings.archive`
+3. Output: `<Creation location>\phoenix_strings\packed\archive\pc\mod\phoenix_strings.archive`
+   (e.g. `G:\Cyberpunk2077\Modding\phoenix_strings\packed\archive\pc\mod\phoenix_strings.archive`)
 
 ---
 
@@ -149,7 +152,7 @@ PowerShell, in the repo folder:
 
 ```powershell
 cd $HOME\f1-cyberpunk-mod
-python .\tools\inspect_archive.py "C:\Users\mahak\WolvenKit\phoenix_strings\packed\archive\pc\mod\phoenix_strings.archive" --json-only --expect 'phoenix\aston_valkyrie\en-us.json'
+python .\tools\inspect_archive.py "G:\Cyberpunk2077\Modding\phoenix_strings\packed\archive\pc\mod\phoenix_strings.archive" --json-only --expect 'phoenix\aston_valkyrie\en-us.json'
 ```
 
 * `OK: phoenix\aston_valkyrie\en-us.json is in the archive` → continue.
@@ -166,7 +169,7 @@ python .\tools\inspect_archive.py "C:\Users\mahak\WolvenKit\phoenix_strings\pack
 
 ```powershell
 $GAME = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty"
-$WK   = "C:\Users\mahak\WolvenKit\phoenix_strings\packed\archive\pc\mod\phoenix_strings.archive"
+$WK   = "G:\Cyberpunk2077\Modding\phoenix_strings\packed\archive\pc\mod\phoenix_strings.archive"
 
 Copy-Item $WK "$GAME\archive\pc\mod\" -Force          # into the game
 Copy-Item $WK ".\Phoenix_aston_cheats\archive\pc\mod\" -Force   # into the repo, so the zip keeps up
