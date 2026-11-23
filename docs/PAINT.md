@@ -133,6 +133,24 @@ That gives an in-game colour wheel, two colours, and "off/on" material states �
 close to what the Car Manager already does, for a lot more work. Only worth it if route
 1 fails and you want runtime colour choice rather than one fixed scheme.
 
+## Applied 2026-11-23 (local, needs in-game confirmation)
+
+The one-liner is in place on the test machine — `init.lua` line 225 now reads
+
+```lua
+records = (function() local t = rec('xaires_aston_valkyrie') t[#t+1] = 'phoenix_aston_valkyrie' return t end)(),
+```
+
+backup at `init.lua.orig`. Remaining questions, in order:
+
+1. does the Car Manager tab now paint the Phoenix (stock Valkyrie must keep working too),
+2. which palette entry is closest to Rosso Fiorano,
+3. does the choice persist per car entry (`amv`) as expected — i.e. shared with the
+   stock Valkyrie.
+
+If the CET log complains (`attempt to get length of a ... value`), `rec()` does not
+return a table and the patch needs a different append — send the log line.
+
 ## Recommendation
 
 1. Run the 10-second check and the in-game test.
