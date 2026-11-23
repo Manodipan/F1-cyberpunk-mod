@@ -210,6 +210,61 @@ For the requested look, pick in the pane:
 | Livery / paint | Ferrari | **Rosso Fiorano** | 98, 16, 26 (metallic 0.55 / rough 0.25) |
 | Second colour | `Metallic` or `Special` | **Bronze** | 181,128,84 (`metallic_bronze`) or 163,111,59 (`bronze`) |
 
+## Stuck on "Original livery" — 2026-11-24
+
+Reported *after* the patch and a CET reload: the Phoenix still shows the stock
+*The Heart of Racing #007* livery, the pane sits on **Original livery**.
+
+"Stuck on original livery" hides three different failures. They look identical in game
+and need different fixes, so the next measurement is chosen to tell them apart:
+
+| # | What you see | What it means | Fix |
+|---|---|---|---|
+| **A** | you click a swatch and the pane snaps back to *Original livery* / the row stays on it | the click is not even **stored** — the write path refuses this car | `ayarlar.json` → `"amv".kaplama` stays `orijinal`; the guard is in the click handler |
+| **B** | the pane **keeps** Rosso Fiorano, the car still looks stock | the choice is stored but the **apply** path bails for our record | `ayarlar.json` shows `"kaplama":"rosso_fiorano"`; the guard is in `apply`/`desired` |
+| **C** | the *Livery / paint* slot only ever lists **Original livery** — no Ferrari / Lamborghini / Solid / Metallic groups under it | the palette file did not load for this slot | `marka_renkleri.json` / `sdh0_palet.json` / `kaplamalar.json` content |
+
+The cheap way to separate A/B from C: the Ferrari, Lamborghini, Porsche … groups exist
+for **every** car in the catalogue, because they come from `marka_renkleri.json`
+(car-independent). If they are visible under *Livery / paint*, C is out.
+
+### Isolation test that costs nothing (do this first)
+
+Spawn the **stock** Aston and paint it the same way:
+
+```lua
+Game.GetVehicleSystem():EnablePlayerVehicle("Vehicle.xaires_aston_valkyrie", true, false)
+```
+
+* Stock Aston paints, Phoenix does not → the problem is on our side of the record
+  (A or B above).
+* **Neither** paints → the Car Manager's paint path is broken on this install, patch or
+  no patch (a manager update, a missing dependency, or the palette files), and the
+  Phoenix was never the problem.
+
+### Then, in the same session
+
+1. Click **Rosso Fiorano**; get *into* the car and drive a few metres (the pane applies
+   on mount, and some managers re-apply on a tick).
+2. Run `tools/dump-car-manager.ps1` **after** the click — it now also dumps the apply
+   path and the palette files, so the stored value is visible:
+
+```powershell
+cd $HOME\f1-cyberpunk-mod
+git pull
+powershell -ExecutionPolicy Bypass -File .\tools\dump-car-manager.ps1
+```
+
+New sections in that file:
+
+| Section | Answers |
+|---|---|
+| `SAVED CHOICES` | was the click stored? (`"amv".kaplama`) → A vs B |
+| `PAINT APPLY CODE (init.lua 455-640)` | what `apply`/`desired` actually calls |
+| `PAINT KEYWORD INDEX` | line numbers for `appearance` / `Component` / `comps` |
+| `PALETTE FILES` | do the palette JSONs have an `amv` block, and what keys |
+| `ARE THE TWO COLOURS IN THE PALETTE?` | is `rosso_fiorano` / a bronze spelled the way we think (the author writes Turkish — `bronz`, `metalik_bronz`) |
+
 ## Applied 2026-11-23 (local, needs in-game confirmation)
 
 The one-liner is in place on the test machine — `init.lua` line 225 now reads
