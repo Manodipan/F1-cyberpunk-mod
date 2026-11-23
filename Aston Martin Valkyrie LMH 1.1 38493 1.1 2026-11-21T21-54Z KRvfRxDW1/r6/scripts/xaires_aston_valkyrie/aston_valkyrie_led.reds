@@ -1,0 +1,59 @@
+// 2026-11-11 (xaires, wkit\rpm_led.py ile URETILDI - elle duzenleme): Aston Martin Valkyrie direksiyon devir LED'leri.
+// LED diskleri ekran mesh'inde (03_export rpm_led.add_to_screen), widget amvLed/led_00..09 (make_inkwidget).
+// Sanal devir (XairesTagEngineState.vrpm, ses sanal sanzimani; oyuncu bu aracta degilse oyunun devri): 5600 devirde ilk sira,
+// 8600 devirde son sira; ustunde vites atma noktasina (9200) kadar TUMU MAVI yanip soner (2026-11-13). Sira: distan ice (iki yan esit).
+
+public static func XairesAMV_LedLo() -> Float { return 5600.0; }
+public static func XairesAMV_LedBlink() -> Float { return 8600.0; }
+
+public static func XairesAMV_LedUpdate(root: ref<inkCompoundWidget>, rpm: Float) -> Void {
+  let cv = root.GetWidgetByPathName(n"amvLed") as inkCompoundWidget;
+  if !IsDefined(cv) {
+    return;
+  }
+  let ranks: array<Int32> = [0, 1, 2, 3, 4, 4, 3, 2, 1, 0];
+  let onP: array<CName> = [n"led_on_g", n"led_on_g", n"led_on_y", n"led_on_y", n"led_on_r", n"led_on_r", n"led_on_y", n"led_on_y", n"led_on_g", n"led_on_g"];
+  let offP: array<CName> = [n"led_off_g", n"led_off_g", n"led_off_y", n"led_off_y", n"led_off_r", n"led_off_r", n"led_off_y", n"led_off_y", n"led_off_g", n"led_off_g"];
+  let R: Float = 5.0;
+  let lo: Float = XairesAMV_LedLo();
+  let hi: Float = XairesAMV_LedBlink();
+  let blinkOn: Bool = true;
+  let flash: Bool = rpm >= hi;
+  if flash {
+    let t: Float = EngineTime.ToFloat(GameInstance.GetSimTime(GetGameInstance()));
+    blinkOn = (Cast<Int32>(t * 8.0) % 2) == 0;
+  }
+  let n: Int32 = Min(cv.GetNumChildren(), ArraySize(ranks));
+  let i: Int32 = 0;
+  while i < n {
+    let img = cv.GetWidgetByIndex(i) as inkImage;
+    if IsDefined(img) {
+      let on: Bool = rpm >= lo + Cast<Float>(ranks[i]) * (hi - lo) / R;
+      if flash {
+        img.SetTexturePart(blinkOn ? n"led_on_b" : offP[i]);
+      } else {
+        img.SetTexturePart(on ? onP[i] : offP[i]);
+      }
+    }
+    i += 1;
+  }
+}
+
+@wrapMethod(tachometerLogicController)
+public final func OnRpmValueChanged(newRPM: Float) -> Void {
+  wrappedMethod(newRPM);
+  let own = this.GetRootWidget() as inkCompoundWidget;
+  if !IsDefined(own) {
+    return;
+  }
+  let parent = own.GetParentWidget() as inkCompoundWidget;
+  if !IsDefined(parent) || !IsDefined(parent.GetWidgetByPathName(n"amvLed")) {
+    return;                                       // bizim ekranimiz degil
+  }
+  let rpm: Float = newRPM;
+  let state = XairesAMVEngineState.Get();
+  if IsDefined(state) && state.active {
+    rpm = state.vrpm;
+  }
+  XairesAMV_LedUpdate(parent, rpm);
+}
