@@ -114,17 +114,26 @@ Still needed from user:
 
 ## 8. Session log — 2026-11-23 (`arena/fd35b985-f1-cyberpunk-mod`)
 
-§4 Steps 2–3 are **done and machine-checked** in this repo: the rename is applied by
-`tools/port_to_phoenix.py` (single rule set, `--check` gate, 15 tests), producing
-`Phoenix_aston_cheats/` with the Phoenix YAML and the 4 Phoenix `.reds`.
+The real unpacked mod landed on `main` (3a6d0b1). §4 is now **done against the real
+files** and the Phoenix build is complete apart from §6.
 
-Done: record/ID/module/file rename, "keep shared" guards (assets, `.ent`, bank,
-`xamw_*`, widget paths, stock LocKeys), gear-7 + `GearSpeed` 91.7 → 138.89, §3
-physics table encoded as data, stock + `_f1` reference files, docs.
+Built: `tools/port_to_phoenix.py` (one ordered rule set + `--check` gate + 21 tests),
+`Phoenix_aston_cheats/` with the renamed archive + `.xl` (byte-identical copy), the
+Phoenix tweak YAML (2000 hp / 3824 Nm / 138.89 m/s) and the four real redscript
+files ported verbatim, plus `reference/stock/` as the source of truth.
 
-Deviations: `VC_*` methods → `PHX_*` (both mods installed ⇒ duplicate `@addMethod`
-would not compile); `.archive`/`.bnk` are gitignored and copied by hand.
+Reality vs this document (§4):
 
-Still open (§1/§4/§5/§6): archive copy + `.xl`, script bodies (`PORT-BODY`
-markers), Phoenix LocKeys, `Medium`/`Low` field confirmations, v2 handling test.
-See `docs/STATUS.md` for the ordered list and `docs/INSTALL.md` for the test matrix.
+| §4 said | What the files actually contain |
+|---|---|
+| `XairesAMVF1` module | no `module` line; free functions `XairesAMV_*` + classes `XairesAMV*` |
+| interim `_f1` files | never existed — port is stock → Phoenix directly |
+| `VC_DeepCopyAudioMetadata` is the mod's | it is **VehicleCore's** API; renaming it breaks audio (regression test added) |
+| steering 94/26/0.33 | `wheelTurnMaxAddPerSecond` 94, `turnUpdateMaxSpeedThreshold` 26 m/s, `turnUpdateMaxSpeedTurnMul` 0.33 |
+| rear helper 0.95 | `minLatFrictionCoef` **and** `minLongFrictionCoef` on `RearWheelsFrictionModifier_Exotic` |
+| downforce 0.60 | `maxSpeedFactorGround` on `DynamicDownforceHelper_Exotic` (air stays 0) |
+| gear 7 = one field | two places: `Vehicle.xaires_amv_gear_7.maxSpeed` **and** the `GearSpeed` default in the audio script |
+
+Still open: §6 (onscreens JSON is inside the archive at
+`xaires\aston_valkyrie\aston_valkyrie.json` / `_tr.json` per the real `.xl`), and the
+pending v2 handling test. See `docs/STATUS.md`.

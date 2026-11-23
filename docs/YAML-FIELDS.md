@@ -1,61 +1,51 @@
-# YAML field map — PORT.md §3 → TweakDB
+# YAML field map — PORT.md §3 → the real TweakDB fields
 
-Every physics row from the port notes, the field the Phoenix YAML writes, and how
-sure that mapping is. **Confidence is the point of this table:** `High` rows are
-documented TweakDB fields; `Medium`/`Low` rows must be confirmed in WolvenKit's
-Tweak Browser against the stock file before an in-game test means anything.
+Now that the stock file is in the repo (`reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml`),
+every row below is confirmed against the actual record tree instead of guessed.
 
-| PORT.md §3 | Stock | Phoenix | Record | Field | Confidence |
-|---|---|---|---|---|---|
-| Scanner hp | 680 | 2000 | `VehicleUIData` | `horsepower` | High |
-| Engine torque | 1300 | 3824 | `gamedataVehicleEngineData_Record` | `engineMaxTorque` | High |
-| Redline | 10100 | 10100 | `gamedataVehicleEngineData_Record` | `maxRPM` | High |
-| Gear 7 ceiling | 91.7 | 138.89 | gear record (inline 6) | `maxSpeed` | Medium — engine gear records are 0-indexed (`_inline0` = reverse?) |
-| Drag | 1.35 | 0.90 | `gamedataVehicleDriveModelData_Record` | `airResistanceFactor` | Medium |
-| Front grip | 1.29 / 1.15 | 1.60 / 1.50 | wheel preset (front) | `frictionMulLateral` / `frictionMulLongitudinal` | High |
-| Rear grip | 1.33 / 1.20 | 2.00 / 1.85 | wheel preset (back) | `frictionMulLateral` / `frictionMulLongitudinal` | High |
-| Rear helper | 0.95 | 1.45 | `gamedataRearWheelsFrictionModifier_Record` | `multiplier` | Low — field name + helper inline index |
-| Downforce | 0.60 | 1.40 | `gamedataDynamicDownforceHelper_Record` | `downforceFactor` | Low — field name |
-| Sway F/R | 11 / 16 | 15 / 19 | wheel preset | `swaybarStiffness` | High |
-| Braking F/R | 1410 / 1200 | 1850 / 1550 | wheel preset | `maxBrakingTorque` | High |
-| Steering in / return | 94 / 26 | 94 / 26 | `gamedataVehicleDriveModelData_Record` | `wheelTurnMaxAddPerSecond` / `wheelTurnMaxSubPerSecond` | Medium |
-| Steering `0.33` | 0.33 | 0.33 | — | not modelled | Low — unknown field; unchanged anyway, so the base record keeps it |
-| Springs F/R | 23 / 22 | 30 / 28 | wheel preset | `springStiffness` | High |
-| Damping | 2000 | 3000 | wheel preset | `springDamping` | Medium — could be `springReboundDamping` / `...LowRate` |
-| Mass | 1750 | 1750 | `gamedataVehicleDriveModelData_Record` | `total_mass` | High |
-| Roll factor | 0 | 0 | `gamedataVehicleDriveModelData_Record` | `turningRollFactor` | High |
+| PORT.md §3 | Stock | Phoenix | Where in the stock YAML | Confidence |
+|---|---|---|---|---|
+| Scanner hp | 680 | 2000 | `VehicleUIData.horsepower` (`_data` record) | Confirmed |
+| Engine torque | 1300 | 3824 | `vehEngineData.engineMaxTorque` (`$base: VehicleEngineData_4_SuperSport`) | Confirmed |
+| Redline | 10100 | 10100 | `vehEngineData.maxRPM` (unchanged) | Confirmed |
+| Gear 7 ceiling | 91.7 | 138.89 | `Vehicle.xaires_amv_gear_7.maxSpeed` **and** `XairesAMV_GearSpeed` default in `aston_valkyrie_audio.reds` | Confirmed — both places must move together |
+| Drag | 1.35 | 0.90 | `vehDriveModelData.airResistanceFactor` (911 base record was 1.93) | Confirmed |
+| Front grip | 1.29 / 1.15 | 1.60 / 1.50 | `wheelSetup.frontPreset.frictionMulLateral` / `.frictionMulLongitudinal` | Confirmed |
+| Rear grip | 1.33 / 1.20 | 2.00 / 1.85 | `wheelSetup.backPreset.…` | Confirmed |
+| Rear helper | 0.95 | 1.45 | `driveHelpers` → `RearWheelsFrictionModifier_Exotic.minLatFrictionCoef` **and** `.minLongFrictionCoef` (both 0.95) | Confirmed |
+| Downforce | 0.60 | 1.40 | `driveHelpers` → `DynamicDownforceHelper_Exotic.maxSpeedFactorGround` (`maxSpeedFactorAir: 0` stays) | Confirmed |
+| Sway F/R | 11 / 16 | 15 / 19 | `frontPreset` / `backPreset` `swaybarStiffness` | Confirmed |
+| Braking F/R | 1410 / 1200 | 1850 / 1550 | `frontPreset` / `backPreset` `maxBrakingTorque` | Confirmed |
+| Steering | 94 / 26 / 0.33 | unchanged | `wheelTurnMaxAddPerSecond` / `turnUpdateMaxSpeedThreshold` / `turnUpdateMaxSpeedTurnMul` (source note: "86 derece/s, 24 m/s üstü %29") | Confirmed — the "26" is a speed threshold in m/s, **not** the steering return rate |
+| Springs F/R | 23 / 22 | 30 / 28 | `springStiffness` | Confirmed |
+| Damping | 2000 | 3000 | `springDamping` (rebound/bound damping left alone) | Confirmed |
+| Mass | 1750 | 1750 | `total_mass`, `chassis_mass` | Confirmed |
+| Roll factor | 0 | 0 | `turningRollFactor` | Confirmed |
+| Tyres | model | model | `vehWheelDimensionsSetup` (0.392 m radius, 0.341 / 0.374 width) | Untouched |
 
-Other assumptions baked into the YAML (all marked `VERIFY` inline):
+## What the stock file corrected in the plan
 
-* **Donor record** `Vehicle.v_sport1_rayfield_caliburn_player` /
-  `..._purchasable` — the stock mod's `$base`. Any 4-wheel player car record works;
-  it only supplies the fields the mod does not override.
-* **Wheel setup** `Vehicle.VehicleWheelDrivingSetup_4_RWD` — RWD roles; confirm the
-  record name in the Tweak Browser.
-* **Wheel preset base** `Vehicle.VehicleWheelDrivingPreset_Default`.
-* **Engine base** `Vehicle.VehicleEngineData_4_SuperSport` — supplies gears 1–6,
-  `gearChangeTime`, `gears` array, `gearCurvesPath` unchanged, per §3.
-* **Drive helpers** `Vehicle.VehicleDriveModelDataDefault_4w_inline1` (downforce) and
-  `..._inline4` (rear friction); inline numbering follows the stock file's
-  `driveHelpers` order and must be confirmed.
-* **`player_audio_resource`** — taken verbatim from the port notes; if TweakXL
-  rejects it, the stock mod's own vehicle record shows the field name it really uses.
+* **Gears are separate records.** `Vehicle.xaires_amv_gear_r`, `_1` … `_7`, each
+  `$base`d on a Quadra engine inline record with its own `torqueMultiplier`,
+  `minSpeed`, `maxSpeed`, `minEngineRPM`, `maxEngineRPM`. They are attached with
+  `!remove` of the SuperSport inlines + `!append` of ours. Only gear 7 moves.
+* **Wheel roles vs presets.** `Vehicle.xaires_amv_wheel_front/_back` are
+  `VehicleWheelRole` records (`isDrive` / `isHandBrake` / `isMainBrake`), not wheel
+  presets; the presets are inline under `wheelSetup` with a 911 base.
+* **`player_audio_resource`** is real (AudioXL + VehicleCore), and the reds side
+  creates that metadata record.
+* **Steering triplet** is `wheelTurnMaxAddPerSecond` + `turnUpdateMaxSpeedThreshold`
+  + `turnUpdateMaxSpeedTurnMul`, not `wheelTurnMaxSubPerSecond`.
+* **Nothing is guessed any more.** `docs/YAML-FIELDS.md` used to carry Medium/Low
+  confidence rows; the remaining unknown is gameplay behaviour, not field mapping.
 
-## How to confirm in one pass
+## Gear 1–6 stay as they are (PORT.md §3)
 
-1. Open the game's Tweak Browser in WolvenKit.
-2. Search `Vehicle.xaires_aston_valkyrie` (stock mod) and right-click → create a
-   TweakXL override. That file is the ground truth for every `$base`, inline index
-   and field name above.
-3. Diff it against `reference/aston_valkyrie_stock.yaml`; fix this repo, then
-   `python3 tools/port_to_phoenix.py --from stock … --out …` to regenerate.
+With gear 6 at `80.6` m/s and gear 7 at `138.89`, the 6→7 step is large on purpose
+(overdrive top gear). If the car bogs at the shift or never reaches the ceiling,
+tune gear 6 `maxSpeed` / gear 7 `minSpeed` — not the physics table.
 
-Nothing in the pipeline depends on my guesses being right — the port tool is
-value/key driven, so correcting a field name in the reference file propagates.
-
-## Numeric style
-
-Floats are written as plain numbers (`1985`, `1.60`, `138.89`) — TweakXL casts YAML
-numbers to the record's flat type, so `2000` and `2000.0` are equivalent. If your
-TweakXL build is strict about a specific field, add the `.0` in the reference file
-and re-run the port; the tool never reformats numbers it does not change.
+Also note the virtual audio gearbox (`XairesAMV_GearboxStep`) ups at
+`4800 + 4900·gas^1.6` rpm using `v · 9900 / GearSpeed(gear)`; at 138.89 m/s in 7th
+that is ~7 130 "virtual rpm", i.e. the note climbs more slowly near the top — that
+is expected, not a bug.

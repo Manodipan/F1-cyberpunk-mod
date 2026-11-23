@@ -1,74 +1,70 @@
-# RENAME MAP — `_f1` → `phoenix` (PORT.md §4)
+# RENAME MAP — stock → Phoenix (PORT.md §4)
 
-Everything here is applied mechanically by `tools/port_to_phoenix.py`; the table
-exists so you can audit the tool and hand-check a diff.
+Applied mechanically by `tools/port_to_phoenix.py` against the real mod on `main`
+(TweakXL YAML + 4 redscript files). The table exists so the tool can be audited.
 
-## 1. Renamed
+## 1. Renamed — YAML (`reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml`)
 
-| Kind | From (interim) | To (Phoenix) |
+| From | To |
+|---|---|
+| `Vehicle.xaires_aston_valkyrie` | `Vehicle.phoenix_aston_valkyrie` |
+| `Vehicle.xaires_aston_valkyrie_data` | `Vehicle.phoenix_aston_valkyrie_data` |
+| `Vehicle.xaires_aston_valkyrie_manufacturer` | `Vehicle.phoenix_aston_valkyrie_manufacturer` |
+| `Vehicle.xaires_aston_valkyrie_purchasable` (+ `.dealerPrice`, `.dealerCred`, `.dealerAtlasPath`, `.dealerPartName`) | `Vehicle.phoenix_aston_valkyrie_purchasable` (…) |
+| `UIIcon.xaires_aston_valkyrie_icon` / `_logo` | `UIIcon.phoenix_aston_valkyrie_icon` / `_logo` |
+| `enumName: xaires_aston_valkyrie_logo` | `enumName: phoenix_aston_valkyrie_logo` |
+| `Vehicle.xaires_amv_wheel_front` / `_back` (WheelRole) | `Vehicle.phoenix_amv_wheel_front` / `_back` |
+| `Vehicle.xaires_amv_gear_r`, `_gear_1` … `_gear_7` | `Vehicle.phoenix_amv_gear_r`, `_gear_1` … `_gear_7` |
+| `player_audio_resource: xaires_amv_engine` | `player_audio_resource: phoenix_amv_engine` |
+| `Vehicle.vehicle_list.list` entries | append the Phoenix records instead |
+| gear 7 `maxSpeed: 91.7` | `maxSpeed: 138.89` |
+
+## 2. Renamed — redscript (`r6/scripts/xaires_aston_valkyrie/*.reds`)
+
+| From | To | Why it matters |
 |---|---|---|
-| Vehicle record | `Vehicle.xaires_aston_valkyrie_f1` | `Vehicle.phoenix_aston_valkyrie` |
-| … purchasable | `Vehicle.xaires_aston_valkyrie_f1_purchasable` | `Vehicle.phoenix_aston_valkyrie_purchasable` |
-| … UI data | `Vehicle.xaires_aston_valkyrie_f1_data` | `Vehicle.phoenix_aston_valkyrie_data` |
-| … manufacturer | `Vehicle.xaires_aston_valkyrie_f1_manufacturer` | `Vehicle.phoenix_aston_valkyrie_manufacturer` |
-| Engine / gears | `Vehicle.xaires_amv_f1_gear` (+ `_inlineN`) | `Vehicle.phoenix_amv_gear` (+ `_inlineN`) |
-| Wheels | `Vehicle.xaires_amv_f1_wheel`, `_front`, `_back` | `Vehicle.phoenix_amv_wheel`, `_front`, `_back` |
-| Drive model | `Vehicle.xaires_amv_f1_drive` | `Vehicle.phoenix_amv_drive` |
-| Drive helpers | `Vehicle.xaires_amv_f1_downforce`, `_rearHelper` | `Vehicle.phoenix_amv_downforce`, `_rearHelper` |
-| Icons | `UIIcon.xaires_aston_valkyrie_f1_*` | `UIIcon.phoenix_aston_valkyrie_*` |
-| Manufacturer enum | `enumName: xaires_aston_valkyrie_f1_logo` | `enumName: phoenix_aston_valkyrie_logo` |
-| Module / classes | `XairesAMVF1_*`, module `XairesAMVF1` | `PhoenixAMV_*`, module `PhoenixAMV` |
-| Audio resource | `xaires_amv_engine` | `phoenix_amv_engine` |
-| Methods | `VC_DeepCopyAudioMetadata`, `VC_UpdateAMVDash` | `PHX_DeepCopyAudioMetadata`, `PHX_UpdateAMVDash` |
-| Gear 7 ceiling | `91.7` (330 km/h) | `138.89` (500 km/h) |
-| Folders / files | `r6\scripts\xaires_aston_valkyrie\` `xaires_aston_valkyrie_f1_*.reds` | `r6\scripts\phoenix_aston_valkyrie\` `phoenix_aston_valkyrie_*.reds` |
-| Tweak file | `r6\tweaks\xaires\aston_valkyrie.yaml` | `r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml` |
-| Archives | `aston_valkyrie.archive` + `.xl` | `phoenix_aston_valkyrie.archive` + `.xl` |
+| `XairesAMVEngineState` / `XairesAMVInput` / `XairesAMVEngineTick` / `XairesAMVAudioMetadata` / `XairesAMVWwise` | `Phoenix…` | duplicate class names are a compile error when both mods are installed |
+| `n"XairesAMVEngineState"` service lookup | `n"PhoenixAMVEngineState"` | must match the class or the service is never found |
+| `XairesAMV_IsTarget`, `_GearSpeed`, `_GearboxStep`, `_EngineStartTicker`, `_WwiseSend`, … | `PhoenixAMV_*` | global functions would otherwise collide with the stock mod |
+| `t"Vehicle.xaires_aston_valkyrie"` / `…_purchasable"` | `t"Vehicle.phoenix_aston_valkyrie"` / `…_purchasable"` | otherwise the HUD/audio hooks silently keep driving the **stock** car |
+| `n"xaires_amv_engine"` (metadata `Equals` check + copy target) | `n"phoenix_amv_engine"` | the record name the YAML points at |
+| `XairesAMV_GearSpeed` `default: 91.7` | `default: 138.89` | audio rev ceiling must match gear 7 |
+| file names `aston_valkyrie*.reds` | `phoenix_aston_valkyrie*.reds` | |
 
-### Why `VC_*` → `PHX_*` when PORT.md §4 doesn't say so
+Everything else in those files (`@wrapMethod` hooks on `hudCarController`,
+`speedometerLogicController`, `tachometerLogicController`, `VehicleComponent`) is
+left alone — redscript chains wrappers, and each wrapper checks its own car by
+TweakDBID.
 
-PORT.md §5 installs **both** mods at once ("two separate mods, both enabled").
-redscript compiles every mod together and rejects two `@addMethod`/`@wrapMethod`
-definitions with the same class + name + signature. Keeping `VC_DeepCopyAudioMetadata`
-in both mods is a guaranteed compile error on the next launch — so the Phoenix
-build uses a `PHX_` prefix (game-internal, never referenced by the YAML).
-
-If you ever need the old names: `--keep-method-names` (only safe if the stock mod
-is uninstalled).
-
-## 2. Kept shared (do **not** rename — same assets, same bank)
+## 3. Kept shared
 
 | Thing | Value | Why |
 |---|---|---|
-| Appearance | `appearanceName: aston_valkyrie` | lives in the shared `.ent` |
-| Entity template | `xaires\aston_valkyrie\aston_valkyrie.ent` | single backslashes, shared asset |
-| Texture core | `xaires\aston_valkyrie\ui\*.inkatlas`, `atlasPartName: *` | inside the unchanged `.archive` |
-| Wwise bank | `XairesAMV_Wwise`, `xaires_amv.bnk` | one AudioXL bank for both mods |
-| Wwise events / facts | `xamw_*`, `xcm_vol`, `xaires_cm_vol` | baked into the bank |
-| Dashboard widgets | `amvGear`, `amvLed`, `amvRev`, `seg_*`, `g_*`, `s_*`, `led_*` | inside the dashboard `.inkwidget` |
-| Display LocKeys | `xaires_aston_valkyrie_name`, `xaires_aston_valkyrie_info` | reused until §6 adds `phoenix_*` entries |
+| Appearance | `appearanceName: aston_valkyrie` | inside the shared `.ent` |
+| Entity template | `xaires\aston_valkyrie\aston_valkyrie.ent` | shared asset |
+| Textures / UI | `xaires\aston_valkyrie\ui\amv_icon.inkatlas`, `amv_dealer.inkatlas`, `aston_valkyrie_logo.inkatlas`, `atlasPartName` | inside the unchanged `.archive` |
+| `dealerAtlasPath` / `dealerPartName` | `"xaires\\aston_valkyrie\\ui\\amv_dealer.inkatlas"` / `"amv_full"` | same archive UI |
+| Wwise bank | `XairesAMV_Wwise` folder, `xaires_amv.bnk` | **one** AudioXL bank for both mods |
+| Wwise events / params | `xamw_engine_on/off`, `xamw_rpm`, `xamw_gas`, `xcm_vol`, fact `xaires_cm_vol` | baked into the bank |
+| Widget paths | `amvGear`, `amvGearImg`, `amvLed`, `amvRev`, `seg_*`, `g_*`, `s_*`, `led_*`, `amvSpd*` | inside the dashboard `.inkwidget` |
+| Display LocKeys | `xaires_aston_valkyrie_name`, `LocKey#xaires_aston_valkyrie_info` | reused until §6 adds `phoenix_*` entries |
+| **`VC_DeepCopyAudioMetadata`** | unchanged | it is a **VehicleCore** API (`import VehicleCore.*`), not the mod's own method. Renaming it breaks the audio metadata copy — an early draft of the tool did exactly that and it is now a regression test |
 
-## 3. Tool
+## 4. Tool
 
 ```bash
-# port one file
-python3 tools/port_to_phoenix.py --from f1 reference/aston_valkyrie_f1.yaml \
-    --out Phoenix_aston_cheats/r6/tweaks/phoenix/phoenix_aston_valkyrie.yaml
+make port     # regenerate Phoenix_aston_cheats/r6 from reference/stock
+make check    # identifiers + stock physics + script↔YAML reference consistency
+make test     # 21 tests, incl. "committed tree == tool output"
 
-# port a folder (file names renamed too)
-python3 tools/port_to_phoenix.py --from f1 reference/clone_f1 \
-    --out Phoenix_aston_cheats/r6/scripts/phoenix_aston_valkyrie
-
-# port physics as well (fresh start from the stock file)
-python3 tools/port_to_phoenix.py --from stock reference/aston_valkyrie_stock.yaml --out /tmp/x.yaml
-
-# audit a tree — exit 1 on any leftover xaires/_f1 identifier or stock physics value
-python3 tools/port_to_phoenix.py --check Phoenix_aston_cheats
-
-# port your own stock copy in place (Vortex staging folder, not the game folder)
+# port your own staging copy in place (never the game folder — Vortex overwrites)
 python3 tools/port_to_phoenix.py --from stock "C:/mods/aston_valkyrie" --in-place
 ```
 
-`--check` is the gate that replaces eyeballing: it fails on stale `Vehicle.xaires_*`,
-`UIIcon.xaires*`, `XairesAMV*`, `xaires_amv_engine`, `VC_*` methods and any stock
-physics value that should have moved (e.g. `engineMaxTorque: 1300`).
+`--check` fails on:
+
+* any `xaires` / `_f1` identifier left **in code** (comments are exempt — the
+  Turkish engineering notes and the credit to xaires are provenance);
+* any stock physics value that should have moved (`engineMaxTorque: 1300`, …);
+* a `t"Vehicle.phoenix_*"` literal with no matching record in the YAML;
+* a `player_audio_resource` that no script creates, or a metadata record no YAML uses.

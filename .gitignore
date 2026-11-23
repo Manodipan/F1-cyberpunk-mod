@@ -1,9 +1,9 @@
-# Binary game assets are delivered with the mod, not through Git.
-# The .archive / .xl / .bnk files are copies of the Nexus original (PORT.md §4
-# Step 1-2) and are typically hundreds of MB. Copy + rename them per
-# Phoenix_aston_cheats/archive/pc/mod/README-COPY-ARCHIVE.md.
+# Binary game assets: only the Phoenix archive is tracked (it IS the deliverable).
+# Everything else binary stays out of Git.
 *.archive
+!Phoenix_aston_cheats/archive/pc/mod/phoenix_aston_valkyrie.archive
 *.archive.xl
+!Phoenix_aston_cheats/archive/pc/mod/phoenix_aston_valkyrie.archive.xl
 *.bnk
 
 # Local tooling noise

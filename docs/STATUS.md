@@ -1,51 +1,63 @@
 # Status — where PORT.md stands
 
-Last touched: 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod`
+Updated 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main` @ `3a6d0b1`
+(the real unpacked mod).
 
-## Done (in this repo, verified by tests)
+## Done — the Phoenix build is complete except one item
 
-| Item | Where |
-|---|---|
-| §3 physics table encoded once, as data | `tools/port_to_phoenix.py` (`STOCK_TO_F1`, `GEAR7_*`) |
-| §4 rename: records, sub-records, UIIcon, module/classes, audio resource, files/folders | `tools/port_to_phoenix.py` (`RENAME`, `rename_path`) |
-| §4 "keep shared" guard (assets, `.ent`, bank, events, widget paths, stock LocKeys) | `tools/port_to_phoenix.py` (`PROTECT`) |
-| §4 audio-only gear ceiling 91.7 → 138.89 | `GEAR7_FROM/TO`, applied in both port modes |
-| Phoenix tweak file, 2000 hp / 3824 Nm / 500 km/h | `Phoenix_aston_cheats/r6/tweaks/phoenix/phoenix_aston_valkyrie.yaml` |
-| 4 Phoenix redscript files | `Phoenix_aston_cheats/r6/scripts/phoenix_aston_valkyrie/*.reds` |
-| Stock reference + interim `_f1` reference | `reference/aston_valkyrie_stock.yaml`, `reference/aston_valkyrie_f1.yaml` |
-| Audit gate (`--check`): fails on any leftover `xaires`/`_f1` id or stock physics value | `tools/port_to_phoenix.py --check` |
-| 15 regression tests | `tests/test_port.py` (`python3 -m unittest discover -s tests -v`) |
-| Docs: install/test, rename map, field confidence, localisation | `docs/` |
+| Item | Where | Notes |
+|---|---|---|
+| §3 physics table | `tools/port_to_phoenix.py` (`STOCK_TO_F1`) | value-keyed against the **real** stock numbers |
+| §4 rename (records, gears, wheels, icons, classes, functions, TweakDBID literals, file names) | `RENAME` / `FILE_RENAME` | 21 tests |
+| §4 "keep shared" guards | `PROTECT` | assets, `.ent`, bank, `xamw_*`, facts, widget paths, dealer atlas, stock LocKeys |
+| §4 gear ceiling 91.7 → 138.89 | YAML gear 7 **and** `GearSpeed` default | both move together, test-enforced |
+| Tweak file | `Phoenix_aston_cheats/r6/tweaks/phoenix/phoenix_aston_valkyrie.yaml` | 2000 hp / 3824 Nm / 500 km/h |
+| 4 redscript files | `Phoenix_aston_cheats/r6/scripts/phoenix_aston_valkyrie/` | **real logic**, not stubs: audio + virtual gearbox, HUD, rev LEDs, speed readout |
+| Archive + `.xl` | `Phoenix_aston_cheats/archive/pc/mod/` | byte-identical copy, renamed (11.6 MB, tracked) |
+| Audit gate | `make check` | identifiers, stock physics, script↔YAML references |
+| Tests | `tests/test_port.py` | incl. "committed tree == tool output" |
 
-## Not done — each one needs your machine or the game
+`red4ext/` is deliberately absent: the Phoenix scripts load the stock bank at
+`red4ext/plugins/AudioXL/sounds/XairesAMV_Wwise/xaires_amv.bnk`.
 
-| # | Item | Why it is blocked | What unblocks it |
+## Still open
+
+| # | Item | Why | Unblocks it |
 |---|---|---|---|
-| 1 | `phoenix_aston_valkyrie.archive` + `.archive.xl` | binaries, ~100s of MB, copies of the Nexus original | `Phoenix_aston_cheats/archive/pc/mod/README-COPY-ARCHIVE.md` (one PowerShell copy) |
-| 2 | redscript bodies | `PORT-BODY-START/END` markers in the generated `.reds`; the audio/Wwise metadata calls are engine-internal and can't be re-derived from the port notes | paste the stock `.reds` into `reference/clone_f1/` and re-run the port (bodies are copied verbatim, only identifiers move) — or run `--from stock`/`--in-place` on the stock staging folder |
-| 3 | Distinct name (`phoenix_aston_valkyrie_name` / `_info`) | needs the language file inside the `.archive` (PORT.md §6) | `docs/LOCALISATION.md` |
-| 4 | `aston_valkyrie.archive.xl` contents | small text file, only on your install | attach it as `.txt`; the Phoenix `.xl` is renamed from it |
-| 5 | `Medium`/`Low` field + inline-index confirmations | need WolvenKit Tweak Browser against the stock file | the 3-step check at the bottom of `docs/YAML-FIELDS.md` |
-| 6 | **v2 handling test** (hairpin / top speed / launch) | needs the game | `docs/INSTALL.md` §4 test matrix |
+| 1 | Distinct Phoenix name (`phoenix_aston_valkyrie_name` / `_info`) | the onscreens JSON lives **inside** `phoenix_aston_valkyrie.archive`; adding keys means repacking | `docs/LOCALISATION.md` — WolvenKit, or a repack tool |
+| 2 | **v2 handling test** (hairpin, top speed, launch) | needs the game | `docs/INSTALL.md` §4 matrix |
+| 3 | Confirm both mods boot together cleanly | CT/LM: two archives, two `.xl` registering the same onscreens JSON, two `ScriptableService`s, both loading the same bank | first launch — check `cyber_engine_tweaks.log` and `archivexl.log` |
+| 4 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 
-## Deliberate deviations from the port notes
+## Risks worth knowing before the first launch
 
-1. **`VC_*` → `PHX_*`** method rename. PORT.md §5 installs both mods together;
-   two identical `@addMethod` signatures is a redscript compile error. Revert with
-   `--keep-method-names` only if the stock mod is uninstalled.
-2. **Value-keyed physics.** The tool maps `(field, stock value) → Phoenix value`
-   instead of rewriting whole records, so an unknown field name cannot silently
-   shift the wrong number (front vs rear presets are disambiguated by their
-   distinct stock values).
-3. **`.archive`/`.bnk` in `.gitignore`.** They are Nexus binaries, not source;
-   copying and renaming them is a one-command step documented next to the folder.
-4. **Gear 1–6 are inherited, not rewritten.** §3 says they are unchanged, so the
-   YAML only touches gear 7 — expect a big 6→7 step; if the car bogs on the
-   upshift, that is a gear 6 `minSpeed`/`maxSpeed` tune, not a Phoenix physics bug.
+1. **Duplicate `.xl` localisation entry.** Both archives declare
+   `xaires\aston_valkyrie\aston_valkyrie.json`. ArchiveXL normally merges this; if
+   the log complains, delete the `localization:` block from
+   `phoenix_aston_valkyrie.archive.xl` (the archive still works, the car just keeps
+   the stock name — which is the current state anyway).
+2. **Same bank loaded twice** (`AudioXLNative.LoadBank` in both mods). The return
+   codes are already handled (`1 || 69`); if the second load fails it just logs.
+3. **Both wrappers chain**, by design: each `@wrapMethod` checks the mounted
+   vehicle's TweakDBID via `PhoenixAMV_IsTarget` / `XairesAMV_IsTarget`, so the
+   stock car keeps stock HUD/audio behaviour and the Phoenix car keeps its own.
+4. **Shared `xaires_cm_vol` fact** — the "Xaires Car Manager" volume slider applies
+   to both cars. Intentional (one bank, one mix).
+
+## Corrections to PORT.md found while porting the real files
+
+| PORT.md said | Reality |
+|---|---|
+| `XairesAMVF1` module → `PhoenixAMV` | no `module` declaration at all; names are free functions `XairesAMV_*` + classes `XairesAMV*`. Renamed to `PhoenixAMV_*` / `PhoenixAMV*` |
+| `_f1` IDs everywhere | the previous chat's `_f1` artefacts never existed; the port is stock → Phoenix directly |
+| `VC_DeepCopyAudioMetadata` is part of the mod | it is **VehicleCore's** API. Renaming it (an early draft did) breaks the audio copy — now a regression test |
+| steering "94/26/0.33" | `wheelTurnMaxAddPerSecond` 94, `turnUpdateMaxSpeedThreshold` 26 **m/s**, `turnUpdateMaxSpeedTurnMul` 0.33 |
+| `.archive` copies must be made by hand | now done and committed |
+| script bodies must be restored | not true — the real scripts are ported verbatim |
 
 ## Next three actions
 
-1. Copy + rename the two archive files (5 minutes, no game launch needed).
-2. Splice the real script bodies (`reference/clone_f1/` → re-run the port) so the
-   dashboard/audio actually run.
-3. Launch, run the §4 test matrix, and report top speed + hairpin behaviour for v3.
+1. Launch with both mods and run `docs/INSTALL.md` §4 → report speeds/symptoms.
+2. Watch the two logs for duplicate-registration warnings (item 3 above).
+3. If the handling report says "wobble" or "bog at the 6→7 shift", tune in the
+   reference YAML and `make port` — never hand-edit the generated tree.

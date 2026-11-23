@@ -1,51 +1,55 @@
 #!/usr/bin/env python3
 """
-port_to_phoenix.py — PORT.md §4: the `_f1` -> `phoenix` rename (and the stock ->
-Phoenix physics port), done mechanically instead of by hand.
+port_to_phoenix.py — PORT.md §4: the stock -> `phoenix` rename, plus the §3 physics
+port, done mechanically instead of by hand.
 
-Why a tool: the rename touches every ID, class, module, service string and file
-name; a missed identifier means a duplicate-ID crash, a TEST-name car or a
-redscript compile error, and PORT.md §7 shows how expensive those are to debug.
-This tool applies one ordered rule set and can prove the result is clean
-(`--check`).
+Why a tool: the rename touches record IDs, wheel roles, every gear record, TweakDBID
+literals inside four redscript files, the audio metadata name and the file names.
+A missed identifier means duplicate IDs, a TEST-name car, HUD hooks that never fire,
+or scripts that silently target the stock car — and PORT.md §7 shows how expensive
+those are to debug. This applies one ordered rule set and can prove the result is
+clean (`--check`).
 
 Usage
 -----
-  # single file -> single file
-  python3 tools/port_to_phoenix.py --from f1 \
-      reference/aston_valkyrie_f1.yaml \
+  # build the installable Phoenix tree from the stock mod on main
+  python3 tools/port_to_phoenix.py --from stock reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml \
       --out Phoenix_aston_cheats/r6/tweaks/phoenix/phoenix_aston_valkyrie.yaml
-
-  # whole folder (file names are renamed too)
-  python3 tools/port_to_phoenix.py --from f1 \
-      reference/clone_f1 \
+  python3 tools/port_to_phoenix.py --from stock reference/stock/r6/scripts/xaires_aston_valkyrie \
       --out Phoenix_aston_cheats/r6/scripts/phoenix_aston_valkyrie
 
-  # stock physics -> Phoenix physics (donor = stock reference file)
-  python3 tools/port_to_phoenix.py --from stock \
-      reference/aston_valkyrie_stock.yaml --out /tmp/phoenix.yaml
-
-  # verify a finished tree: exits 1 on any leftover xaires / _f1 identifier
+  # audit a finished tree (identifiers, stock physics, script<->YAML references)
   python3 tools/port_to_phoenix.py --check Phoenix_aston_cheats
+
+  # port your own staging copy in place (never the game folder — Vortex overwrites)
+  python3 tools/port_to_phoenix.py --from stock "C:/mods/aston_valkyrie" --in-place
 
 Renamed (PORT.md §4)
 --------------------
-  Vehicle.xaires_aston_valkyrie_f1[_*]  -> Vehicle.phoenix_aston_valkyrie[_*]
-  Vehicle.xaires_amv_f1_gear/wheel/...  -> Vehicle.phoenix_amv_gear/wheel/...
-  UIIcon.xaires_aston_valkyrie_f1_*     -> UIIcon.phoenix_aston_valkyrie_*
-  XairesAMVF1 / XairesAMV               -> PhoenixAMV
-  xaires_amv_engine                     -> phoenix_amv_engine
-  VC_* methods                          -> PHX_*  (see --keep-method-names)
-  gear 7 ceiling 91.7                   -> 138.89 (500 km/h)
+  Vehicle.xaires_aston_valkyrie[_data|_purchasable|_manufacturer|_icon|_logo]
+                                        -> Vehicle.phoenix_aston_valkyrie[...]
+  Vehicle.xaires_amv_wheel_front/back   -> Vehicle.phoenix_amv_wheel_front/back
+  Vehicle.xaires_amv_gear_r, _1 .. _7   -> Vehicle.phoenix_amv_gear_r, _1 .. _7
+  UIIcon.xaires_aston_valkyrie_*        -> UIIcon.phoenix_aston_valkyrie_*
+  enumName: xaires_aston_valkyrie_logo  -> enumName: phoenix_aston_valkyrie_logo
+  XairesAMVEngineState / XairesAMV*     -> PhoenixAMVEngineState / PhoenixAMV*
+  n"xaires_amv_engine", t"Vehicle.xaires_*" literals
+  gear 7 ceiling 91.7                   -> 138.89 (500 km/h), YAML + reds
   file / folder names                   -> phoenix_aston_valkyrie*
 
 Kept shared (same assets, same bank, stock LocKeys until §6)
 -------------------------------------------------------------
   appearanceName: aston_valkyrie
-  xaires\\aston_valkyrie\\...  (.ent, .inkatlas, .xbm ...)
-  XairesAMV_Wwise, xaires_amv.bnk, xamw_*, xcm_vol, xaires_cm_vol
-  widget names (amvGear / amvLed / amvRev / seg_* / g_* / s_* / led_*)
-  LocKeys xaires_aston_valkyrie_name / _info / _layout
+  xaires\\aston_valkyrie\\...  (.ent, .inkatlas, .xbm, onscreens .json)
+  XairesAMV_Wwise / xaires_amv.bnk     (one AudioXL bank for both mods)
+  xamw_* / xcm_vol / xaires_cm_vol      (Wwise events + Car Manager fact)
+  widget paths (amvGear, amvLed, amvRev, seg_*, g_*, s_*, led_*, amvSpd*)
+  LocKeys xaires_aston_valkyrie_name / _info
+  VC_DeepCopyAudioMetadata             (VehicleCore API, not ours to rename)
+
+Not renamed on purpose: `VC_DeepCopyAudioMetadata` is provided by the VehicleCore
+module (`import VehicleCore.*`), so it must stay byte-identical — an earlier draft
+of this tool prefixed it and would have broken the audio metadata copy.
 """
 
 from __future__ import annotations
@@ -59,86 +63,86 @@ from pathlib import Path
 # 1. Spans that must survive untouched (shared assets, shared bank, stock LocKeys)
 # ---------------------------------------------------------------------------
 PROTECT = [
-    r"xaires\\aston_valkyrie\\[A-Za-z0-9_.\\]*",     # asset paths inside the shared .archive
-    r"appearanceName:[ \t]*aston_valkyrie",          # appearance lives in the shared .ent
-    r"XairesAMV[_-]?Wwise[A-Za-z0-9_.\\]*",          # AudioXL bank folder name
-    r"xaires_amv\.bnk",                              # shared Wwise bank
-    r"xaires_cm_vol",                                # AudioXL fact
-    r"xamw_[A-Za-z0-9_]*",                           # Wwise events
-    r"xcm_vol",                                      # AudioXL volume fact
-    r"xaires_aston_valkyrie_(?:name|info|layout)\b", # LocKeys reused until PORT.md §6
-    r"atlasResourcePath:[ \t]*\S+",                  # texture-core paths
-    r"atlasPartName:[ \t]*\S+",                       # atlas part names
+    r"xaires\\aston_valkyrie\\[A-Za-z0-9_.\\]*",       # assets inside the shared .archive
+    r"appearanceName:[ \t]*aston_valkyrie",            # appearance lives in the shared .ent
+    r"XairesAMV_Wwise[/\\][A-Za-z0-9_.\\/]*",           # AudioXL bank folder (path form only:
+    r"xaires_amv\.bnk",                                # shared Wwise bank file
+    r"xaires_cm_vol",                                  # Car Manager volume fact
+    r"xamw_[A-Za-z0-9_]*",                             # Wwise events / parameters
+    r"xcm_vol",                                        # AudioXL volume parameter
+    r"xaires_aston_valkyrie_(?:name|info)\b",          # LocKeys reused until PORT.md §6
+    r"atlasResourcePath:[ \t]*\S+",                    # texture-core paths
+    r"atlasPartName:[ \t]*\S+",                        # atlas part names
+    r'(?:dealerAtlasPath|dealerPartName):[ \t]*"[^"]*"',  # Virtual Car Dealer preview
 ]
 
 # ---------------------------------------------------------------------------
 # 2. Ordered rename rules (most specific first)
 # ---------------------------------------------------------------------------
 RENAME = [
-    (r"xaires_aston_valkyrie_f1", "phoenix_aston_valkyrie"),
-    (r"xaires_amv_f1", "phoenix_amv"),
-    (r"XairesAMVF1", "PhoenixAMV"),
-    (r"xaires_aston_valkyrie", "phoenix_aston_valkyrie"),   # stock ids -> phoenix (--from stock)
-    (r"xaires_amv", "phoenix_amv"),                         # covers xaires_amv_engine
-    (r"XairesAMV", "PhoenixAMV"),
-    (r"F1-interim", "Phoenix"),
+    (r"xaires_aston_valkyrie", "phoenix_aston_valkyrie"),   # records, UIIcon, enumName
+    (r"xaires_amv", "phoenix_amv"),                         # wheels, gears, audio resource
+    (r"XairesAMV", "PhoenixAMV"),                           # classes, services, functions
 ]
 
-# Phoenix-only method prefix. The stock mod and the Phoenix build are installed
-# side by side (PORT.md §5), and redscript rejects two @addMethod definitions with
-# the same class + name + signature. Renaming VC_* -> PHX_* keeps both compilable.
-METHOD_RULE = (r"\bVC_", "PHX_")
-
 # ---------------------------------------------------------------------------
-# 3. Physics: stock -> Phoenix F1 (PORT.md §3), keyed by field name + stock value
-#    Value-based so front/rear presets are unambiguous without block context.
+# 3. Physics: stock -> Phoenix F1 (PORT.md §3), keyed by (field, stock value).
+#    Value-keyed so the front and rear wheel presets are unambiguous without
+#    block context, and so an unknown field name cannot move the wrong number.
 # ---------------------------------------------------------------------------
 STOCK_TO_F1 = {
-    ("horsepower", "680"): "2000",
-    ("engineMaxTorque", "1300"): "3824",
-    ("airResistanceFactor", "1.35"): "0.90",
-    ("frictionMulLateral", "1.29"): "1.60",
-    ("frictionMulLongitudinal", "1.15"): "1.50",
-    ("frictionMulLateral", "1.33"): "2.00",
-    ("frictionMulLongitudinal", "1.20"): "1.85",
-    ("maxBrakingTorque", "1410"): "1850",
-    ("maxBrakingTorque", "1200"): "1550",
-    ("springStiffness", "23"): "30",
-    ("springStiffness", "22"): "28",
-    ("springDamping", "2000"): "3000",
-    ("swaybarStiffness", "11"): "15",
-    ("swaybarStiffness", "16"): "19",
-    ("multiplier", "0.95"): "1.45",
-    ("downforceFactor", "0.60"): "1.40",
+    ("horsepower", "680"): "2000",                 # scanner hp        (VehicleUIData)
+    ("engineMaxTorque", "1300"): "3824",           # torque
+    ("airResistanceFactor", "1.35"): "0.90",       # drag
+    ("frictionMulLateral", "1.29"): "1.60",        # front grip, lateral
+    ("frictionMulLongitudinal", "1.15"): "1.50",   # front grip, longitudinal
+    ("frictionMulLateral", "1.33"): "2.00",        # rear grip, lateral
+    ("frictionMulLongitudinal", "1.20"): "1.85",   # rear grip, longitudinal
+    ("maxBrakingTorque", "1410"): "1850",          # front brakes
+    ("maxBrakingTorque", "1200"): "1550",          # rear brakes
+    ("springStiffness", "23"): "30",               # front spring
+    ("springStiffness", "22"): "28",               # rear spring
+    ("springDamping", "2000"): "3000",             # damping (both axles)
+    ("swaybarStiffness", "11"): "15",              # front anti-roll
+    ("swaybarStiffness", "16"): "19",              # rear anti-roll
+    ("minLatFrictionCoef", "0.95"): "1.45",        # RearWheelsFrictionModifier_Exotic
+    ("minLongFrictionCoef", "0.95"): "1.45",
+    ("maxSpeedFactorGround", "0.6"): "1.40",       # DynamicDownforceHelper_Exotic
 }
 
-# Applied in both modes: gear 7 ceiling + the audio GearSpeed default.
+# Applied in both port modes: gear 7 `maxSpeed` + XairesAMV_GearSpeed default.
 GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
 
 # ---------------------------------------------------------------------------
-# 4. Check mode: identifiers that must NOT exist in a Phoenix build
+# 4. Check mode
 # ---------------------------------------------------------------------------
-FORBIDDEN = [
-    r"xaires_aston_valkyrie_f1",
-    r"xaires_amv_f1",
-    r"XairesAMVF1",
-    r"Vehicle\.xaires_aston_valkyrie",
-    r"Vehicle\.xaires_amv",
-    r"UIIcon\.xaires",
-    r"xaires_amv_engine",
-    r"\bVC_",
-]
+# After masking, any surviving `xaires`/`Xaires`/`_f1` in *code* is a bug. Comments
+# are exempt so credits ("(xaires)") and the port notes survive.
+FORBIDDEN_TOKEN = re.compile(r"xaires|_f1", re.IGNORECASE)
 
 TEXT_SUFFIXES = {".yaml", ".yml", ".reds", ".tweak", ".json", ".txt", ".md"}
 
 LINE_RE = re.compile(
     r"^(\s*)([A-Za-z_][A-Za-z0-9_.]*)(:[ \t]*)([+-]?\d+(?:\.\d+)?)(.*)$"
 )
+RECORD_RE = re.compile(
+    r"^([A-Z][A-Za-z0-9_]*\.[A-Za-z0-9_]+)(?:\.[A-Za-z0-9_]+)?:(?:[ \t]|$)"
+)
+TWEAKDB_LITERAL_RE = re.compile(r't"((?:Vehicle|UIIcon)\.[A-Za-z0-9_]+)"')
 SENTINEL = "\x00P{}\x00"
+
+COMMENT_MARKERS = {
+    # YAML: a comment starts at a "#" that is at line start or preceded by space
+    # (so `LocKey#xaires_...` and `t"Vehicle.x"` are never treated as comments).
+    ".yaml": r"(?P<c>(?<!\S)#)",
+    ".yml": r"(?P<c>(?<!\S)#)",
+    ".reds": r"(?P<c>//)",
+    ".tweak": r"(?P<c>//)",
+}
 
 
 # ---------------------------------------------------------------------------
-# text transforms
+# masking helpers
 # ---------------------------------------------------------------------------
 def _mask(text: str) -> tuple[str, list[str]]:
     """Replace every protected span with a sentinel so rename rules cannot touch it."""
@@ -154,8 +158,8 @@ def _mask(text: str) -> tuple[str, list[str]]:
 
 
 def _unmask(text: str, kept: list[str]) -> str:
-    """Restore sentinels. Loops because later protect patterns can wrap earlier
-    sentinels (e.g. `atlasResourcePath: <path>` nests the path span)."""
+    """Restore sentinels. Loops because later patterns can wrap earlier sentinels
+    (e.g. `atlasResourcePath: <path>` nests the path span)."""
     pattern = re.compile(r"\x00P(\d+)\x00")
 
     def put(m: re.Match) -> str:
@@ -170,6 +174,30 @@ def _unmask(text: str, kept: list[str]) -> str:
     return text
 
 
+def split_comment(line: str, suffix: str) -> tuple[str, str]:
+    """Split a line into (code, comment) so rewrites and checks ignore prose."""
+    marker = COMMENT_MARKERS.get(suffix)
+    if marker is None:
+        return line, ""
+    m = re.search(marker, line)
+    if not m:
+        return line, ""
+    cut = m.start("c")
+    return line[:cut], line[cut:]
+
+
+def _split_eol(line: str) -> tuple[str, str]:
+    body, newline = line, ""
+    if body.endswith("\n"):
+        body, newline = body[:-1], "\n"
+    if body.endswith("\r"):
+        body, newline = body[:-1], "\r" + newline
+    return body, newline
+
+
+# ---------------------------------------------------------------------------
+# physics rewrite
+# ---------------------------------------------------------------------------
 def _num(value: str) -> float | None:
     try:
         return float(value)
@@ -177,35 +205,10 @@ def _num(value: str) -> float | None:
         return None
 
 
-COMMENT_MARKERS = {
-    ".yaml": r"\s#",      # YAML comment needs leading whitespace (LocKey# is not a comment)
-    ".yml": r"\s#",
-    ".reds": r"//",
-    ".tweak": r"//",
-}
-
-
-def split_comment(line: str, suffix: str) -> tuple[str, str]:
-    """Split a line into (code, comment) so rewrites never touch prose."""
-    marker = COMMENT_MARKERS.get(suffix)
-    if marker is None:
-        return line, ""
-    m = re.search(marker, line)
-    if not m:
-        return line, ""
-    cut = m.start() + (1 if marker == r"\s#" else 0)
-    return line[:cut], line[cut:]
-
-
-def rewrite_line_values(line: str, suffix: str, pairs: dict[tuple[str, str], str]) -> str:
+def rewrite_line_values(line: str, suffix: str,
+                        pairs: dict[tuple[str, str], str]) -> str:
     """Rewrite `key: value` pairs in the code part of a line (YAML style)."""
-    newline = ""
-    body = line
-    if body.endswith("\n"):
-        body, newline = body[:-1], "\n"
-    if body.endswith("\r"):
-        body, newline = body[:-1], "\r" + newline
-
+    body, newline = _split_eol(line)
     code, comment = split_comment(body, suffix)
     m = LINE_RE.match(code)
     if not m:
@@ -218,14 +221,8 @@ def rewrite_line_values(line: str, suffix: str, pairs: dict[tuple[str, str], str
 
 
 def rewrite_gear7(line: str, suffix: str) -> str:
-    """91.7 -> 138.89, in code only (YAML value position or redscript literals)."""
-    newline = ""
-    body = line
-    if body.endswith("\n"):
-        body, newline = body[:-1], "\n"
-    if body.endswith("\r"):
-        body, newline = body[:-1], "\r" + newline
-
+    """91.7 -> 138.89 in code only (YAML value position or redscript literals)."""
+    body, newline = _split_eol(line)
     code, comment = split_comment(body, suffix)
     if suffix in (".yaml", ".yml"):
         m = LINE_RE.match(code)
@@ -237,8 +234,7 @@ def rewrite_gear7(line: str, suffix: str) -> str:
             return line
         return f"{indent}{key}{sep}{GEAR7_TO}{rest}{comment}{newline}"
 
-    rewritten = re.sub(r"(?<![\d.])91\.7(?![\d])", GEAR7_TO, code)
-    return rewritten + comment + newline
+    return re.sub(r"(?<![\d.])91\.7(?![\d])", GEAR7_TO, code) + comment + newline
 
 
 def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
@@ -264,65 +260,108 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
     return "".join(out)
 
 
-def port_text(text: str, suffix: str, physics: bool, keep_method_names: bool,
+def _rename_code(code: str) -> str:
+    """Apply the identifier rules to a single code fragment."""
+    masked, kept = _mask(code)
+    for pattern, repl in RENAME:
+        masked = re.sub(pattern, repl, masked)
+    return _unmask(masked, kept)
+
+
+def port_text(text: str, suffix: str, physics: bool,
               warn: list[str] | None = None) -> str:
     if physics:
         text = apply_physics(text, suffix, warn)
     else:
         text = "".join(rewrite_gear7(line, suffix) for line in text.splitlines(keepends=True))
 
-    masked, kept = _mask(text)
-    for pattern, repl in RENAME:
-        masked = re.sub(pattern, repl, masked)
-    if not keep_method_names:
-        masked = re.sub(METHOD_RULE[0], METHOD_RULE[1], masked)
-    return _unmask(masked, kept)
+    # Rename in code only: the source's Turkish engineering notes stay verbatim
+    # (they are provenance — dates of in-game tests, and the credit to xaires).
+    out = []
+    for line in text.splitlines(keepends=True):
+        body, newline = _split_eol(line)
+        code, comment = split_comment(body, suffix)
+        out.append(_rename_code(code) + comment + newline)
+    return "".join(out)
+
+
+FILE_RENAME = [
+    (r"^aston_valkyrie", "phoenix_aston_valkyrie"),   # aston_valkyrie_audio.reds -> ...
+]
 
 
 def rename_path(path: Path) -> Path:
     """Rename each path component with the same identifier rules."""
-    parts = []
-    for part in path.parts:
+    parts = list(path.parts)
+    for i, part in enumerate(parts):
         for pattern, repl in RENAME:
             part = re.sub(pattern, repl, part)
-        parts.append(part)
+        if i == len(parts) - 1:            # file name gets the explicit prefix
+            for pattern, repl in FILE_RENAME:
+                part = re.sub(pattern, repl, part)
+        parts[i] = part
     return Path(*parts)
 
 
-STAMP = {
-    ".yaml": (
-        "# GENERATED by tools/port_to_phoenix.py ({origin}) from {source}\n"
-        "# PORT.md §4 rename output — do not edit by hand, re-run the tool instead.\n\n"
-    ),
-    ".yml": (
-        "# GENERATED by tools/port_to_phoenix.py ({origin}) from {source}\n"
-        "# PORT.md §4 rename output — do not edit by hand, re-run the tool instead.\n\n"
-    ),
-    ".reds": (
-        "// GENERATED by tools/port_to_phoenix.py ({origin}) from {source}\n"
-        "// PORT.md §4 rename output — do not edit by hand, re-run the tool instead.\n\n"
-    ),
-}
-
-
-def stamp(text: str, suffix: str, origin: str, source: str) -> str:
-    template = STAMP.get(suffix)
-    if template is None:
-        return text
-    return template.format(origin=origin, source=source) + text
-
-
-def check_text(text: str, label: str) -> list[str]:
-    problems = []
+# ---------------------------------------------------------------------------
+# checks
+# ---------------------------------------------------------------------------
+def check_text(text: str, label: str, suffix: str) -> list[str]:
+    problems: list[str] = []
     masked, _ = _mask(text)
-    for pattern in FORBIDDEN:
-        for m in re.finditer(pattern, masked):
-            line_no = masked[: m.start()].count("\n") + 1
-            problems.append(f"{label}:{line_no}: leftover {m.group(0)!r} (rule {pattern})")
-    for (key, value), _new in STOCK_TO_F1.items():
-        for m in re.finditer(rf"^[ \t]*{key}:[ \t]*{re.escape(value)}(?![.\d])", masked, re.M):
-            line_no = masked[: m.start()].count("\n") + 1
-            problems.append(f"{label}:{line_no}: stock physics leftover {key}: {value}")
+
+    for no, line in enumerate(masked.splitlines(), 1):
+        code, _comment = split_comment(line, suffix)
+        for m in FORBIDDEN_TOKEN.finditer(code):
+            problems.append(f"{label}:{no}: leftover {m.group(0)!r} in code")
+        m = LINE_RE.match(code)
+        if m:
+            key, value = m.group(2).rsplit(".", 1)[-1], m.group(4)
+            if (key, value) in STOCK_TO_F1:
+                problems.append(f"{label}:{no}: stock physics leftover {key}: {value}")
+    return problems
+
+
+def collect_refs(files: list[tuple[Path, str]]) -> list[str]:
+    """Cross-check script TweakDBID literals against records defined in the YAML."""
+    records: set[str] = set()
+    literals: dict[str, str] = {}
+    audio_resources: set[str] = set()
+    audio_cnames: set[str] = set()
+
+    for path, text in files:
+        suffix = path.suffix.lower()
+        for line in text.splitlines():
+            code, _ = split_comment(line, suffix)
+            if suffix in (".yaml", ".yml"):
+                m = RECORD_RE.match(code)
+                if m:
+                    records.add(m.group(1))
+                m = re.match(r"^\s*player_audio_resource:[ \t]*(\S+)", code)
+                if m:
+                    audio_resources.add(m.group(1))
+            for m in TWEAKDB_LITERAL_RE.finditer(code):
+                literals[m.group(1)] = str(path)
+            for m in re.finditer(r'n"([a-z0-9_]*amv_engine)"', code):
+                audio_cnames.add(m.group(1))
+
+    problems = []
+    for ident, source in sorted(literals.items()):
+        if ident.startswith("Vehicle.phoenix_") and ident not in records:
+            problems.append(
+                f"{source}: TweakDBID literal {ident!r} has no matching record in the YAML"
+            )
+    for resource in sorted(audio_resources):
+        if resource.startswith("phoenix_") and resource not in audio_cnames:
+            problems.append(
+                f"YAML player_audio_resource {resource!r} is never created by the scripts"
+                " (audio metadata copy)"
+            )
+    for cname in sorted(audio_cnames):
+        if cname not in audio_resources:
+            problems.append(
+                f"scripts create audio metadata {cname!r} but no YAML record uses it"
+            )
     return problems
 
 
@@ -341,19 +380,27 @@ def iter_sources(sources: list[Path]):
             raise SystemExit(f"error: no such file or directory: {src}")
 
 
+def _origin_source(src: Path) -> str:
+    """Pre-rename location to record in the provenance stamp (repo-relative if possible)."""
+    try:
+        return str(src.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(src)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="PORT.md §4: rename the interim _f1 mod to the Phoenix namespace.",
+        description="PORT.md §4/§3: rename the stock Valkyrie mod to the Phoenix namespace"
+                    " and port the F1 physics.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     ap.add_argument("sources", nargs="+", type=Path, help="files or folders to port / check")
-    ap.add_argument("--from", dest="origin", choices=["f1", "stock"], default="f1",
-                    help="f1 = physics already applied (rename only); stock = also port physics (default: f1)")
+    ap.add_argument("--from", dest="origin", choices=["stock", "f1"], default="stock",
+                    help="stock = rename + apply v2 physics (default); "
+                         "f1 = physics already applied, rename only")
     ap.add_argument("--out", type=Path, help="output file or directory")
     ap.add_argument("--in-place", action="store_true", help="rewrite sources (renames file names too)")
     ap.add_argument("--check", action="store_true", help="verify a finished tree; no writing")
-    ap.add_argument("--keep-method-names", action="store_true",
-                    help="do not rename VC_* methods to PHX_* (unsafe when stock mod is also installed)")
     ap.add_argument("--no-stamp", action="store_true",
                     help="do not prepend the 'GENERATED ...' provenance header")
     ap.add_argument("--quiet", action="store_true")
@@ -361,18 +408,19 @@ def main(argv: list[str] | None = None) -> int:
 
     physics = args.origin == "stock"
     warn: list[str] = []
-    rc = 0
 
     # ---- check mode -------------------------------------------------------
     if args.check:
         problems: list[str] = []
-        scanned = 0
+        texts: list[tuple[Path, str]] = []
         for path, _rel in iter_sources(args.sources):
-            scanned += 1
-            problems += check_text(path.read_text(encoding="utf-8", errors="replace"), str(path))
+            text = path.read_text(encoding="utf-8", errors="replace")
+            texts.append((path, text))
+            problems += check_text(text, str(path), path.suffix.lower())
+        problems += collect_refs(texts)
         for p in problems:
             print(p, file=sys.stderr)
-        print(f"\n{scanned} file(s) scanned, {len(problems)} problem(s).", file=sys.stderr)
+        print(f"\n{len(texts)} file(s) scanned, {len(problems)} problem(s).", file=sys.stderr)
         return 1 if problems else 0
 
     # ---- port mode --------------------------------------------------------
@@ -387,9 +435,12 @@ def main(argv: list[str] | None = None) -> int:
     for path, rel in sources:
         text = path.read_text(encoding="utf-8")
         suffix = path.suffix.lower()
-        ported = port_text(text, suffix, physics, args.keep_method_names, warn)
+        ported = port_text(text, suffix, physics, warn)
         if not args.no_stamp:
-            ported = stamp(ported, suffix, args.origin, str(rename_path(path)))
+            template = STAMP.get(suffix)
+            if template:
+                ported = template.format(origin=args.origin,
+                                         source=_origin_source(path)) + ported
 
         if args.in_place:
             target = rename_path(path.parent) / rename_path(Path(path.name)).name
@@ -414,8 +465,23 @@ def main(argv: list[str] | None = None) -> int:
 
     for w in warn:
         print(f"warning: {w}", file=sys.stderr)
-        rc = 0  # warnings do not fail the port; --check is the gate
-    return rc
+    return 0
+
+
+STAMP = {
+    ".yaml": (
+        "# GENERATED by tools/port_to_phoenix.py ({origin}) from {source}\n"
+        "# PORT.md §4 rename output — do not edit by hand, re-run the tool instead.\n\n"
+    ),
+    ".yml": (
+        "# GENERATED by tools/port_to_phoenix.py ({origin}) from {source}\n"
+        "# PORT.md §4 rename output — do not edit by hand, re-run the tool instead.\n\n"
+    ),
+    ".reds": (
+        "// GENERATED by tools/port_to_phoenix.py ({origin}) from {source}\n"
+        "// PORT.md §4 rename output — do not edit by hand, re-run the tool instead.\n\n"
+    ),
+}
 
 
 if __name__ == "__main__":
