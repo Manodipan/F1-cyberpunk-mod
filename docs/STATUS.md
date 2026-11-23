@@ -28,10 +28,11 @@ Updated 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 
 | # | Item | Why | Unblocks it |
 |---|---|---|---|
-| 1 | Pretty name ("Phoenix AMV LMH") — **packed 2026-11-23**, awaiting in-game confirmation | the strings live in a CR2W `JsonResource` **inside** the archive — the stock archive has none at all, so the card falls back to the record name (`PHOENIX_ASTON_VALKYRIE`, already distinct) | `docs/LOCALISATION.md` — pack `tools/localization/en-us.json` into the archive (WolvenKit, one file) |
-| 2 | **v2 handling test** (hairpin, top speed, launch) | needs the game | `docs/INSTALL.md` §4 matrix |
-| 3 | Confirm both mods boot together cleanly | CT/LM: two archives, two `.xl`, two `ScriptableService`s, both loading the same bank | first launch — check `cyber_engine_tweaks.log` and `archivexl.log` |
-| 4 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
+| 1 | Pretty name ("Phoenix AMV LMH") — **confirmed in game 2026-11-23** (card + scanner info) | the strings live in a CR2W `JsonResource` **inside** the archive — the stock archive has none at all, so the card falls back to the record name (`PHOENIX_ASTON_VALKYRIE`, already distinct) | `docs/LOCALISATION.md` — pack `tools/localization/en-us.json` into the archive (WolvenKit, one file) |
+| 2 | Paint / livery in the two slots (Rosso Fiorano + bronze) — see `docs/PAINT.md` |
+| 3 | **v2 handling test** (hairpin, top speed, launch) | needs the game | `docs/INSTALL.md` §4 matrix |
+| 4 | Confirm both mods boot together cleanly | CT/LM: two archives, two `.xl`, two `ScriptableService`s, both loading the same bank | first launch — check `cyber_engine_tweaks.log` and `archivexl.log` |
+| 5 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 
 ## Risks worth knowing before the first launch
 
