@@ -224,6 +224,34 @@ and need different fixes, so the next measurement is chosen to tell them apart:
 | **B** | the pane **keeps** Rosso Fiorano, the car still looks stock | the choice is stored but the **apply** path bails for our record | `ayarlar.json` shows `"kaplama":"rosso_fiorano"`; the guard is in `apply`/`desired` |
 | **C** | the *Livery / paint* slot only ever lists **Original livery** — no Ferrari / Lamborghini / Solid / Metallic groups under it | the palette file did not load for this slot | `marka_renkleri.json` / `sdh0_palet.json` / `kaplamalar.json` content |
 
+### What the test machine actually showed (2026-11-24)
+
+> "the aston changes the original aston, but doesn't affect the phoenix"
+
+That rules out A (the click *is* stored — the stock car obeys it) and C (the palette
+loads). It leaves one thing: **`carOf()` still does not resolve the Phoenix**, so the
+apply loop never runs for our vehicle. The paint works; the lookup misses.
+
+Which means the v1 patch added a string that `carOf` hashes into a different key than
+`GetRecordID()` returns. The only way that happens is if the entries in `CARS.amv.records`
+are **not plain record names** — e.g. `rec()` prefixes `Vehicle.`, or resolves the name
+through TweakDB. v1 hand-wrote `'phoenix_aston_valkyrie'`; if the stock entry really
+expands to something else, our key never matches.
+
+v2 asks `rec()` for our id as well, so whatever it does to the stock name it also does to
+ours — correct in both worlds:
+
+```lua
+records = (function() local t = rec('xaires_aston_valkyrie') local p = rec('phoenix_aston_valkyrie') if type(p) == 'table' then for i = 1, #p do t[#t + 1] = p[i] end end return t end)(),
+```
+
+Apply with `compat/xaires_car_manager/repatch.ps1` (rebuilds from `init.lua.orig`, keeps
+`init.lua.prev`, prints the body of `rec()`), reload mods, spawn, pick Rosso Fiorano.
+
+If v2 also leaves the Phoenix untouched, `rec()`'s body and the apply loop are in
+`paint_dump.txt` (sections `FUNCTION INDEX`, `init.lua 160-260`, `PAINT APPLY CODE`), and
+the next patch is aimed by that code instead of guessed.
+
 The cheap way to separate A/B from C: the Ferrari, Lamborghini, Porsche … groups exist
 for **every** car in the catalogue, because they come from `marka_renkleri.json`
 (car-independent). If they are visible under *Livery / paint*, C is out.

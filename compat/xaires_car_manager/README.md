@@ -21,7 +21,33 @@ second argument means — we append to whatever it returns.
 
 ## The patch (one line)
 
-Replace that line with:
+**Use v2** (below). v1 is kept because it is what the file currently holds, and because
+it explains the failure: v1 *worked* in the sense that the manager stopped ignoring the
+car — but it repainted the **stock** Aston and left the Phoenix alone, which is exactly
+what happens when the ids in that list are not plain record names.
+
+### v2 — 2026-11-24 (recommended)
+
+Rewrite the line so the id is built by `rec()`, the same way the stock one is:
+
+```lua
+records = (function() local t = rec('xaires_aston_valkyrie') local p = rec('phoenix_aston_valkyrie') if type(p) == 'table' then for i = 1, #p do t[#t + 1] = p[i] end end return t end)(),
+```
+
+One command, from the clone folder (`$HOME\f1-cyberpunk-mod`), after `git pull`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\compat\xaires_car_manager\repatch.ps1
+```
+
+It rebuilds `init.lua` from the pristine `init.lua.orig` (so it does not matter that v1
+is in there now, and running it twice is harmless), keeps the current file as
+`init.lua.prev`, and prints the patched line **plus the body of `rec()`** — that body is
+what proves whether the v1 string ever could have matched.
+
+Then: CET ▸ **Reload all mods**, spawn the Phoenix, click **Rosso Fiorano**.
+
+### v1 — 2026-11-23 (superseded, applied on the test machine)
 
 ```lua
 records = (function() local t = rec('xaires_aston_valkyrie') t[#t+1] = 'phoenix_aston_valkyrie' return t end)(),

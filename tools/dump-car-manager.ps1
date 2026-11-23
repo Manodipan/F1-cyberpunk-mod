@@ -6,7 +6,10 @@
 #
 #   powershell -ExecutionPolicy Bypass -File .\tools\dump-car-manager.ps1
 #
-# Writes .\car_manager_dump.txt next to the repo root and opens it in Notepad.
+# Writes two files next to the repo root:
+#   car_manager_dump.txt  - everything
+#   paint_dump.txt        - only the paint diagnosis, opened in Notepad (this is the one
+#                           to paste into the chat: select all, copy, paste)
 
 param(
     [string]$Game = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty",
@@ -56,12 +59,13 @@ $json = Get-ChildItem $modDir -Filter *.json -ErrorAction SilentlyContinue
 if (-not $json) { $lines.Add("(no .json files)") }
 foreach ($j in $json) {
     $lines.Add("--- $($j.Name) ($($j.Length) bytes) ---")
+    $cap = 6000
+    if (-not ($j.Name -eq "ayarlar.json" -or $j.Name -eq "ses.json")) { $cap = 600 }
     try {
-        $raw = @(Get-Content $j.FullName -Raw -ErrorAction Stop)
-        $txt = ($raw | Out-String)
-        if ($txt.Length -gt 6000) {
-            $lines.Add($txt.Substring(0, 6000))
-            $lines.Add("... (truncated - pasted only the first 6000 chars)")
+        $txt = (Get-Content $j.FullName -Raw -ErrorAction Stop | Out-String)
+        if ($txt.Length -gt $cap) {
+            $lines.Add($txt.Substring(0, $cap))
+            $lines.Add("... (only the first $cap chars - the full dump has the same cap)")
         } else {
             $lines.Add($txt)
         }
@@ -70,7 +74,9 @@ foreach ($j in $json) {
     }
 }
 
-Section "IS THE PATCH THERE? (line 225)"
+$paintStart = $lines.Count
+
+Section "IS THE PATCH THERE?"
 $patchHits = Select-String -Path $init -Pattern "phoenix_aston_valkyrie"
 if (-not $patchHits) { $lines.Add("(no hit - the patch is NOT in init.lua)") }
 foreach ($h in $patchHits) { $lines.Add("$($h.LineNumber): $($h.Line)") }
@@ -85,6 +91,36 @@ if (Test-Path $init) {
     }
 } else {
     $lines.Add("init.lua not found")
+}
+
+Section "EVERY MENTION OF THE ASTON / RECORD IDS IN init.lua"
+if (Test-Path $init) {
+    $hits = Select-String -Path $init -Pattern "aston|xaires|phoenix|GetRecordID|recordID|records"
+    foreach ($h in $hits) {
+        $t = $h.Line.Trim()
+        if ($t.Length -gt 140) { $t = $t.Substring(0, 140) + " ..." }
+        $lines.Add(("{0,4}: {1}" -f $h.LineNumber, $t))
+    }
+    $lines.Add("(total hits: " + @($hits).Count + ")")
+}
+
+Section "FUNCTION INDEX (line: definition)"
+if (Test-Path $init) {
+    $fns = Select-String -Path $init -Pattern "^\s*(local\s+)?function\s+[\w\.:]+"
+    foreach ($f in $fns) {
+        $t = $f.Line.Trim()
+        if ($t.Length -gt 90) { $t = $t.Substring(0, 90) + " ..." }
+        $lines.Add(("{0,4}: {1}" -f $f.LineNumber, $t))
+    }
+    $lines.Add("(total functions: " + @($fns).Count + ")")
+}
+
+Section "init.lua 160-260  (helpers above the CARS table, incl. rec())"
+if (Test-Path $init) {
+    $c2 = Get-Content $init
+    for ($i = 159; $i -le 259 -and $i -lt $c2.Count; $i++) {
+        $lines.Add(("{0,4}: {1}" -f ($i + 1), $c2[$i]))
+    }
 }
 
 Section "PAINT APPLY CODE  (init.lua 455-640)"
@@ -167,10 +203,16 @@ foreach ($log in $logCandidates) {
 Section "END"
 
 $lines | Out-File -FilePath $Out -Encoding utf8
+
+$small = Join-Path (Split-Path -Parent $Out) "paint_dump.txt"
+$slice = $lines.GetRange($paintStart, $lines.Count - $paintStart)
+$slice | Out-File -FilePath $small -Encoding utf8
+
 Write-Host ""
 Write-Host "written: $Out"
 Write-Host "lines  : $($lines.Count)"
+Write-Host "paste this one: $small  ($($slice.Count) lines)"
 Write-Host ""
 Write-Host "Next: paste the sections 'SAVED CHOICES', 'ARE THE TWO COLOURS IN THE PALETTE?'"
 Write-Host "and 'PAINT APPLY CODE'. Those three decide the diagnosis."
-Start-Process notepad.exe $Out
+Start-Process notepad.exe $small
