@@ -133,6 +133,31 @@ That gives an in-game colour wheel, two colours, and "off/on" material states �
 close to what the Car Manager already does, for a lot more work. Only worth it if route
 1 fails and you want runtime colour choice rather than one fixed scheme.
 
+## What the UI looks like after the patch (expected, not a bug)
+
+The manager's left column is **xa1res's whole catalogue** — Porsche Mission R, Apollo,
+Bolide, Countach, 296 GT3, 9X8, SC63, A424, … — whether or not those mods are installed.
+It has no per-record discovery; it just lists the cars its author built.
+
+The Phoenix consequently has **no row of its own**: our patch points its record at the
+`amv` entry, so the Phoenix is painted from the *Aston Martin Valkyrie LMH* pane. That is
+the intended result — one palette, two cars. A separate row would mean a forked copy of
+the manager.
+
+Where the palette lives inside that pane:
+
+| Row | Meaning |
+|---|---|
+| `Livery (n)` | the baked liveries — for the AMV that's *The Heart of Racing #007* |
+| `Ferrari (13)`, `Lamborghini (16)`, `McLaren (10)`, … | real manufacturer colours (flat paint) |
+| `Solid / Metallic / Matte (22 each)` | generic colours |
+| `Second colour` (further down) | the accent panels; has *Livery original* and *Carbon black* first |
+
+Pick a swatch → the car repaints when you close the overlay (the pane's own note:
+*"Choices are saved and applied when you get in or look at this car"*). For the
+Rosso Fiorano + bronze look: a dark red from the Ferrari group for **Livery / paint**,
+then a bronze from `Metallic` for **Second colour**.
+
 ## Applied 2026-11-23 (local, needs in-game confirmation)
 
 The one-liner is in place on the test machine — `init.lua` line 225 now reads
