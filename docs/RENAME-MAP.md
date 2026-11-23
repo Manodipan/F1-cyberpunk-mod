@@ -18,6 +18,8 @@ Applied mechanically by `tools/port_to_phoenix.py` against the real mod on `main
 | `player_audio_resource: xaires_amv_engine` | `player_audio_resource: phoenix_amv_engine` |
 | `Vehicle.vehicle_list.list` entries | append the Phoenix records instead |
 | gear 7 `maxSpeed: 91.7` | `maxSpeed: 138.89` |
+| `displayName: xaires_aston_valkyrie_name` | `displayName: phoenix_aston_valkyrie_name` |
+| `info: LocKey#xaires_aston_valkyrie_info` | `info: LocKey#phoenix_aston_valkyrie_info` |
 
 ## 2. Renamed — redscript (`r6/scripts/xaires_aston_valkyrie/*.reds`)
 
@@ -47,7 +49,6 @@ TweakDBID.
 | Wwise bank | `XairesAMV_Wwise` folder, `xaires_amv.bnk` | **one** AudioXL bank for both mods |
 | Wwise events / params | `xamw_engine_on/off`, `xamw_rpm`, `xamw_gas`, `xcm_vol`, fact `xaires_cm_vol` | baked into the bank |
 | Widget paths | `amvGear`, `amvGearImg`, `amvLed`, `amvRev`, `seg_*`, `g_*`, `s_*`, `led_*`, `amvSpd*` | inside the dashboard `.inkwidget` |
-| Display LocKeys | `xaires_aston_valkyrie_name`, `LocKey#xaires_aston_valkyrie_info` | reused until §6 adds `phoenix_*` entries |
 | **`VC_DeepCopyAudioMetadata`** | unchanged | it is a **VehicleCore** API (`import VehicleCore.*`), not the mod's own method. Renaming it breaks the audio metadata copy — an early draft of the tool did exactly that and it is now a regression test |
 
 ## 4. Tool
@@ -55,7 +56,7 @@ TweakDBID.
 ```bash
 make port     # regenerate Phoenix_aston_cheats/r6 from reference/stock
 make check    # identifiers + stock physics + script↔YAML reference consistency
-make test     # 36 tests, incl. "committed tree == tool output"
+make test     # 37 tests, incl. "committed tree == tool output"
 
 # port your own staging copy in place (never the game folder — Vortex overwrites)
 python3 tools/port_to_phoenix.py --from stock "C:/mods/aston_valkyrie" --in-place
@@ -67,4 +68,5 @@ python3 tools/port_to_phoenix.py --from stock "C:/mods/aston_valkyrie" --in-plac
   Turkish engineering notes and the credit to xaires are provenance);
 * any stock physics value that should have moved (`engineMaxTorque: 1300`, …);
 * a `t"Vehicle.phoenix_*"` literal with no matching record in the YAML;
-* a `player_audio_resource` that no script creates, or a metadata record no YAML uses.
+* a `player_audio_resource` that no script creates, or a metadata record no YAML uses;
+* a `xaires` path in the `.xl` (it registers the Phoenix onscreens file, not the stock one).

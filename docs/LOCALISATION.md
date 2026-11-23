@@ -1,10 +1,31 @@
-# Localisation — distinct Phoenix name (PORT.md §6)
+# Localisation — what the label under a car actually is
 
-Status: **the only open blocker to a fully distinct car.** Everything else is built.
+Status: the **name is already distinct**; the *pretty* name ("Phoenix AMV LMH") needs
+one packed file. This page explains why, with the evidence, so nobody chases the
+wrong bug again.
 
-## What the real mod tells us
+## Finding: the stock mod ships no strings at all
 
-`main` shipped the answer to §6's first question. `aston_valkyrie.archive.xl`:
+`phoenix_aston_valkyrie.archive` is a byte copy of `aston_valkyrie.archive`, so this
+applies to both:
+
+```bash
+python3 - <<'PY'
+data = open("Phoenix_aston_cheats/archive/pc/mod/phoenix_aston_valkyrie.archive", "rb").read()
+for pat in (b"xaires_aston_valkyrie_name", b"xaires_aston_valkyrie_info",
+            b"localization", b".json", b"Aston", b"Valkyrie"):
+    print(pat.decode(), data.count(pat))
+PY
+# xaires_aston_valkyrie_name 0
+# xaires_aston_valkyrie_info 0
+# localization 0
+# .json 0
+# Aston 0
+# Valkyrie 0
+```
+
+The archive contains the model, the UI atlases and the widgets — **no onscreen
+text**. The stock `.xl` nevertheless declares
 
 ```yaml
 localization:
@@ -13,66 +34,86 @@ localization:
     tr-tr: xaires\aston_valkyrie\aston_valkyrie_tr.json
 ```
 
-So the display strings live in two JSON files **inside** the archive, at
-`xaires\aston_valkyrie\aston_valkyrie.json` (en-us) and `…_tr.json` (tr-tr), and the
-stock keys are `xaires_aston_valkyrie_name` and `xaires_aston_valkyrie_info`
-(referenced from the YAML as `displayName: xaires_aston_valkyrie_name` and
-`info: LocKey#xaires_aston_valkyrie_info`).
+and those two files do not exist inside the archive: a dangling reference. That is
+the original mod's bug, inherited by the copy, and the reason the summon card shows
+`XAIRES_ASTON_VALKYRIE` instead of "Aston Martin Valkyrie".
 
-While this is unresolved both cars show the stock name; the scanner footer still
-tells them apart by horsepower (2000 vs 680).
+## How the game labels a car with no string
 
-## The change
+`displayName` is a `gamedataLocKeyWrapper` — a 64-bit hash, not text. Resolution:
 
-Add to **`xaires\aston_valkyrie\aston_valkyrie.json`** inside
-`phoenix_aston_valkyrie.archive`:
+| `displayName` value | What the UI shows |
+|---|---|
+| LocKey that exists in an onscreen file | that text, e.g. "Aston Martin Valkyrie" |
+| LocKey that does not exist (our case today) | **the TweakDB record name, uppercased** |
+| plain string (`displayName: Phoenix`) | `TEST` — proven, see PORT.md §6 |
 
-```json
-{
-  "phoenix_aston_valkyrie_name": "Aston Martin Valkyrie F1 CHEAT",
-  "phoenix_aston_valkyrie_info": "Workshop-built LMH Valkyrie on a 2000 hp F1-spec drivetrain. 500 km/h gearing, ground-effect downforce. Not road legal anywhere."
-}
-```
+The proof that it is the *record* name and not the LocKey: the card reads
+`XAIRES_ASTON_VALKYRIE`, while the LocKey is `xaires_aston_valkyrie_name`
+(the `_name` suffix would have shown up).
 
-(keep the existing keys — the stock car still uses them). Add a Turkish pair to
-`aston_valkyrie_tr.json` if you care about the tr-tr build; otherwise tr-tr keeps
-the stock name.
+So the visible label follows the **TweakDBID**, which is exactly what the port
+renamed:
 
-Then repack the archive (WolvenKit: open `phoenix_aston_valkyrie.archive`, add the
-edited JSON, save — contents otherwise unchanged) and flip two lines in the
-reference file:
+| Car | Record | Card today |
+|---|---|---|
+| stock | `Vehicle.xaires_aston_valkyrie` | `XAIRES_ASTON_VALKYRIE` · 2023 · 680 hp |
+| Phoenix | `Vehicle.phoenix_aston_valkyrie` | `PHOENIX_ASTON_VALKYRIE` · 2023 · 2000 hp |
 
-```bash
-sed -i 's/displayName: xaires_aston_valkyrie_name/displayName: phoenix_aston_valkyrie_name/' \
-    reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml
-```
+Two different labels, two different horsepower figures. Nothing to fix for
+identification; what is missing is only the polish.
 
-Careful: that reference file is a *copy of stock*; the cleanest way is to make the
-change in a local copy, then port it:
+## What this repo ships towards the pretty name
 
-```bash
-cp reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml /tmp/aston_valkyrie.yaml
-# edit /tmp/aston_valkyrie.yaml: displayName -> phoenix_aston_valkyrie_name
-#                              info -> LocKey#phoenix_aston_valkyrie_info
-python3 tools/port_to_phoenix.py --from stock /tmp/aston_valkyrie.yaml \
-    --out Phoenix_aston_cheats/r6/tweaks/phoenix/phoenix_aston_valkyrie.yaml
-```
+| File | Role |
+|---|---|
+| `tools/localization/en-us.json` | CR2W `JsonResource` with the two onscreen entries, ready to pack |
+| `Phoenix_aston_valkyrie.archive.xl` → `archive/pc/mod/phoenix_aston_valkyrie.archive.xl` | registers it as `phoenix\aston_valkyrie\en-us.json` |
+| tweak file | asks for `phoenix_aston_valkyrie_name` / `LocKey#phoenix_aston_valkyrie_info` |
 
-Both keys are in the tool's `PROTECT` list, so they are **not** auto-renamed: the
-Phoenix entries must exist in the language file before the YAML points at them
-(otherwise the summon UI falls back to `TEST` — proven in PORT.md §6).
+Entry contents:
 
-## Alternative without WolvenKit
+| secondaryKey | femaleVariant |
+|---|---|
+| `phoenix_aston_valkyrie_name` | Phoenix AMV LMH |
+| `phoenix_aston_valkyrie_info` | Aston Martin Valkyrie LMH, rebuilt as the Phoenix F1 prototype: 2000 hp, 500 km/h, 7-speed sequential, rear-wheel drive. |
 
-Two other routes, both needing a Windows tool that writes `.archive` files:
+`make test` (37 tests) keeps the JSON, the `.xl` and the YAML in agreement:
+`test_localisation_source_matches_the_yaml` fails if a key drifts.
 
-* **Separate small archive** with only the localisation JSON, plus a second `.xl`
-  declaring `localization.onscreens.en-us: phoenix\aston_valkyrie\aston_valkyrie.json`.
-  ArchiveXL merges archives, so the texture archive can stay byte-identical to stock.
-* **Script-side rename**: a redscript/CET hook that rewrites the onscreen entry at
-  runtime (`LocalizationHelper`?). Fragile, version-dependent, not recommended.
+## Packing it (WolvenKit, one file, ~2 minutes)
 
-If you want me to attempt a pure-Python archive writer, say so — there is a
-reference implementation (`jcoetzee/cp2077-ev-conversion`, `tools/rdar.py`) that
-reads/writes RDAR archives, but an archive we cannot test in-game is a crash risk,
-so I'd rather not ship one blind.
+1. WolvenKit → **File ▸ New Project** → name it `phoenix_aston_valkyrie`.
+2. `Source/archive` → right-click → **Add existing file…** → pick the real
+   `Phoenix_aston_valkyrie/archive/pc/mod/phoenix_aston_valkyrie.archive`.
+3. In the project tree, right-click the archive's `xaires\aston_valkyrie` folder →
+   **Add file** → choose `tools/localization/en-us.json`, then rename it to
+   `en-us.json` **and move it** so the path is `phoenix\aston_valkyrie\en-us.json`
+   (that string is what the `.xl` points at; a different path silently does nothing).
+4. Right-click it → **Convert to CR2W** (it must be a `JsonResource`, not text).
+5. Archive → **Pack** → take the produced `.archive`, rename it
+   `phoenix_aston_valkyrie.archive`, and drop it into
+   `Phoenix_aston_cheats/archive/pc/mod/` (replacing the 11.6 MB copy).
+6. `make all` (the port/check/packaging gates), then reinstall and **restart the
+   game** — the card should read `Phoenix AMV LMH`.
+
+If WolvenKit's JSON template version differs from `WKitJsonVersion 0.0.8`, create a
+new JSON resource inside WolvenKit instead of importing ours, and paste only the
+`entries` array from `tools/localization/en-us.json`.
+
+## Why not do it in the repo automatically
+
+The strings live in a CR2W `JsonResource` **inside** an archive. Writing CR2W plus a
+valid RDAR archive from scratch and shipping it untested is how mods get a
+crash-on-boot reputation; a Python archive writer we cannot validate in-game is not
+worth the risk. Everything up to the packing step is versioned here, so the manual
+step is one file and one Pack click.
+
+## Fallbacks, if you would rather not pack
+
+* **Keep the fallback label.** `PHOENIX_ASTON_VALKYRIE` + 2000 hp is already
+  unambiguous; you lose nothing functionally.
+* **Rename the record** (`Vehicle.phoenix_amv_lmh` → card `PHOENIX_AMV_LMH`). Costs a
+  rename across the YAML, scripts, docs and tests for a cosmetic string.
+* **Reuse an unused vanilla LocKey** — every candidate belongs to another vehicle,
+  so the card would lie. Not recommended.

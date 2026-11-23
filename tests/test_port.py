@@ -5,6 +5,7 @@ Tests for tools/port_to_phoenix.py against the REAL stock mod (as uploaded to ma
 Run:  python3 -m unittest discover -s tests -v
 """
 
+import json
 import subprocess
 import sys
 import tempfile
@@ -66,8 +67,11 @@ class RenameTests(unittest.TestCase):
         self.assertIn("entityTemplatePath: xaires\\aston_valkyrie\\aston_valkyrie.ent", out)
         self.assertIn("appearanceName: aston_valkyrie", out)
         self.assertIn('"xaires\\\\aston_valkyrie\\\\ui\\\\amv_dealer.inkatlas"', out)
-        self.assertIn("displayName: xaires_aston_valkyrie_name", out)      # LocKey until §6
-        self.assertIn("info: LocKey#xaires_aston_valkyrie_info", out)
+        # LocKeys are renamed too: the stock archive has no strings at all (docs/LOCALISATION.md)
+        self.assertIn("displayName: phoenix_aston_valkyrie_name", out)
+        self.assertIn("info: LocKey#phoenix_aston_valkyrie_info", out)
+        self.assertNotIn("xaires_aston_valkyrie_name", out)
+        self.assertNotIn("xaires_aston_valkyrie_info", out)
         self.assertIn("atlasPartName: amv", out)
 
     def test_audio_resource_and_scripts(self):
@@ -210,9 +214,30 @@ class DeliverableTests(unittest.TestCase):
     def test_archive_and_localisation_present(self):
         xl = DELIVERABLE / "archive" / "pc" / "mod" / "phoenix_aston_valkyrie.archive.xl"
         self.assertTrue(xl.is_file())
-        # contents stay stock: the onscreens JSON lives inside the unchanged archive
-        self.assertIn("xaires\\aston_valkyrie\\aston_valkyrie.json",
-                      xl.read_text(encoding="utf-8"))
+        text = xl.read_text(encoding="utf-8")
+        # our own namespace, and the path the packed archive must contain
+        self.assertIn("phoenix\\aston_valkyrie\\en-us.json", text)
+        self.assertNotIn("xaires", text)
+
+    def test_localisation_source_matches_the_yaml(self):
+        """tools/localization/en-us.json must define exactly the keys the YAML asks for."""
+        doc = json.loads((ROOT / "tools" / "localization" / "en-us.json").read_text(encoding="utf-8"))
+        root = doc["Data"]["RootChunk"]
+        self.assertEqual(root["$type"], "JsonResource")
+        entries = root["root"]["Data"]["entries"]
+        self.assertEqual(root["root"]["Data"]["$type"],
+                         "localizationPersistenceOnScreenEntries")
+        keys = {e["secondaryKey"] for e in entries}
+        self.assertEqual(keys, {"phoenix_aston_valkyrie_name", "phoenix_aston_valkyrie_info"})
+
+        yaml = (DELIVERABLE / "r6" / "tweaks" / "phoenix" / "phoenix_aston_valkyrie.yaml"
+                ).read_text(encoding="utf-8")
+        for key in keys:
+            self.assertIn(key, yaml, f"{key} is not referenced by the tweak file")
+        for entry in entries:
+            self.assertTrue(entry["femaleVariant"].strip(), f"empty text for {entry['secondaryKey']}")
+            self.assertEqual(entry["maleVariant"], "")
+            self.assertNotIn("xaires", entry["femaleVariant"].lower())
 
     def test_no_reds_leftover_code(self):
         problems = []

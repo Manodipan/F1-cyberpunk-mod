@@ -1,4 +1,10 @@
+# Phoenix_aston_cheats — ArchiveXL loader config (see docs/LOCALISATION.md)
+#
+# Registers this mod's own onscreens file. The path is *inside*
+# phoenix_aston_valkyrie.archive, not on disk: tools/localization/en-us.json must
+# be packed into the archive at this exact path for the car to show its own name.
+# Until it is packed the game falls back to the TweakDBID label
+# (PHOENIX_ASTON_VALKYRIE) and nothing else changes.
 localization:
   onscreens:
-    en-us: xaires\aston_valkyrie\aston_valkyrie.json
-    tr-tr: xaires\aston_valkyrie\aston_valkyrie_tr.json
+    en-us: phoenix\aston_valkyrie\en-us.json

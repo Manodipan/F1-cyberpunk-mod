@@ -68,7 +68,7 @@ assets and bank), and that the stock mod provides `red4ext/`.
 
 ## Pre-upload checklist
 
-- [ ] `make all` green (port → check → 36 tests → layout)
+- [ ] `make all` green (port → check → 37 tests → layout)
 - [ ] `make package` built, zip has exactly 7 entries and no `.md`/`.txt`
 - [ ] zip has `phoenix_aston_valkyrie.archive` **and** `.archive.xl`
 - [ ] `r6/tweaks/phoenix/` contains one YAML; `r6/scripts/phoenix_aston_valkyrie/` four `.reds`

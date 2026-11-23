@@ -37,14 +37,13 @@ Renamed (PORT.md §4)
   gear 7 ceiling 91.7                   -> 138.89 (500 km/h), YAML + reds
   file / folder names                   -> phoenix_aston_valkyrie*
 
-Kept shared (same assets, same bank, stock LocKeys until §6)
+Kept shared (same assets, same bank, same Wwise events)
 -------------------------------------------------------------
   appearanceName: aston_valkyrie
   xaires\\aston_valkyrie\\...  (.ent, .inkatlas, .xbm, onscreens .json)
   XairesAMV_Wwise / xaires_amv.bnk     (one AudioXL bank for both mods)
   xamw_* / xcm_vol / xaires_cm_vol      (Wwise events + Car Manager fact)
   widget paths (amvGear, amvLed, amvRev, seg_*, g_*, s_*, led_*, amvSpd*)
-  LocKeys xaires_aston_valkyrie_name / _info
   VC_DeepCopyAudioMetadata             (VehicleCore API, not ours to rename)
 
 Not renamed on purpose: `VC_DeepCopyAudioMetadata` is provided by the VehicleCore
@@ -60,7 +59,7 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# 1. Spans that must survive untouched (shared assets, shared bank, stock LocKeys)
+# 1. Spans that must survive untouched (shared assets, shared bank, shared Wwise)
 # ---------------------------------------------------------------------------
 PROTECT = [
     r"xaires\\aston_valkyrie\\[A-Za-z0-9_.\\]*",       # assets inside the shared .archive
@@ -70,7 +69,6 @@ PROTECT = [
     r"xaires_cm_vol",                                  # Car Manager volume fact
     r"xamw_[A-Za-z0-9_]*",                             # Wwise events / parameters
     r"xcm_vol",                                        # AudioXL volume parameter
-    r"xaires_aston_valkyrie_(?:name|info)\b",          # LocKeys reused until PORT.md §6
     r"atlasResourcePath:[ \t]*\S+",                    # texture-core paths
     r"atlasPartName:[ \t]*\S+",                        # atlas part names
     r'(?:dealerAtlasPath|dealerPartName):[ \t]*"[^"]*"',  # Virtual Car Dealer preview
@@ -120,7 +118,7 @@ GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
 # are exempt so credits ("(xaires)") and the port notes survive.
 FORBIDDEN_TOKEN = re.compile(r"xaires|_f1", re.IGNORECASE)
 
-TEXT_SUFFIXES = {".yaml", ".yml", ".reds", ".tweak", ".json", ".txt", ".md"}
+TEXT_SUFFIXES = {".yaml", ".yml", ".xl", ".reds", ".tweak", ".json", ".txt", ".md"}
 
 LINE_RE = re.compile(
     r"^(\s*)([A-Za-z_][A-Za-z0-9_.]*)(:[ \t]*)([+-]?\d+(?:\.\d+)?)(.*)$"
@@ -136,6 +134,7 @@ COMMENT_MARKERS = {
     # (so `LocKey#xaires_...` and `t"Vehicle.x"` are never treated as comments).
     ".yaml": r"(?P<c>(?<!\S)#)",
     ".yml": r"(?P<c>(?<!\S)#)",
+    ".xl": r"(?P<c>(?<!\S)#)",   # ArchiveXL loader config is YAML
     ".reds": r"(?P<c>//)",
     ".tweak": r"(?P<c>//)",
 }

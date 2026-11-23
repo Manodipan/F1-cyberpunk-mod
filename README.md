@@ -14,7 +14,7 @@ The port plan is [`PORT.md`](PORT.md); what is done vs open is
 ```bash
 make port            # rebuild Phoenix_aston_cheats/r6 from reference/stock (the real mod)
 make check           # identifiers, stock physics, script<->YAML references
-make test            # 36 tests, incl. "committed tree == tool output"
+make test            # 37 tests, incl. "committed tree == tool output"
 make verify-package  # the folder is a clean game-root mirror (mod packaging norm)
 make package         # -> dist/Phoenix_aston_cheats.zip for Nexus / Vortex
 ```
@@ -23,13 +23,13 @@ make package         # -> dist/Phoenix_aston_cheats.zip for Nexus / Vortex
 
 ```
 Phoenix_aston_cheats/            the mod = a mirror of the game root (7 files, 12 MB)
-  archive/pc/mod/                phoenix_aston_valkyrie.archive(.xl)  — renamed copy of stock
+  archive/pc/mod/                phoenix_aston_valkyrie.archive(.xl)  — copy of stock + own .xl
   r6/tweaks/phoenix/             phoenix_aston_valkyrie.yaml          — generated
   r6/scripts/phoenix_aston_valkyrie/  phoenix_aston_valkyrie{,_audio,_ekran,_led}.reds
 reference/stock/                 verbatim copy of the real mod from main (source of truth)
 tools/port_to_phoenix.py         §4 rename + §3 physics, one auditable rule set
 tools/package.py                 payload-layout validator + Nexus zip builder
-tests/                           36 tests (port + packaging) over the real files
+tests/                           37 tests (port + packaging) over the real files
 docs/                            install + test matrix, packaging, rename map, field map,
                                  localisation, archive provenance, status
 ```
@@ -68,5 +68,5 @@ to xaires) are left verbatim on purpose.
   `dist/*.zip` you upload.
 * [`docs/STATUS.md`](docs/STATUS.md) — the one open blocker (distinct name LocKey),
    the pending handling test, and three launch risks worth knowing.
-* [`docs/LOCALISATION.md`](docs/LOCALISATION.md) — exact JSON paths from the real `.xl`
+* [`docs/LOCALISATION.md`](docs/LOCALISATION.md) — why the card shows the TweakDBID, and the one-file pack that turns it into "Phoenix AMV LMH"
    and the two-line YAML flip.

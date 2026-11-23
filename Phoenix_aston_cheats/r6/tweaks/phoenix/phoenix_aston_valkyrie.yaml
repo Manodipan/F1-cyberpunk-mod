@@ -12,7 +12,7 @@ Vehicle.phoenix_aston_valkyrie_data:
   productionYear: 2023
   horsepower: 2000
   mass: 1750
-  info: LocKey#xaires_aston_valkyrie_info
+  info: LocKey#phoenix_aston_valkyrie_info
 
 # Arkadan itis (AMR-LMH: V12 arkada, hibrit yok); el freni arkada
 Vehicle.phoenix_amv_wheel_front:
@@ -122,7 +122,7 @@ Vehicle.phoenix_aston_valkyrie:
   entityTemplatePath: xaires\aston_valkyrie\aston_valkyrie.ent
   destruction:
     $base: Vehicle.v_sport2_porsche_911turbo_inline8
-  displayName: xaires_aston_valkyrie_name
+  displayName: phoenix_aston_valkyrie_name
   manufacturer: Vehicle.phoenix_aston_valkyrie_manufacturer
   vehicleUIData: Vehicle.phoenix_aston_valkyrie_data
   icon: UIIcon.phoenix_aston_valkyrie_icon

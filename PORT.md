@@ -77,7 +77,7 @@ Unchanged: RWD, gears 1–6 values, RPM, mass 1750, inertia, CoM, `turningRollFa
 
 **Step 4 — Textures:** Reuse original `.archive` texture core as-is. New F1 livery later: AI-generate PNG → Wolvenkit import to `.xbm` → repack `.archive`. No imitation needed — original designs.
 
-**Step 5 — Names:** `displayName`/`info` → `phoenix_aston_valkyrie_name/info` once language entries added (§6). Until then reuse stock LocKey (`xaires_aston_valkyrie_name`).
+**Step 5 — Names:** `displayName`/`info` → `phoenix_aston_valkyrie_name/info` (done by the port; the stock LocKeys were dangling anyway — the archive contains no strings, see §6).
 
 ---
 
@@ -91,16 +91,30 @@ Unchanged: RWD, gears 1–6 values, RPM, mass 1750, inertia, CoM, `turningRollFa
 
 ---
 
-## 6. Localisation — distinct Phoenix name (pending)
+## 6. Localisation — distinct name (solved, one manual pack left)
 
-Plain-string `displayName` **fails** (summon shows TEST fallback — proven). Names must be valid LocKeys in language files inside `.archive`.
+Resolved by inspection of the real archive (2026-11-23): `aston_valkyrie.archive`
+contains **no** onscreen text at all — zero hits for `xaires_aston_valkyrie_name`,
+`xaires_aston_valkyrie_info`, `localization`, `.json`, even `Aston`/`Valkyrie`. Its
+`.xl` points at `xaires\aston_valkyrie\aston_valkyrie.json`, a file that is not in
+the archive: a dangling reference, in the original mod, not in the port.
 
-Still needed from user:
-1. `aston_valkyrie.archive.xl` contents (small text file, paste as `.txt`).
-2. Wolvenkit file list for `.archive` + language file contents (likely `base\languages\en-us.json` with `xaires_aston_valkyrie_name`). Wolvenkit = Windows tool to extract/repackage `.archive` (model/UI/language). Cannot run in sandbox.
-3. Then: add `phoenix_aston_valkyrie_name` = "Aston Martin Valkyrie F1 CHEAT" + `_info`, repackage (modify original OR new small lang `.archive` — ArchiveXL merges all), update Phoenix YAML to new LocKeys (match prefix style: displayName no `LocKey#`, info with `LocKey#`).
+Consequence: the summon card falls back to the TweakDB record name, uppercased —
+which is why the stock car reads `XAIRES_ASTON_VALKYRIE` and why plain-string
+`displayName` shows `TEST` instead. The label therefore follows the TweakDBID, and
+the port's rename already makes it distinct: `PHOENIX_ASTON_VALKYRIE` · 2000 hp.
 
-`.archive` strings search found only `.xbm` UI paths (compressed) — extraction required. Never edit `.archive` binary as text.
+Shipped here, ready to use:
+* `tools/localization/en-us.json` — CR2W `JsonResource`, entries
+  `phoenix_aston_valkyrie_name` = "Phoenix AMV LMH" and `_info`.
+* `phoenix_aston_valkyrie.archive.xl` — registers it as
+  `phoenix\aston_valkyrie\en-us.json` (no more duplicate/dangling stock reference).
+* YAML asks for both keys (`displayName`, `LocKey#..._info`).
+
+Remaining manual step: pack that JSON into the archive at that path in WolvenKit
+(step-by-step in `docs/LOCALISATION.md`; ~2 minutes, one file). Nothing else blocks.
+
+Never edit `.archive` as text, and never ship an archive we could not test in-game.
 
 ---
 
@@ -117,7 +131,7 @@ Still needed from user:
 The real unpacked mod landed on `main` (3a6d0b1). §4 is now **done against the real
 files** and the Phoenix build is complete apart from §6.
 
-Built: `tools/port_to_phoenix.py` (one ordered rule set + `--check` gate + 36 tests),
+Built: `tools/port_to_phoenix.py` (one ordered rule set + `--check` gate + 37 tests),
 `Phoenix_aston_cheats/` with the renamed archive + `.xl` (byte-identical copy), the
 Phoenix tweak YAML (2000 hp / 3824 Nm / 138.89 m/s) and the four real redscript
 files ported verbatim, plus `reference/stock/` as the source of truth.

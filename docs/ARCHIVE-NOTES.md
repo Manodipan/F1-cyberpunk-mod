@@ -6,7 +6,7 @@
 | Size | 11,624,448 bytes — byte-identical copy, **contents unchanged** |
 | Renamed | file name only (`aston_valkyrie` → `phoenix_aston_valkyrie`, same for `.archive.xl`) |
 | Why unchanged | same model, livery, texture core (`amv_icon` / `amv_dealer` / `aston_valkyrie_logo` atlases), same `.ent`, same onscreens JSON — the Phoenix car is a second *registration* of the same assets |
-| `.archive.xl` | copied verbatim; it declares the onscreens localisation files inside the archive |
+| `.archive.xl` | **not** verbatim any more: rewritten to register the Phoenix onscreens path (`phoenix\aston_valkyrie\en-us.json`) instead of the stock one, which pointed at a file the archive does not contain — see `docs/LOCALISATION.md` |
 
 ```
 localization:
