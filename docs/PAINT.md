@@ -178,7 +178,19 @@ backup at `init.lua.orig`. Remaining questions, in order:
 3. does the choice persist per car entry (`amv`) as expected — i.e. shared with the
    stock Valkyrie.
 
-If the CET log complains (`attempt to get length of a ... value`), `rec()` does not
+### Collecting evidence without copy-paste
+
+`tools/dump-car-manager.ps1` writes one text file with the four things that decide the
+diagnosis — the manager folder listing, its saved-choices JSON, `init.lua` lines 420-463
+(`chosen` / `carOf` / `currentVehicle`) and the CET log tail:
+
+```powershell
+cd $HOME\f1-cyberpunk-mod
+git pull
+powershell -ExecutionPolicy Bypass -File .\tools\dump-car-manager.ps1
+```
+
+It writes `car_manager_dump.txt` in the repo root and opens it. If the CET log complains (`attempt to get length of a ... value`), `rec()` does not
 return a table and the patch needs a different append — send the log line.
 
 ## Recommendation
