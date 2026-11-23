@@ -15,8 +15,9 @@ Updated 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 | 4 redscript files | `Phoenix_aston_cheats/r6/scripts/phoenix_aston_valkyrie/` | **real logic**, not stubs: audio + virtual gearbox, HUD, rev LEDs, speed readout |
 | Archive + `.xl` | `Phoenix_aston_cheats/archive/pc/mod/` | byte-identical copy, renamed (11.6 MB, tracked) |
 | Audit gate | `make check` | identifiers, stock physics, script↔YAML references |
+| Pretty name (optional) | `docs/WOLVENKIT.md`, `tools/localization/en-us.json`, `make check-strings` | pack `phoenix_strings.archive` once in WolvenKit; `tools/inspect_archive.py` proves the path landed |
 | Mod packaging | `tools/package.py`, `make verify-package`, `make package` | game-root mirror only: no docs/junk in the payload, archive + `.xl` paired, tweaks/scripts in their subfolders; builds `dist/Phoenix_aston_cheats.zip` |
-| Tests | `tests/test_port.py`, `tests/test_package.py` | 37 tests, incl. "committed tree == tool output" and the packaging rules |
+| Tests | `tests/test_port.py`, `tests/test_package.py` | 41 tests, incl. "committed tree == tool output" and the packaging rules |
 
 `red4ext/` is deliberately absent: the Phoenix scripts load the stock bank at
 `red4ext/plugins/AudioXL/sounds/XairesAMV_Wwise/xaires_amv.bnk`.

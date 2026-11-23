@@ -78,10 +78,13 @@ Entry contents:
 | `phoenix_aston_valkyrie_name` | Phoenix AMV LMH |
 | `phoenix_aston_valkyrie_info` | Aston Martin Valkyrie LMH, rebuilt as the Phoenix F1 prototype: 2000 hp, 500 km/h, 7-speed sequential, rear-wheel drive. |
 
-`make test` (37 tests) keeps the JSON, the `.xl` and the YAML in agreement:
+`make test` (41 tests) keeps the JSON, the `.xl` and the YAML in agreement:
 `test_localisation_source_matches_the_yaml` fails if a key drifts.
 
 ## Packing it (WolvenKit, one file, ~2 minutes)
+
+Click-by-click for a first-time user, screenshots-what-to-look-for included:
+[`docs/WOLVENKIT.md`](WOLVENKIT.md). Short version below.
 
 1. WolvenKit → **File ▸ New Project** → name it `phoenix_aston_valkyrie`.
 2. `Source/archive` → right-click → **Add existing file…** → pick the real
@@ -91,11 +94,12 @@ Entry contents:
    `en-us.json` **and move it** so the path is `phoenix\aston_valkyrie\en-us.json`
    (that string is what the `.xl` points at; a different path silently does nothing).
 4. Right-click it → **Convert to CR2W** (it must be a `JsonResource`, not text).
-5. Archive → **Pack** → take the produced `.archive`, rename it
-   `phoenix_aston_valkyrie.archive`, and drop it into
-   `Phoenix_aston_cheats/archive/pc/mod/` (replacing the 11.6 MB copy).
-6. `make all` (the port/check/packaging gates), then reinstall and **restart the
-   game** — the card should read `Phoenix AMV LMH`.
+5. Toolbar → **Pack** → the result is `packed/archive/pc/mod/phoenix_strings.archive`.
+   Ship it **next to** the texture archive (do not overwrite that one):
+   `Phoenix_aston_cheats/archive/pc/mod/phoenix_strings.archive`.
+6. `make check-strings` — proves the archive really contains
+   `phoenix\aston_valkyrie\en-us.json`, the path the `.xl` names.
+7. Reinstall and **restart the game** — the card reads `Phoenix AMV LMH`.
 
 If WolvenKit's JSON template version differs from `WKitJsonVersion 0.0.8`, create a
 new JSON resource inside WolvenKit instead of importing ours, and paste only the

@@ -6,6 +6,7 @@ Cyberpunk 2077 mod (game-root mirror, nothing else).
 Run:  python3 -m unittest discover -s tests -v
 """
 
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -37,10 +38,13 @@ def make_mod(tmp: Path, files: dict[str, bytes]) -> Path:
 
 
 def errors_for(files: dict[str, bytes]) -> list[str]:
+    return check(files)[0]
+
+
+def check(files: dict[str, bytes]) -> tuple[list[str], list[str]]:
     with tempfile.TemporaryDirectory() as tmp:
         mod = make_mod(Path(tmp), files)
-        errors, _warnings = pkg.validate(mod)
-        return errors
+        return pkg.validate(mod)
 
 
 class ShippedLayoutTests(unittest.TestCase):
@@ -90,9 +94,16 @@ class ViolationTests(unittest.TestCase):
         files["r6/scripts/phoenix_aston_valkyrie.reds"] = b"// x\n"
         self.assertTrue(any("script must be r6/scripts" in e for e in errors_for(files)))
 
-    def test_archive_without_xl_is_an_error(self):
+    def test_archive_without_xl_warns_but_is_legal(self):
+        """Asset-only archives (the packed onscreens file) need no loader config."""
         files = {k: v for k, v in MINIMAL.items() if not k.endswith(".archive.xl")}
-        self.assertTrue(any("no matching .archive.xl" in e for e in errors_for(files)))
+        errors, warnings = check(files)
+        self.assertEqual(errors, [])
+        self.assertTrue(any("no matching .archive.xl" in w for w in warnings))
+
+    def test_xl_without_archive_is_still_an_error(self):
+        files = {k: v for k, v in MINIMAL.items() if not k.endswith(".archive")}
+        self.assertTrue(any("has no matching .archive" in e for e in errors_for(files)))
 
     def test_junk_and_tooling_rejected(self):
         files = dict(MINIMAL)
@@ -135,6 +146,41 @@ class ZipTests(unittest.TestCase):
             pkg.build_zip(DELIVERABLE, a)
             pkg.build_zip(DELIVERABLE, b)
             self.assertEqual(a.read_bytes(), b.read_bytes())
+
+
+class InspectArchiveTests(unittest.TestCase):
+    """tools/inspect_archive.py is the no-WolvenKit proof that the strings landed."""
+
+    B = "\\"
+
+    def run_tool(self, archive: Path, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(ROOT / "tools" / "inspect_archive.py"),
+                               str(archive), *args], capture_output=True, text=True)
+
+    def test_shipped_archive_has_no_onscreens_yet(self):
+        """Documents today's state: the texture archive carries no .json resource."""
+        r = self.run_tool(DELIVERABLE / "archive" / "pc" / "mod" / "phoenix_aston_valkyrie.archive",
+                          "--json-only")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("0 of them .json", r.stdout)
+
+    def test_expected_path_found_and_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp) / "phoenix_strings.archive"
+            want = self.B.join(["phoenix", "aston_valkyrie", "en-us.json"])
+            fake.write_bytes(b"RDAR" + b"\x00" * 16 + want.encode())
+            ok = self.run_tool(fake, "--json-only", "--expect", want)
+            self.assertEqual(ok.returncode, 0, ok.stderr)
+            self.assertIn("is in the archive", ok.stdout)
+            bad = self.run_tool(fake, "--expect", want.replace("en-us", "de-de"))
+            self.assertEqual(bad.returncode, 1)
+            self.assertIn("MISSING", bad.stderr)
+
+    def test_not_an_archive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            junk = Path(tmp) / "nope.archive"
+            junk.write_bytes(b"not an archive")
+            self.assertEqual(self.run_tool(junk).returncode, 2)
 
 
 if __name__ == "__main__":

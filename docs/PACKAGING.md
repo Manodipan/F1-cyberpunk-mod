@@ -28,7 +28,7 @@ Phoenix_aston_cheats/                        ->  ...\Cyberpunk 2077\
   r6/scripts/phoenix_aston_valkyrie/*.reds           r6\scripts\phoenix_aston_valkyrie\
 ```
 
-7 files, 12 MB. Deliberately **absent**:
+7 files (8 once `phoenix_strings.archive` is packed with `docs/WOLVENKIT.md`), 12 MB. Deliberately **absent**:
 
 | Missing | Why |
 |---|---|
@@ -68,7 +68,7 @@ assets and bank), and that the stock mod provides `red4ext/`.
 
 ## Pre-upload checklist
 
-- [ ] `make all` green (port → check → 37 tests → layout)
+- [ ] `make all` green (port → check → 41 tests → layout)
 - [ ] `make package` built, zip has exactly 7 entries and no `.md`/`.txt`
 - [ ] zip has `phoenix_aston_valkyrie.archive` **and** `.archive.xl`
 - [ ] `r6/tweaks/phoenix/` contains one YAML; `r6/scripts/phoenix_aston_valkyrie/` four `.reds`

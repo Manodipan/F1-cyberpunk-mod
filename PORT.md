@@ -131,7 +131,7 @@ Never edit `.archive` as text, and never ship an archive we could not test in-ga
 The real unpacked mod landed on `main` (3a6d0b1). §4 is now **done against the real
 files** and the Phoenix build is complete apart from §6.
 
-Built: `tools/port_to_phoenix.py` (one ordered rule set + `--check` gate + 37 tests),
+Built: `tools/port_to_phoenix.py` (one ordered rule set + `--check` gate + 41 tests),
 `Phoenix_aston_cheats/` with the renamed archive + `.xl` (byte-identical copy), the
 Phoenix tweak YAML (2000 hp / 3824 Nm / 138.89 m/s) and the four real redscript
 files ported verbatim, plus `reference/stock/` as the source of truth.

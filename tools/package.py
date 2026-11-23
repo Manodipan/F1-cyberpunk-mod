@@ -18,7 +18,8 @@ Rules enforced (errors)
   * top level contains only game-root folders: archive/, r6/, red4ext/, bin/
   * no documentation / tooling inside the payload (.md .txt .py .pyc .zip,
     __pycache__, .DS_Store, Thumbs.db, .git*)
-  * archive/pc/mod: exactly one .archive, each with a matching .archive.xl
+  * archive/pc/mod: .archive files, at most one loader config each (.archive.xl);
+    an asset-only archive may ship without one, a .xl must always have its archive
   * r6/tweaks/<author>/<file>.yaml        (one author folder, as the stock mod does)
   * r6/scripts/<mod folder>/*.reds        (one folder per mod)
   * no empty directories
@@ -124,9 +125,10 @@ def validate(mod: Path) -> tuple[list[str], list[str]]:
 
     if not archive_stems:
         errors.append("archive/pc/mod has no .archive")
-    for stem in sorted(archive_stems):
-        if stem not in xl_stems:
-            errors.append(f"{stem}.archive has no matching .archive.xl")
+    for stem in sorted(archive_stems - xl_stems):
+        # Legal: a pure asset archive (e.g. the packed onscreens archive) needs no
+        # loader config. A .xl without an archive stays an error: that is a typo.
+        warnings.append(f"{stem}.archive: no matching .archive.xl (asset-only archive)")
     for stem in sorted(xl_stems - archive_stems):
         errors.append(f"{stem}.archive.xl has no matching .archive")
 

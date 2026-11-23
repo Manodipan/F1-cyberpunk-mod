@@ -3,7 +3,7 @@ PY ?= python3
 STOCK := reference/stock
 MOD := Phoenix_aston_cheats
 
-.PHONY: all port check test verify-package package clean
+.PHONY: all port check test verify-package package check-strings clean
 
 all: port check test verify-package
 
@@ -26,6 +26,11 @@ verify-package:
 # Nexus upload: dist/Phoenix_aston_cheats.zip
 package: port check verify-package
 	$(PY) tools/package.py --mod $(MOD) --zip
+
+# after the WolvenKit step: the strings archive must carry the path the .xl names
+check-strings:
+	$(PY) tools/inspect_archive.py $(MOD)/archive/pc/mod/phoenix_strings.archive \
+		--json-only --expect 'phoenix\aston_valkyrie\en-us.json'
 
 clean:
 	rm -rf $(MOD)/r6 dist tools/__pycache__ tests/__pycache__
