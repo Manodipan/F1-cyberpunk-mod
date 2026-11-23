@@ -86,9 +86,18 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
    That path — `phoenix\aston_valkyrie\en-us.json` — is exactly the string in
    `Phoenix_aston_cheats\archive\pc\mod\phoenix_aston_valkyrie.archive.xl`. If you put
    the file somewhere else, the name will silently not appear.
-5. Replace the `entries` list in the editor with these two entries (identical to
-   `tools/localization/en-us.json` in the repo). Paste **only** the entries — let
-   WolvenKit write the header exactly as 2.5 expects it:
+5. Replace the `entries` list. **The easiest editor is Notepad, not WolvenKit's** —
+   the project files are ordinary files on disk
+   (`…\phoenix_strings\source\archive\phoenix\aston_valkyrie\en-us.json`):
+   right-click the file in Explorer ▸ *Open with* ▸ *Notepad*, then follow 5a–5c.
+   (If WolvenKit shows the file as editable text in the middle pane, you can type there
+   instead — same result. If it shows a property *tree* (`RootChunk` / `root` /
+   `HandleId`), do not fight it: use Notepad.)
+
+   **5a.** Find the line `"entries"`. It looks like `"entries": []` in a fresh file.
+   Select from `"entries"` all the way to the matching closing `]` and replace that
+   selection with the block below.
+   Paste **only** the entries — let the header stay as WolvenKit wrote it:
 
 ```json
 "entries": [
@@ -109,10 +118,16 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
 ]
 ```
 
-   The two `secondaryKey` values must match the YAML byte for byte — they are what
-   `displayName: phoenix_aston_valkyrie_name` and
+   **5b.** The two `secondaryKey` values must match the YAML byte for byte — they are
+   what `displayName: phoenix_aston_valkyrie_name` and
    `info: LocKey#phoenix_aston_valkyrie_info` look up.
-6. **Ctrl+S**.
+   Sanity checks in the file: it must contain `"$type": "JsonResource"` somewhere near
+   the top (otherwise the file type is wrong) and the closing `]` of `entries` must be
+   followed by `}` on the next line — a missing bracket makes WolvenKit fail at pack
+   time with a JSON error.
+   **5c.** Save (**Ctrl+S**). In WolvenKit, close the file's tab (the **×**) and
+   double-click the file again to confirm your text is what is now in the project;
+   then continue.
 
 > If the editor shows a red error, or the file type you created is not `JsonResource`,
 > stop and send a screenshot: creating the wrong type is the one step that leads to a
