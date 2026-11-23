@@ -1,0 +1,137 @@
+# =============================================================================
+#  Aston Martin Valkyrie  —  STOCK physics reference (Nexus original by xaires)
+# =============================================================================
+#  Purpose: read-only reference for the stock record tree, so the Phoenix build
+#  can be diffed/tuned against it. This is the *stock* column of PORT.md §2/§3:
+#     680 hp · engineMaxTorque 1300 · gear7 91.7 (330 km/h) · drag 1.35
+#     front 1.29/1.15 · rear 1.33/1.20 · rear helper 0.95 · downforce 0.60
+#     sway 11/16 · braking 1410/1200 · steering 94/26/0.33 · springs 23/22 + 2000
+#     RWD · 7-speed · maxRPM 10100 · mass 1750 · turningRollFactor 0
+#
+#  Do NOT install this file. It is reference material only.
+#  Field names / $base donors carry VERIFY markers where they could not be
+#  confirmed from the port notes — see docs/YAML-FIELDS.md.
+#
+#  Regenerate the Phoenix build from this file with:
+#      python3 tools/port_to_phoenix.py --from stock \
+#          reference/aston_valkyrie_stock.yaml \
+#          --out Phoenix_aston_cheats/r6/tweaks/phoenix/phoenix_aston_valkyrie.yaml
+# =============================================================================
+
+# --- UI data (scanner / dealer footer) --------------------------------------
+# VERIFY: LocKeys are the stock ones; §6 adds phoenix_* language entries.
+Vehicle.xaires_aston_valkyrie_data:
+  $type: VehicleUIData
+  horsepower: 680
+  mass: 1750
+  info: LocKey#xaires_aston_valkyrie_info
+  productionYear: 2025
+
+# --- Manufacturer + icons ---------------------------------------------------
+Vehicle.xaires_aston_valkyrie_manufacturer:
+  $type: VehicleManufacturer_Record
+  enumName: xaires_aston_valkyrie_logo
+
+# Shared texture core lives inside the (unchanged) .archive — atlas paths stay.
+UIIcon.xaires_aston_valkyrie_logo:
+  $type: UIIcon_Record
+  atlasResourcePath: xaires\aston_valkyrie\ui\xaires_aston_valkyrie.inkatlas
+  atlasPartName: xaires_aston_valkyrie_logo
+
+UIIcon.xaires_aston_valkyrie_icon:
+  $type: UIIcon_Record
+  atlasResourcePath: xaires\aston_valkyrie\ui\xaires_aston_valkyrie.inkatlas
+  atlasPartName: xaires_aston_valkyrie_icon
+
+UIIcon.xaires_aston_valkyrie_dealer:
+  $type: UIIcon_Record
+  atlasResourcePath: xaires\aston_valkyrie\ui\xaires_aston_valkyrie.inkatlas
+  atlasPartName: xaires_aston_valkyrie_dealer
+
+# --- Wheels -----------------------------------------------------------------
+# RWD: front preset steers, back preset drives. 4-wheel driving setup, RWD roles.
+Vehicle.xaires_amv_wheel:
+  $base: Vehicle.VehicleWheelDrivingSetup_4_RWD
+  frontPreset: Vehicle.xaires_amv_wheel_front
+  backPreset: Vehicle.xaires_amv_wheel_back
+
+Vehicle.xaires_amv_wheel_front:
+  $base: Vehicle.VehicleWheelDrivingPreset_Default
+  frictionMulLateral: 1.29          # front grip (lateral)
+  frictionMulLongitudinal: 1.15     # front grip (longitudinal)
+  maxBrakingTorque: 1410            # front braking
+  springStiffness: 23               # front spring
+  springDamping: 2000               # front damping
+  swaybarStiffness: 11              # front anti-roll
+
+Vehicle.xaires_amv_wheel_back:
+  $base: Vehicle.VehicleWheelDrivingPreset_Default
+  frictionMulLateral: 1.33          # rear grip (lateral)
+  frictionMulLongitudinal: 1.20     # rear grip (longitudinal)
+  maxBrakingTorque: 1200            # rear braking
+  springStiffness: 22               # rear spring
+  springDamping: 2000               # rear damping
+  swaybarStiffness: 16              # rear anti-roll
+
+# --- Engine / gearbox -------------------------------------------------------
+Vehicle.xaires_amv_gear:
+  $base: Vehicle.VehicleEngineData_4_SuperSport
+  engineMaxTorque: 1300
+  maxRPM: 10100
+
+# Gear 7 ceiling = top speed. 91.7 units ≈ 330 km/h.
+Vehicle.xaires_amv_gear_inline6.maxSpeed: 91.7
+
+# --- Drive model ------------------------------------------------------------
+Vehicle.xaires_amv_drive:
+  $base: Vehicle.VehicleDriveModelDataDefault_4w
+  total_mass: 1750
+  airResistanceFactor: 1.35          # drag
+  turningRollFactor: 0
+  wheelTurnMaxAddPerSecond: 94       # steering in
+  wheelTurnMaxSubPerSecond: 26       # steering return
+  wheelSetup: Vehicle.xaires_amv_wheel
+  vehEngineData: Vehicle.xaires_amv_gear
+
+# Drive helpers. Inline indices follow the stock file's driveHelpers order:
+#   inline0 DriveWheelsAccelerateNoise  inline1 DynamicDownforce
+#   inline2 HandbrakeFrictionModifier   inline3 InAirGravityModifier
+#   inline4 RearWheelsFrictionModifier  inline5 RotationLimiter
+#   inline6 UphillDriveHelper
+# VERIFY: confirm indices + field names in the Tweak Browser before shipping.
+Vehicle.xaires_amv_downforce:
+  $base: Vehicle.VehicleDriveModelDataDefault_4w_inline1
+  downforceFactor: 0.60              # downforce
+
+Vehicle.xaires_amv_rearHelper:
+  $base: Vehicle.VehicleDriveModelDataDefault_4w_inline4
+  multiplier: 0.95                   # rear-axle friction helper
+
+# --- The car ----------------------------------------------------------------
+Vehicle.xaires_aston_valkyrie:
+  $base: Vehicle.v_sport1_rayfield_caliburn_player   # VERIFY: stock donor record
+  appearanceName: aston_valkyrie
+  displayName: xaires_aston_valkyrie_name            # LocKey, no "LocKey#" prefix
+  entityTemplatePath: xaires\aston_valkyrie\aston_valkyrie.ent
+  player_audio_resource: xaires_amv_engine           # Wwise bank xaires_amv.bnk (shared)
+  manufacturer: Vehicle.xaires_aston_valkyrie_manufacturer
+  icon: UIIcon.xaires_aston_valkyrie_icon
+  vehicleUIData: Vehicle.xaires_aston_valkyrie_data
+  vehDriveModelData:
+    $base: Vehicle.xaires_amv_drive
+
+Vehicle.xaires_aston_valkyrie_purchasable:
+  $base: Vehicle.v_sport1_rayfield_caliburn_purchasable
+  appearanceName: aston_valkyrie
+  displayName: xaires_aston_valkyrie_name
+  entityTemplatePath: xaires\aston_valkyrie\aston_valkyrie.ent
+  player_audio_resource: xaires_amv_engine
+  manufacturer: Vehicle.xaires_aston_valkyrie_manufacturer
+  icon: UIIcon.xaires_aston_valkyrie_dealer
+  vehicleUIData: Vehicle.xaires_aston_valkyrie_data
+  vehDriveModelData:
+    $base: Vehicle.xaires_amv_drive
+
+# --- Registration -----------------------------------------------------------
+Vehicle.vehicle_list.list:
+  - !append Vehicle.xaires_aston_valkyrie

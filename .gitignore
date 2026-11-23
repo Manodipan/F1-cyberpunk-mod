@@ -1,0 +1,12 @@
+# Binary game assets are delivered with the mod, not through Git.
+# The .archive / .xl / .bnk files are copies of the Nexus original (PORT.md §4
+# Step 1-2) and are typically hundreds of MB. Copy + rename them per
+# Phoenix_aston_cheats/archive/pc/mod/README-COPY-ARCHIVE.md.
+*.archive
+*.archive.xl
+*.bnk
+
+# Local tooling noise
+__pycache__/
+*.pyc
+.venv/
