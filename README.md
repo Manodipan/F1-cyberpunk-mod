@@ -66,6 +66,8 @@ to xaires) are left verbatim on purpose.
 ## Read before installing
 
 * [`docs/INSTALL.md`](docs/INSTALL.md) — two-mod install, summon, 7-test matrix, logs.
+* [`compat/xaires_car_manager/`](compat/xaires_car_manager/README.md) — one-line patch so the
+  Car Manager paints the Phoenix (all 149 colours, no art).
 * [`docs/PAINT.md`](docs/PAINT.md) — how the two-tone paint can actually be changed
   (runtime Car Manager vs baked materials vs CrystalCoat).
 * [`docs/WOLVENKIT.md`](docs/WOLVENKIT.md) — the one-time, click-by-click pack that turns

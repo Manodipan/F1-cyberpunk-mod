@@ -1,7 +1,8 @@
 # Paint and livery — what actually changes the colours
 
-Status: **not started**. This page records what the stock mod does, why our car is
-probably excluded from it, and the three routes — cheapest first.
+Status: **route 1 available** (one-line compat patch, `compat/xaires_car_manager/`).
+This page records what the stock mod does, why our car is excluded from it, and the
+three routes — cheapest first.
 
 ## What the stock mod does (Nexus, mod 38493)
 
@@ -45,10 +46,26 @@ records = rec('xaires_aston_valkyrie' …
 ```
 
 The manager names the stock record explicitly, so the Phoenix
-(`Vehicle.phoenix_aston_valkyrie`) is not among the cars it paints — the sliders will
-open and do nothing. Next question is how that `records` table is used; if it is the
-list of ids the paint engine iterates, one added entry gives the Phoenix all 149
-colours.
+(`Vehicle.phoenix_aston_valkyrie`) is not among the cars it paints.
+
+The file is data-driven: one table entry per car —
+
+```lua
+key = 'amv', ad = 'Aston Martin Valkyrie LMH',
+records = rec('xaires_aston_valkyrie'),
+slots = {
+  { id = 'kaplama', ad = 'Livery / paint', palet = 'sdh0.paint', onek = 'paint_', comps = PAINT_COMPS, marka = true, ... },
+  { id = 'renk2',   ad = 'Second colour',  palet = 'sdh0.paint', onek = 'k_',
+    comps = { 'body_renk2', 'door_fl_renk2', 'door_fr_renk2' }, marka = true, ... },
+  { id = 'jant',    ad = 'Rims',           palet = 'sdh0.rim',   onek = 'rim_', comps = RIM_COMPS, ... },
+}
+```
+
+and `carOf(veh)` iterates `car.records` to find the mounted vehicle. The colours are
+applied as **component appearance names** (`paint_<colour>`, `k_<colour>`,
+`rim_<colour>`) on those components — and because the Phoenix shares the stock `.ent`
+and mesh, every one of those appearances already exists for our car. So route 1 is
+literally one added id: `compat/xaires_car_manager/README.md`.
 
 ### Check it in 10 seconds, no game launch
 
