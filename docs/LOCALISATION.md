@@ -83,6 +83,9 @@ Entry contents:
 
 ## Packing it (WolvenKit, one file, ~2 minutes)
 
+> Game **2.5**: use WolvenKit **10.x** (`10.0.0-beta.1` or newer) — 9.1.1 explicitly
+> does not support 2.5. Details in [`WOLVENKIT.md`](WOLVENKIT.md) §1.
+
 Click-by-click for a first-time user, screenshots-what-to-look-for included:
 [`docs/WOLVENKIT.md`](WOLVENKIT.md). Short version below.
 

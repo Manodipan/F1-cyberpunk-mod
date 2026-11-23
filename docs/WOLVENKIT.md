@@ -27,19 +27,32 @@ texture archive stays exactly as it is — you will not open it, so you cannot b
 
 ## 1. Install (download two things)
 
-1. **.NET Desktop Runtime 10 (x64)** — required by current WolvenKit:
+> **Game version matters here: this mod targets Cyberpunk 2077 2.5.** WolvenKit
+> **9.1.1 does not support 2.5** — its own release notes say *"WKit >= 10.x with 2.5"*.
+> The first WolvenKit build with 2.5 support is **10.0.0-beta.1** (2026-10-24, notes:
+> *"Early support for game version 2.5"*). Install that, not 9.x.
+
+1. **.NET Desktop Runtime 10 (x64)** — required by WolvenKit 10 and 9 alike:
    <https://dotnet.microsoft.com/download/dotnet/10.0> → *.NET Desktop Runtime 10.x* →
    **Windows x64** → download → run → Install.
-2. **WolvenKit 9.1.1** — <https://github.com/WolvenKit/WolvenKit/releases/latest> →
-   `WolvenKitSetup-9.1.1.exe` (≈115 MB) → run → Install.
-   *(Portable alternative: `WolvenKit-9.1.1.zip`, extract anywhere and run
-   `WolvenKit.exe`.)*
+2. **WolvenKit 10.0.0-beta.1** — <https://github.com/WolvenKit/WolvenKit/releases> →
+   pick the `10.0.0-beta.1` entry (it is marked *Pre-release*, so scroll past the
+   9.1.1 that GitHub shows first) → `WolvenKitSetup-10.0.0-beta.1.exe` (≈114 MB) → run →
+   Install.
+   *Portable alternative:* `WolvenKit-10.0.0-beta.1.zip`, extract anywhere, run
+   `WolvenKit.exe`.
+   *If the beta misbehaves on 2.5, the newer nightlies live in
+   `WolvenKit/WolvenKit-nightly-releases` — latest at the time of writing is
+   `10.0.0-beta.2-nightly.2026-11-22`, installer
+   `WolvenKit.NightlySetup-10.0.0-beta.2-nightly.2026-11-22.exe`.*
 3. Windows may warn "unknown publisher": **More info ▸ Run anyway**. It is a signed
    community app, not malware.
 4. First launch asks for the game: point it at
    `G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty\bin\x64\Cyberpunk2077.exe`.
 
-Sanity check: after this, the title bar shows a version starting with **9.**
+Sanity check: after this, the title bar (or *Help ▸ About*) shows a version starting
+with **10.0**. If it says 9.x, the 2.5 support is not there — the app will warn that
+the game version is unsupported.
 
 ---
 
@@ -74,7 +87,8 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
    `Phoenix_aston_cheats\archive\pc\mod\phoenix_aston_valkyrie.archive.xl`. If you put
    the file somewhere else, the name will silently not appear.
 5. Replace the `entries` list in the editor with these two entries (identical to
-   `tools/localization/en-us.json` in the repo):
+   `tools/localization/en-us.json` in the repo). Paste **only** the entries — let
+   WolvenKit write the header exactly as 2.5 expects it:
 
 ```json
 "entries": [
@@ -162,7 +176,16 @@ Logs worth reading: `r6\logs\archivexl.log`, `r6\logs\cyber_engine_tweaks.log`.
 
 ---
 
-## 8. What you can now safely ignore
+## 8. Notes specific to game 2.5
+
+* WolvenKit 10 is a beta: if it shows a *game version* warning, accept it — 2.5 support
+  is exactly what the 10.x line added.
+* The mod itself needs **no changes** for 2.5: it is a renamed copy of a working mod
+  plus a TweakXL file, and TweakXL/ArchiveXL on your install already read it.
+* Archive files written by WolvenKit 10 are 2.5-compatible; do not mix a 9.x-packed
+  archive with the 2.5 game.
+
+## 9. What you can now safely ignore
 
 * **Never** edit `phoenix_aston_valkyrie.archive` (the big one) — it is a working
   texture archive and nothing in this guide touches it.

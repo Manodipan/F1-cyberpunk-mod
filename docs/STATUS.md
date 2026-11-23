@@ -1,6 +1,7 @@
 # Status — where PORT.md stands
 
 Updated 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main` @ `3a6d0b1`
+· target game **2.5** (Phantom Liberty)
 (the real unpacked mod).
 
 ## Done — the Phoenix build is complete except one item
@@ -16,6 +17,7 @@ Updated 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 | Archive + `.xl` | `Phoenix_aston_cheats/archive/pc/mod/` | byte-identical copy, renamed (11.6 MB, tracked) |
 | Audit gate | `make check` | identifiers, stock physics, script↔YAML references |
 | Pretty name (optional) | `docs/WOLVENKIT.md`, `tools/localization/en-us.json`, `make check-strings` | pack `phoenix_strings.archive` once in WolvenKit; `tools/inspect_archive.py` proves the path landed |
+| Target game | Cyberpunk 2077 **2.5** (Phantom Liberty) | payload is version-agnostic; the WolvenKit step needs WK **10.x** (9.1.1 has no 2.5 support) |
 | Mod packaging | `tools/package.py`, `make verify-package`, `make package` | game-root mirror only: no docs/junk in the payload, archive + `.xl` paired, tweaks/scripts in their subfolders; builds `dist/Phoenix_aston_cheats.zip` |
 | Tests | `tests/test_port.py`, `tests/test_package.py` | 41 tests, incl. "committed tree == tool output" and the packaging rules |
 
