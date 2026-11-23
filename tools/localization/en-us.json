@@ -1,15 +1,16 @@
 {
   "Header": {
-    "WKitJsonVersion": "0.0.8",
-    "GameVersion": 2120,
-    "DataType": "CR2W"
+    "WKitJsonVersion": "0.0.9",
+    "GameVersion": 2500,
+    "DataType": "CR2W",
+    "WolvenKitVersion": "10.0.0-beta.1"
   },
   "Data": {
     "Version": 195,
     "BuildVersion": 0,
     "RootChunk": {
       "$type": "JsonResource",
-      "cookingPlatform": "PLATFORM_PC",
+      "cookingPlatform": "PLATFORM_None",
       "root": {
         "HandleId": "0",
         "Data": {

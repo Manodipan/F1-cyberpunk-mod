@@ -99,30 +99,40 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
    (some versions append a second `.json`, e.g. `en-us.json.json` — use whichever
    appears under `raw`).
 
-   **5b. Edit that copy** with Notepad++/Notepad: find `"entries"`, select from there
-   through its closing `]`, and replace it with:
+   **5b. Edit that copy** with Notepad++/Notepad. A brand-new JsonResource exports
+   with `"root": null` on one line — that is the *empty* string table, so there is no
+   `"entries"` key to search for yet. Select just the `"root": null` text (do **not**
+   take the comma that follows it) and paste this in its place:
 
 ```json
-"entries": [
-  {
-    "$type": "localizationPersistenceOnScreenEntry",
-    "femaleVariant": "Phoenix AMV LMH",
-    "maleVariant": "",
-    "primaryKey": "0",
-    "secondaryKey": "phoenix_aston_valkyrie_name"
-  },
-  {
-    "$type": "localizationPersistenceOnScreenEntry",
-    "femaleVariant": "Aston Martin Valkyrie LMH, rebuilt as the Phoenix F1 prototype: 2000 hp, 500 km/h, 7-speed sequential, rear-wheel drive.",
-    "maleVariant": "",
-    "primaryKey": "0",
-    "secondaryKey": "phoenix_aston_valkyrie_info"
+"root": {
+  "HandleId": "0",
+  "Data": {
+    "$type": "localizationPersistenceOnScreenEntries",
+    "entries": [
+      {
+        "$type": "localizationPersistenceOnScreenEntry",
+        "femaleVariant": "Phoenix AMV LMH",
+        "maleVariant": "",
+        "primaryKey": "0",
+        "secondaryKey": "phoenix_aston_valkyrie_name"
+      },
+      {
+        "$type": "localizationPersistenceOnScreenEntry",
+        "femaleVariant": "Aston Martin Valkyrie LMH, rebuilt as the Phoenix F1 prototype: 2000 hp, 500 km/h, 7-speed sequential, rear-wheel drive.",
+        "maleVariant": "",
+        "primaryKey": "0",
+        "secondaryKey": "phoenix_aston_valkyrie_info"
+      }
+    ]
   }
-]
+}
 ```
 
-   Keep everything around it (the `Header`/`Data → RootChunk → root` wrapper) exactly
-   as WolvenKit wrote it — that is what makes the file 2.5-compatible.
+   Keep the `Header` / `Data` wrapper exactly as WolvenKit wrote it — `GameVersion:
+   2500`, `WKitJsonVersion 0.0.9` are what makes it valid for 2.5.
+   Sanity: after the edit the file has one `"root": {` and braces still balance
+   (Notepad++ highlights the matching one when you click next to a brace).
 
    **5c. Convert back.** Save the text file, then right-click it under **raw** ▸
    **Convert from JSON** (the menu item is also labelled *Import as JSON*). If
