@@ -88,18 +88,19 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
    That path — `phoenix\aston_valkyrie\en-us.json` — is exactly the string in
    `Phoenix_aston_cheats\archive\pc\mod\phoenix_aston_valkyrie.archive.xl`. If you put
    the file somewhere else, the name will silently not appear.
-5. Replace the `entries` list. **The easiest editor is Notepad, not WolvenKit's** —
-   the project files are ordinary files on disk
-   (`<Creation location>\phoenix_strings\source\archive\phoenix\aston_valkyrie\en-us.json`):
-   right-click the file in Explorer ▸ *Open with* ▸ *Notepad*, then follow 5a–5c.
-   (If WolvenKit shows the file as editable text in the middle pane, you can type there
-   instead — same result. If it shows a property *tree* (`RootChunk` / `root` /
-   `HandleId`), do not fight it: use Notepad.)
+5. **The `archive` copy is binary** — opening `…\source\archive\…\en-us.json` in
+   Notepad shows `CR2W`/`jsonResource` and a wall of `NUL`s. That is normal and
+   correct: everything under `source\archive` is compiled CR2W. Text lives in `raw`.
 
-   **5a.** Find the line `"entries"`. It looks like `"entries": []` in a fresh file.
-   Select from `"entries"` all the way to the matching closing `]` and replace that
-   selection with the block below.
-   Paste **only** the entries — let the header stay as WolvenKit wrote it:
+   **5a. Convert to text.** In WolvenKit's project explorer, right-click
+   `en-us.json` (the one under `archive`) ▸ **Convert to JSON**. A readable copy
+   appears under **raw** at the mirrored path:
+   `…\phoenix_strings\source\raw\phoenix\aston_valkyrie\en-us.json`
+   (some versions append a second `.json`, e.g. `en-us.json.json` — use whichever
+   appears under `raw`).
+
+   **5b. Edit that copy** with Notepad++/Notepad: find `"entries"`, select from there
+   through its closing `]`, and replace it with:
 
 ```json
 "entries": [
@@ -120,20 +121,18 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
 ]
 ```
 
-   **5b.** The two `secondaryKey` values must match the YAML byte for byte — they are
-   what `displayName: phoenix_aston_valkyrie_name` and
-   `info: LocKey#phoenix_aston_valkyrie_info` look up.
-   Sanity checks in the file: it must contain `"$type": "JsonResource"` somewhere near
-   the top (otherwise the file type is wrong) and the closing `]` of `entries` must be
-   followed by `}` on the next line — a missing bracket makes WolvenKit fail at pack
-   time with a JSON error.
-   **5c.** Save (**Ctrl+S**). In WolvenKit, close the file's tab (the **×**) and
-   double-click the file again to confirm your text is what is now in the project;
-   then continue.
+   Keep everything around it (the `Header`/`Data → RootChunk → root` wrapper) exactly
+   as WolvenKit wrote it — that is what makes the file 2.5-compatible.
 
-> If the editor shows a red error, or the file type you created is not `JsonResource`,
-> stop and send a screenshot: creating the wrong type is the one step that leads to a
-> silent no-op.
+   **5c. Convert back.** Save the text file, then right-click it under **raw** ▸
+   **Convert from JSON** (the menu item is also labelled *Import as JSON*). If
+   WolvenKit asks whether to reload the open tab, say yes. The binary under `archive`
+   is now updated — confirm by re-opening it in the CR2W editor: `root ▸ Data ▸
+   entries` should list two `localizationPersistenceOnScreenEntry` chunks.
+
+> If **Convert to JSON** errors out, or the text file under `raw` contains no
+> `"$type": "JsonResource"`, stop and send a screenshot: a wrong file type is the one
+> mistake that leads to a silent no-op.
 
 ---
 
