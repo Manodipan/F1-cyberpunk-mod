@@ -194,7 +194,12 @@ $WK   = "G:\Cyberpunk2077\Modding\phoenix_strings\packed\archive\pc\mod\phoenix_
 
 Copy-Item $WK "$GAME\archive\pc\mod\" -Force          # into the game
 Copy-Item $WK ".\Phoenix_aston_cheats\archive\pc\mod\" -Force   # into the repo, so the zip keeps up
-make all                                              # repo gates still green (optional)
+make all                                              # 8 files, 1 warning (asset-only archive) = expected
+
+# optional: keep it in git so the branch carries it
+git add -f Phoenix_aston_cheats/archive/pc/mod/phoenix_strings.archive
+git commit -m "Add packed onscreens archive (Phoenix AMV LMH)"
+git push
 ```
 
 Full restart of the game (not a CET reload). Summon the car: the card should read

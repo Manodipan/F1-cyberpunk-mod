@@ -4,6 +4,8 @@
 !Phoenix_aston_cheats/archive/pc/mod/phoenix_aston_valkyrie.archive
 *.archive.xl
 !Phoenix_aston_cheats/archive/pc/mod/phoenix_aston_valkyrie.archive.xl
+# packed onscreens archive (docs/WOLVENKIT.md) - optional, 8 KB, ships when built
+!Phoenix_aston_cheats/archive/pc/mod/phoenix_strings.archive
 *.bnk
 
 # Local tooling noise

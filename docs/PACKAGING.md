@@ -28,7 +28,9 @@ Phoenix_aston_cheats/                        ->  ...\Cyberpunk 2077\
   r6/scripts/phoenix_aston_valkyrie/*.reds           r6\scripts\phoenix_aston_valkyrie\
 ```
 
-7 files (8 once `phoenix_strings.archive` is packed with `docs/WOLVENKIT.md`), 12 MB. Deliberately **absent**:
+7 files — **8** once `phoenix_strings.archive` is packed with `docs/WOLVENKIT.md`
+(the onscreens archive: 8 KB, no `.xl` of its own, registered from the texture
+archive's `.xl`) — 12 MB. Deliberately **absent**:
 
 | Missing | Why |
 |---|---|

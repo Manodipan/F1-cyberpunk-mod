@@ -101,6 +101,15 @@ class ViolationTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertTrue(any("no matching .archive.xl" in w for w in warnings))
 
+    def test_strings_archive_is_welcome(self):
+        """docs/WOLVENKIT.md adds phoenix_strings.archive: same namespace, no .xl."""
+        files = dict(MINIMAL)
+        files["archive/pc/mod/phoenix_strings.archive"] = b"RDAR" + b"\x00" * 8
+        errors, warnings = check(files)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("asset-only archive", warnings[0])
+
     def test_xl_without_archive_is_still_an_error(self):
         files = {k: v for k, v in MINIMAL.items() if not k.endswith(".archive")}
         self.assertTrue(any("has no matching .archive" in e for e in errors_for(files)))

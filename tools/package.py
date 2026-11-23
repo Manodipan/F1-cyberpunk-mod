@@ -137,7 +137,7 @@ def validate(mod: Path) -> tuple[list[str], list[str]]:
             errors.append(f"{d.relative_to(mod)}: empty directory")
 
     for stem in sorted(archive_stems):
-        if Path(stem).name != f"{NAMESPACE}_aston_valkyrie":
+        if not Path(stem).name.startswith(f"{NAMESPACE}_"):
             warnings.append(f"{stem}.archive: archive name does not match the mod namespace")
     return errors, warnings
 
