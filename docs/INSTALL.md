@@ -18,9 +18,11 @@ Phoenix_aston_cheats/r6/tweaks/phoenix/phoenix_aston_valkyrie.yaml
 Phoenix_aston_cheats/r6/scripts/phoenix_aston_valkyrie/phoenix_aston_valkyrie{,_audio,_ekran,_led}.reds
 ```
 
-No `red4ext/`: the Phoenix scripts load the stock bank
+That folder is a **mirror of the game root** — 7 files, nothing else — so the zip
+from `make package` installs by extraction/overlay. `red4ext/` is absent on purpose:
+the Phoenix scripts load the stock bank
 (`AudioXL/sounds/XairesAMV_Wwise/xaires_amv.bnk`), so the stock mod must stay
-installed.
+installed. Layout rules and the validator: `docs/PACKAGING.md`.
 
 ## 2. Install
 

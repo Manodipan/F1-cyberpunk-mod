@@ -55,7 +55,7 @@ TweakDBID.
 ```bash
 make port     # regenerate Phoenix_aston_cheats/r6 from reference/stock
 make check    # identifiers + stock physics + script↔YAML reference consistency
-make test     # 21 tests, incl. "committed tree == tool output"
+make test     # 36 tests, incl. "committed tree == tool output"
 
 # port your own staging copy in place (never the game folder — Vortex overwrites)
 python3 tools/port_to_phoenix.py --from stock "C:/mods/aston_valkyrie" --in-place

@@ -12,22 +12,26 @@ The port plan is [`PORT.md`](PORT.md); what is done vs open is
 ## Quick start
 
 ```bash
-make port     # rebuild Phoenix_aston_cheats/r6 from reference/stock (the real mod)
-make check    # identifiers, stock physics, script<->YAML references
-make test     # 21 tests, incl. "committed tree == tool output"
+make port            # rebuild Phoenix_aston_cheats/r6 from reference/stock (the real mod)
+make check           # identifiers, stock physics, script<->YAML references
+make test            # 36 tests, incl. "committed tree == tool output"
+make verify-package  # the folder is a clean game-root mirror (mod packaging norm)
+make package         # -> dist/Phoenix_aston_cheats.zip for Nexus / Vortex
 ```
 
 ## Layout
 
 ```
-Phoenix_aston_cheats/            merge into the game root
+Phoenix_aston_cheats/            the mod = a mirror of the game root (7 files, 12 MB)
   archive/pc/mod/                phoenix_aston_valkyrie.archive(.xl)  — renamed copy of stock
   r6/tweaks/phoenix/             phoenix_aston_valkyrie.yaml          — generated
   r6/scripts/phoenix_aston_valkyrie/  phoenix_aston_valkyrie{,_audio,_ekran,_led}.reds
 reference/stock/                 verbatim copy of the real mod from main (source of truth)
 tools/port_to_phoenix.py         §4 rename + §3 physics, one auditable rule set
-tests/test_port.py               21 tests over the real files
-docs/                            install + test matrix, rename map, field map, localisation, status
+tools/package.py                 payload-layout validator + Nexus zip builder
+tests/                           36 tests (port + packaging) over the real files
+docs/                            install + test matrix, packaging, rename map, field map,
+                                 localisation, archive provenance, status
 ```
 
 ## Physics (stock → Phoenix)
@@ -60,6 +64,8 @@ to xaires) are left verbatim on purpose.
 ## Read before installing
 
 * [`docs/INSTALL.md`](docs/INSTALL.md) — two-mod install, summon, 7-test matrix, logs.
+* [`docs/PACKAGING.md`](docs/PACKAGING.md) — why the folder looks like this, and the
+  `dist/*.zip` you upload.
 * [`docs/STATUS.md`](docs/STATUS.md) — the one open blocker (distinct name LocKey),
    the pending handling test, and three launch risks worth knowing.
 * [`docs/LOCALISATION.md`](docs/LOCALISATION.md) — exact JSON paths from the real `.xl`

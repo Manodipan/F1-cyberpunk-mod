@@ -10,3 +10,6 @@
 __pycache__/
 *.pyc
 .venv/
+
+# Nexus/Vortex upload artefacts
+dist/

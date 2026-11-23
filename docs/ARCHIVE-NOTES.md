@@ -17,7 +17,7 @@ localization:
 
 Those paths must stay as-is: they point at files *inside* this archive. A distinct
 Phoenix display name therefore needs the JSON edited and repacked — see
-`docs/LOCALISATION.md`.
+`LOCALISATION.md`.
 
 No `red4ext/` here on purpose: the Phoenix scripts load the stock
 `AudioXL/sounds/XairesAMV_Wwise/xaires_amv.bnk`. Two copies of one bank = duplicate
