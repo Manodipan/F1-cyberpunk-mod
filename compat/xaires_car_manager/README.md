@@ -27,7 +27,31 @@ Replace that line with:
 records = (function() local t = rec('xaires_aston_valkyrie') t[#t+1] = 'phoenix_aston_valkyrie' return t end)(),
 ```
 
-## How to apply (safest: Notepad++)
+## How to apply — option A: one PowerShell block (recommended)
+
+Paste this whole thing into PowerShell. It backs the file up, replaces the line, writes
+it back as UTF-8 (no BOM) and prints the result:
+
+```powershell
+$f = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty\bin\x64\plugins\cyber_engine_tweaks\mods\xaires_car_manager\init.lua"
+Copy-Item $f "$f.orig" -Force
+$t = [System.IO.File]::ReadAllText($f)
+$old = "records = rec('xaires_aston_valkyrie'),"
+$new = "records = (function() local t = rec('xaires_aston_valkyrie') t[#t+1] = 'phoenix_aston_valkyrie' return t end)(),"
+if (-not $t.Contains($old)) {
+  "NOT FOUND - nothing was changed"
+} else {
+  $t = $t.Replace($old, $new)
+  [System.IO.File]::WriteAllText($f, $t, (New-Object System.Text.UTF8Encoding($false)))
+  "PATCHED"
+}
+Select-String -Path $f -Pattern "phoenix_aston_valkyrie" | Select-Object LineNumber, Line
+```
+
+`PATCHED` + one hit on line 225 = done. Undo = copy `init.lua.orig` back over
+`init.lua`.
+
+## How to apply — option B: Notepad++ (manual)
 
 1. **Back up first** — PowerShell:
 
