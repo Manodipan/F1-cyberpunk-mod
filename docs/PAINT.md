@@ -153,10 +153,15 @@ Where the palette lives inside that pane:
 | `Solid / Metallic / Matte (22 each)` | generic colours |
 | `Second colour` (further down) | the accent panels; has *Livery original* and *Carbon black* first |
 
-Pick a swatch → the car repaints when you close the overlay (the pane's own note:
-*"Choices are saved and applied when you get in or look at this car"*). For the
-Rosso Fiorano + bronze look: a dark red from the Ferrari group for **Livery / paint**,
-then a bronze from `Metallic` for **Second colour**.
+Pick a swatch → the choice is *stored*, and applied **when the car is spawned or
+looked at** (the pane's own note: *"Choices are saved and applied when you get in or
+look at this car"*). It is not a live preview of the car you are standing next to, and
+the left column is a fixed catalogue you can click at any time — so the UI alone proves
+nothing about whether the Phoenix is recognised. The test is: pick a colour, spawn the
+Phoenix, look at it.
+
+For the Rosso Fiorano + bronze look: a dark red from the Ferrari group for
+**Livery / paint**, then a bronze from `Metallic` for **Second colour**.
 
 ## Applied 2026-11-23 (local, needs in-game confirmation)
 
