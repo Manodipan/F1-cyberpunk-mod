@@ -135,10 +135,22 @@ Anything under `source\archive` gets packed; its folder structure becomes the pa
    (Notepad++ highlights the matching one when you click next to a brace).
 
    **5c. Convert back.** Save the text file, then right-click it under **raw** ▸
-   **Convert from JSON** (the menu item is also labelled *Import as JSON*). If
-   WolvenKit asks whether to reload the open tab, say yes. The binary under `archive`
-   is now updated — confirm by re-opening it in the CR2W editor: `root ▸ Data ▸
-   entries` should list two `localizationPersistenceOnScreenEntry` chunks.
+   **Convert from JSON** (the menu item is also labelled *Import as JSON*). The log
+   should say *Imported … to …\source\archive\…\en-us.json*.
+   Re-open the file under `archive`: `root ▸ entries` lists two
+   `localizationPersistenceOnScreenEntry` rows with your two `secondaryKey`s.
+   Red icons next to `root`/`entries` are WolvenKit's chunk markers, not errors — the
+   decisive check is the byte scan in step 5d.
+
+   **5d. Prove the strings are inside the binary** (no game needed):
+
+```powershell
+cd $HOME\f1-cyberpunk-mod
+python .\tools\inspect_archive.py "G:\Cyberpunk2077\Modding\phoenix_strings\source\archive\phoenix\aston_valkyrie\en-us.json" --grep phoenix_aston_valkyrie_name --grep "Phoenix AMV LMH"
+```
+
+   Two `1 hit(s)` lines = the CR2W really contains them. `not found` = the import did
+   not take (redo 5b/5c).
 
 > If **Convert to JSON** errors out, or the text file under `raw` contains no
 > `"$type": "JsonResource"`, stop and send a screenshot: a wrong file type is the one

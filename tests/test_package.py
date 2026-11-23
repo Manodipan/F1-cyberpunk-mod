@@ -176,6 +176,17 @@ class InspectArchiveTests(unittest.TestCase):
             self.assertEqual(bad.returncode, 1)
             self.assertIn("MISSING", bad.stderr)
 
+    def test_grep_finds_and_reports_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cr2w = Path(tmp) / "en-us.json"     # a bare CR2W, not an archive
+            cr2w.write_bytes(b"CR2W" + b"\x00" * 8 + b"phoenix_aston_valkyrie_name")
+            hit = self.run_tool(cr2w, "--grep", "phoenix_aston_valkyrie_name")
+            self.assertEqual(hit.returncode, 0, hit.stderr)
+            self.assertIn("1 hit(s)", hit.stdout)
+            miss = self.run_tool(cr2w, "--grep", "nope_missing")
+            self.assertEqual(miss.returncode, 1)
+            self.assertIn("not found", miss.stderr)
+
     def test_not_an_archive(self):
         with tempfile.TemporaryDirectory() as tmp:
             junk = Path(tmp) / "nope.archive"

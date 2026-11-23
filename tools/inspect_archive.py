@@ -11,6 +11,11 @@ step worked can be answered with a byte scan:
 Usage:
     python3 tools/inspect_archive.py phoenix_strings.archive
     python3 tools/inspect_archive.py phoenix_strings.archive --expect 'phoenix\\aston_valkyrie\\en-us.json'
+    python3 tools/inspect_archive.py <any file> --grep phoenix_aston_valkyrie_name
+
+`--grep` searches the raw bytes (UTF-8 and UTF-16LE) and works on both the packed
+archive and the uncompressed CR2W under source/archive, so it can prove that the
+onscreen entries really made it into the binary before anything is installed.
 
 Exit code: 0 = the expected path is present (or no --expect given), 1 = missing,
 2 = the file is not an archive.
@@ -43,12 +48,32 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("archive", type=Path)
     ap.add_argument("--expect", help="path that must be present (backslashes)")
     ap.add_argument("--json-only", action="store_true", help="only show *.json resources")
+    ap.add_argument("--grep", action="append", metavar="TEXT",
+                    help="count occurrences of TEXT in the file bytes (repeatable); "
+                         "skips the archive check, so it also works on a bare CR2W file")
     args = ap.parse_args(argv)
 
     if not args.archive.is_file():
         raise SystemExit(f"error: no such file: {args.archive}")
 
     data = args.archive.read_bytes()
+
+    if args.grep:
+        print(f"{args.archive}: {len(data):,} bytes")
+        missing = 0
+        for text in args.grep:
+            raw = text.encode("utf-8")
+            wide = text.encode("utf-16-le")
+            hits = data.count(raw) + data.count(wide)
+            print(f"  {text}: {hits} hit(s)")
+            if not hits:
+                missing += 1
+        if missing:
+            print(f"\n{missing} string(s) not found: the file does not contain them",
+                  file=sys.stderr)
+            return 1
+        return 0
+
     if data[:4] != MAGIC:
         print(f"error: {args.archive} does not start with {MAGIC!r} — not a .archive",
               file=sys.stderr)
