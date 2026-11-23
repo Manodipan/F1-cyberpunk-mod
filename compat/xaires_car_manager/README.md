@@ -21,37 +21,41 @@ second argument means — we append to whatever it returns.
 
 ## The patch (one line)
 
-**Use v2** (below). v1 is kept because it is what the file currently holds, and because
-it explains the failure: v1 *worked* in the sense that the manager stopped ignoring the
-car — but it repainted the **stock** Aston and left the Phoenix alone, which is exactly
-what happens when the ids in that list are not plain record names.
-
-### v2 — 2026-11-24 (recommended)
-
-Rewrite the line so the id is built by `rec()`, the same way the stock one is:
+### v3 — 2026-11-24 (use this; it repairs v1 and v2)
 
 ```lua
-records = (function() local t = rec('xaires_aston_valkyrie') local p = rec('phoenix_aston_valkyrie') if type(p) == 'table' then for i = 1, #p do t[#t + 1] = p[i] end end return t end)(),
+records = (function() local t = rec('xaires_aston_valkyrie') local p = rec('phoenix_aston_valkyrie') if type(p) == 'table' then for i = 1, #p do t[#t + 1] = p[i] end end t[#t + 1] = 'Vehicle.phoenix_aston_valkyrie' return t end)(),
 ```
-
-One command, from the clone folder (`$HOME\f1-cyberpunk-mod`), after `git pull`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\compat\xaires_car_manager\repatch.ps1
 ```
 
-It rebuilds `init.lua` from the pristine `init.lua.orig` (so it does not matter that v1
-is in there now, and running it twice is harmless), keeps the current file as
-`init.lua.prev`, and prints the patched line **plus the body of `rec()`** — that body is
-what proves whether the v1 string ever could have matched.
+Two things it fixes, both of which were ours, not the manager's:
 
-Then: CET ▸ **Reload all mods**, spawn the Phoenix, click **Rosso Fiorano**.
+* **v2 left a double comma.** The regex replaced only `records = rec('xaires_aston_valkyrie')`
+  and the line's own trailing comma stayed, so the file ended in `end)(),,` — a **Lua
+  syntax error**, meaning the manager did not load at all. v3 rewrites the whole line and
+  aborts if `),,` would appear.
+* **v1/v2 wrote the wrong kind of id.** `carOf()` hashes each string with
+  `TweakDBID.new()` and compares it to `veh:GetRecordID()`, which is the TweakDBID of the
+  full name `Vehicle.phoenix_aston_valkyrie`. `rec()` returns full names (that is why the
+  stock car resolves); a bare `phoenix_aston_valkyrie` hashes to a different key. v3 adds
+  both forms — an extra unused key is harmless.
 
-### v1 — 2026-11-23 (superseded, applied on the test machine)
+Running it any number of times is safe. It keeps your current file as `init.lua.prev`,
+prints the patched line, a `double-comma check : clean`, and the body of `rec()`.
+
+### v1 — 2026-11-23 (superseded; what the file held when the stock Aston painted and the Phoenix did not)
 
 ```lua
 records = (function() local t = rec('xaires_aston_valkyrie') t[#t+1] = 'phoenix_aston_valkyrie' return t end)(),
 ```
+
+### v2 — 2026-11-24 (broken, superseded)
+
+Same as v1 but built through `rec('phoenix_aston_valkyrie')`; shipped with the double
+comma above, so it never loaded.
 
 ## How to apply — option A: one PowerShell block (recommended)
 

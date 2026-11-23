@@ -224,6 +224,64 @@ and need different fixes, so the next measurement is chosen to tell them apart:
 | **B** | the pane **keeps** Rosso Fiorano, the car still looks stock | the choice is stored but the **apply** path bails for our record | `ayarlar.json` shows `"kaplama":"rosso_fiorano"`; the guard is in `apply`/`desired` |
 | **C** | the *Livery / paint* slot only ever lists **Original livery** — no Ferrari / Lamborghini / Solid / Metallic groups under it | the palette file did not load for this slot | `marka_renkleri.json` / `sdh0_palet.json` / `kaplamalar.json` content |
 
+### The dump answered it (2026-11-24) — and exposed a bug of ours
+
+Two separate faults, both in the one line we had patched:
+
+**1. v2 was a Lua syntax error.** The regex that applied it replaced only
+`records = rec('xaires_aston_valkyrie')` and left the line's own comma behind, so the
+file read
+
+```lua
+records = (function() ... end)(),,
+```
+
+`X,,` is not valid Lua — the **whole file** fails to parse, so the manager does not load
+at all. v3 rewrites the entire line and refuses to write if `),,` would appear.
+
+**2. The id was never going to match.** `carOf()` (line 435) hashes whatever string sits
+in `car.records`:
+
+```lua
+local id = TweakDBID.new(r)
+recordIndex[tostring(id.hash) .. ':' .. tostring(id.length)] = car
+```
+
+while the lookup uses `veh:GetRecordID()` (line 440-442), i.e. the TweakDBID of the
+**full record name** `Vehicle.phoenix_aston_valkyrie`. `rec('xaires_aston_valkyrie')` is
+not a passthrough — the entries it returns are the full names (that is the only way the
+stock car resolves). A hand-written bare `phoenix_aston_valkyrie` hashes to a different
+key, so the Phoenix stayed invisible to the manager while the stock Aston kept working —
+exactly the symptom reported.
+
+v3 therefore carries **both** forms: whatever `rec('phoenix_aston_valkyrie')` returns, plus
+the literal `'Vehicle.phoenix_aston_valkyrie'`. Extra keys in `recordIndex` cost nothing.
+
+```lua
+records = (function() local t = rec('xaires_aston_valkyrie') local p = rec('phoenix_aston_valkyrie') if type(p) == 'table' then for i = 1, #p do t[#t + 1] = p[i] end end t[#t + 1] = 'Vehicle.phoenix_aston_valkyrie' return t end)(),
+```
+
+### What the rest of the source confirms
+
+| Line | Fact |
+|---|---|
+| 13 | `PAINT_COMPS = { 'body_01', 'door_fl_a', 'door_fr_a' }` — the livery slot paints these three |
+| 231-232 | AMV second colour paints `body_renk2`, `door_fl_renk2`, `door_fr_renk2` |
+| 402, 413 | palette entries become `mesh = { comps = slot.comps, app = slot.onek .. id }` → `paint_rosso_fiorano`, `k_bronze`, `rim_…` |
+| 576-588, 613-626 | applied as `c.meshAppearance = CName.new(app)` + `c:LoadAppearance()` (plus a redscript `SyncVC` call) |
+| 461, 789 | livery tables come from `kaplamalar.json`, whose keys are `apollo, bolide, f296, g3r` — **no `amv`**; so the AMV's *Livery* entry is just component appearance `default`, i.e. the baked #007 skin |
+| 27 | `rec(base, extra)` — `extra` is a list of livery variants (see the Apollo / 992 / 499P entries) |
+
+All of those components exist for the Phoenix because it shares the stock `.ent`, so once
+`carOf` matches, our car paints exactly like the stock one.
+
+Colour ids confirmed present in the manager's own palette files:
+`marka_renkleri.json` → `rosso_fiorano`; `sdh0_palet.json` → `metallic_bronze` (line 293)
+and `bronze` (797, 1075). No guessing needed.
+
+`redscript_rCURRENT.log` also confirms the install is healthy: both `xaires_*` and
+`phoenix_*` script files compiled.
+
 ### What the test machine actually showed (2026-11-24)
 
 > "the aston changes the original aston, but doesn't affect the phoenix"

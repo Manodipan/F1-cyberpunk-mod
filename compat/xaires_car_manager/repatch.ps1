@@ -1,18 +1,23 @@
-# v2 of the one-line Car Manager patch.
+# v3 — repair / re-apply the one-line Car Manager patch.
 #
-# WHY: v1 appended a hand-built string ('phoenix_aston_valkyrie') to the record list.
-# On the test machine that made the manager paint the *stock* Aston and leave the
-# Phoenix alone, which is what you see if the ids in that list are not plain record
-# names (if rec() prefixes 'Vehicle.' or resolves through TweakDB, a hand-written
-# string never matches GetRecordID()). v2 asks rec() for our id too, so whatever
-# transformation it applies is applied to both cars.
+# TWO things this fixes.
 #
-# Rebuilds init.lua from the pristine init.lua.orig (the copy made before v1), so it
-# works whether or not v1 is currently applied, and is safe to run twice.
+# 1. v2 was written by a regex that replaced only `records = rec('xaires_aston_valkyrie')`
+#    and left the line's own trailing comma behind, so init.lua ended up with
+#      ... end)(),,
+#    which is a Lua SYNTAX ERROR: the whole file fails to load, so the manager does not
+#    run at all. That was my bug; this script rewrites the WHOLE line, so the comma
+#    cannot double up again.
+#
+# 2. v2 also assumed rec() returns the same shape of id we could hand-write. It does not
+#    have to: carOf() hashes whatever strings are in the list and compares them with the
+#    vehicle's GetRecordID(). So the line now carries BOTH forms — whatever rec() gives,
+#    plus the literal 'Vehicle.phoenix_aston_valkyrie'. A key nobody matches costs
+#    nothing, and one of them is guaranteed to be the real record id.
 #
 #   powershell -ExecutionPolicy Bypass -File .\compat\xaires_car_manager\repatch.ps1
 #
-# Afterwards: in game, CET -> Reload all mods, spawn the Phoenix, click Rosso Fiorano.
+# Safe to run any number of times. Afterwards: CET -> Reload all mods.
 
 param(
     [string]$Game   = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty",
@@ -29,48 +34,83 @@ $init = Join-Path $ModDir "init.lua"
 $orig = Join-Path $ModDir "init.lua.orig"
 $prev = Join-Path $ModDir "init.lua.prev"
 
+$canonical = "records = (function() local t = rec('xaires_aston_valkyrie') local p = rec('phoenix_aston_valkyrie') if type(p) == 'table' then for i = 1, #p do t[#t + 1] = p[i] end end t[#t + 1] = 'Vehicle.phoenix_aston_valkyrie' return t end)(),"
+
+# (?m) so the same patterns work on one line and on the whole file (used for the fallback test)
+$reStock   = [regex]'(?m)^\s*records\s*=\s*rec\(\s*''xaires_aston_valkyrie''\s*\),?\s*$'
+$rePatched = [regex]'(?m)^\s*records\s*=.*phoenix_aston_valkyrie.*$'
+
 Write-Host ""
 Write-Host "folder : $ModDir"
 
 if (-not (Test-Path $ModDir)) { Write-Host "!! that folder does not exist - check the -Game path"; exit 1 }
-if (-not (Test-Path $init))   { Write-Host "!! init.lua not found"; exit 1 }
-if (-not (Test-Path $orig)) {
-    Write-Host "!! init.lua.orig is missing, so there is no pristine copy to rebuild from."
-    Write-Host "   Re-download the Car Manager, copy init.lua to init.lua.orig, then re-run this."
+if (-not (Test-Path $init))   { Write-Host "!! init.lua not found in that folder"; exit 1 }
+
+# Prefer the live file (keeps anything else you changed); .orig is only a fallback source.
+$source = $init
+$text   = [IO.File]::ReadAllText($source)
+
+if (-not ($reStock.IsMatch($text) -or $rePatched.IsMatch($text))) {
+    if (Test-Path $orig) {
+        $source = $orig
+        $text   = [IO.File]::ReadAllText($source)
+        Write-Host "no patch and no stock line in init.lua - rebuilding from init.lua.orig instead"
+    }
+}
+
+$eol = "`n"
+if ($text.Contains("`r`n")) { $eol = "`r`n" }
+
+$lines = @($text -split "\r?\n")
+$hits  = 0
+
+for ($i = 0; $i -lt $lines.Count; $i++) {
+    $ln = $lines[$i]
+    if ($reStock.IsMatch($ln) -or $rePatched.IsMatch($ln)) {
+        $indent = ""
+        if ($ln -match '^(\s*)') { $indent = $matches[1] }
+        $lines[$i] = $indent + $canonical
+        $hits++
+        Write-Host ("rewrote line {0}" -f ($i + 1))
+    }
+}
+
+if ($hits -eq 0) {
+    Write-Host "!! could not find the  records = ...  line for the Aston at all."
+    Write-Host "   The manager has probably been updated and the table changed shape."
+    exit 1
+}
+if ($hits -gt 1) {
+    Write-Host "!! $hits lines matched - that is unexpected. Nothing was written."
     exit 1
 }
 
-$utf8  = New-Object System.Text.UTF8Encoding($false)
-$text  = [IO.File]::ReadAllText($orig)
+$out = $lines -join $eol
 
-$newLine = "records = (function() local t = rec('xaires_aston_valkyrie') local p = rec('phoenix_aston_valkyrie') if type(p) == 'table' then for i = 1, #p do t[#t + 1] = p[i] end end return t end)(),"
-
-$re = [regex]"records\s*=\s*rec\('xaires_aston_valkyrie'\)"
-$m  = $re.Matches($text)
-Write-Host "matches for the stock line in init.lua.orig : $($m.Count)"
-
-if ($m.Count -lt 1) {
-    Write-Host "!! could not find  records = rec('xaires_aston_valkyrie')  in init.lua.orig"
-    Write-Host "   Either the manager changed, or .orig is not the pristine file."
+# Guard against the exact mistake v2 made.
+if ($out -match '\)\),') {
+    Write-Host "!! refusing to write: the result would contain a double comma (Lua syntax error)"
     exit 1
 }
 
 Copy-Item $init $prev -Force
-Write-Host "current init.lua saved as init.lua.prev"
-
-$out = $re.Replace($text, $newLine, 1)
-[IO.File]::WriteAllText($init, $out, $utf8)
+Write-Host "previous init.lua saved as init.lua.prev"
+[IO.File]::WriteAllText($init, $out, (New-Object System.Text.UTF8Encoding($false)))
 
 Write-Host ""
-Write-Host "PATCHED v2"
+Write-Host "PATCHED v3"
 Select-String -Path $init -Pattern "phoenix_aston_valkyrie" |
     ForEach-Object { Write-Host ("  {0}: {1}" -f $_.LineNumber, $_.Line) }
 
-Write-Host ""
-Write-Host "how rec() builds the ids (this is what decides whether it works):"
-Select-String -Path $init -Pattern "function rec" -Context 0, 10 |
-    ForEach-Object { $_.Context.PostContext | Where-Object { $_ -ne $null } | ForEach-Object { Write-Host ("  " + $_) } }
+$doubles = @(Select-String -Path $init -Pattern "\)\),")
+Write-Host ("double-comma check : " + $(if ($doubles.Count -eq 0) { "clean" } else { "STILL BROKEN" }))
 
 Write-Host ""
-Write-Host "Now in game: CET -> Reload all mods, spawn the Phoenix, pick Rosso Fiorano."
-Write-Host "Then run tools\dump-car-manager.ps1 and paste paint_dump.txt."
+Write-Host "rec() - this is what the ids look like before carOf() hashes them:"
+$recDef = Select-String -Path $init -Pattern "local function rec" -Context 0, 12
+if ($recDef) { $recDef.Context.PostContext | ForEach-Object { Write-Host ("  " + $_) } }
+
+Write-Host ""
+Write-Host "Now: CET -> Reload all mods. If the manager does not appear in the CET list at all,"
+Write-Host "the file still has an error - open the CET log and paste the last few lines."
+Write-Host "Then spawn the Phoenix, pick Rosso Fiorano, and look at the car."

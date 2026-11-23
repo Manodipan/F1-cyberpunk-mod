@@ -115,7 +115,15 @@ if (Test-Path $init) {
     $lines.Add("(total functions: " + @($fns).Count + ")")
 }
 
-Section "init.lua 160-260  (helpers above the CARS table, incl. rec())"
+Section "init.lua 20-45  (the rec() helper itself)"
+if (Test-Path $init) {
+    $c3 = Get-Content $init
+    for ($i = 19; $i -le 44 -and $i -lt $c3.Count; $i++) {
+        $lines.Add(("{0,4}: {1}" -f ($i + 1), $c3[$i]))
+    }
+}
+
+Section "init.lua 160-260  (helpers above the CARS table)"
 if (Test-Path $init) {
     $c2 = Get-Content $init
     for ($i = 159; $i -le 259 -and $i -lt $c2.Count; $i++) {
