@@ -36,6 +36,20 @@ The manager has to recognise the car it is looking at. The stock car is
 usually matches on exactly that record (or on its display name), so the Phoenix is
 likely invisible to it — the tab still opens, the sliders just do nothing.
 
+### Confirmed 2026-11-23
+
+`…\cyber_engine_tweaks\mods\xaires_car_manager\init.lua` line **225**:
+
+```lua
+records = rec('xaires_aston_valkyrie' …
+```
+
+The manager names the stock record explicitly, so the Phoenix
+(`Vehicle.phoenix_aston_valkyrie`) is not among the cars it paints — the sliders will
+open and do nothing. Next question is how that `records` table is used; if it is the
+list of ids the paint engine iterates, one added entry gives the Phoenix all 149
+colours.
+
 ### Check it in 10 seconds, no game launch
 
 ```powershell
