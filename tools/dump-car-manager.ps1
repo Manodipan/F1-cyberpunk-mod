@@ -14,7 +14,11 @@ $ErrorActionPreference = "Continue"
 
 $modDir = Join-Path $Game "bin\x64\plugins\cyber_engine_tweaks\mods\xaires_car_manager"
 $init   = Join-Path $modDir "init.lua"
-$log    = Join-Path $Game "r6\logs\cyber_engine_tweaks.log"
+$logCandidates = @(
+    (Join-Path $Game "bin\x64\plugins\cyber_engine_tweaks\cyber_engine_tweaks.log"),
+    (Join-Path $Game "r6\logs\cyber_engine_tweaks.log"),
+    (Join-Path $Game "r6\logs\redscript_rCURRENT.log")
+)
 
 if (-not $Out) {
     $Out = Join-Path (Split-Path -Parent $PSScriptRoot) "car_manager_dump.txt"
@@ -68,13 +72,18 @@ if (Test-Path $init) {
     $lines.Add("init.lua not found")
 }
 
-Section "CET LOG (last 30 xaires / phoenix / error lines)"
-if (Test-Path $log) {
-    $hits = Select-String -Path $log -Pattern "xaires|phoenix|rror" | Select-Object -Last 30
-    if (-not $hits) { $lines.Add("(no matching lines)") }
-    foreach ($h in $hits) { $lines.Add($h.Line) }
-} else {
-    $lines.Add("log not found: $log")
+Section "LOGS (last 30 xaires / phoenix / error lines per file)"
+$anyLog = $false
+foreach ($log in $logCandidates) {
+    $lines.Add("--- $log")
+    if (Test-Path $log) {
+        $anyLog = $true
+        $hits = Select-String -Path $log -Pattern "xaires|phoenix|rror" | Select-Object -Last 30
+        if (-not $hits) { $lines.Add("(no matching lines)") }
+        foreach ($h in $hits) { $lines.Add($h.Line) }
+    } else {
+        $lines.Add("(missing)")
+    }
 }
 
 Section "END"

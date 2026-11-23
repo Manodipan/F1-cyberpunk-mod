@@ -163,6 +163,53 @@ Phoenix, look at it.
 For the Rosso Fiorano + bronze look: a dark red from the Ferrari group for
 **Livery / paint**, then a bronze from `Metallic` for **Second colour**.
 
+## Code path verified 2026-11-24 (`carOf`)
+
+```lua
+local recordIndex = nil
+local function carOf(veh)
+  if not recordIndex then                      -- built once, from CARS
+    recordIndex = {}
+    for _, car in ipairs(CARS) do
+      for _, r in ipairs(car.records) do
+        local id = TweakDBID.new(r)
+        recordIndex[tostring(id.hash) .. ':' .. tostring(id.length)] = car
+      end
+    end
+  end
+  ...
+  return recordIndex[tostring(rid.hash) .. ':' .. tostring(rid.length)]
+end
+```
+
+So `carOf` hashes whatever strings `car.records` holds and compares them with the mounted
+vehicle's `GetRecordID()`. Our patched line puts `phoenix_aston_valkyrie` into
+`CARS.amv.records`, which hashes to exactly our record — no further code change is
+needed. (`currentVehicle()` additionally recognises the car you *look at*, not only the
+one you sit in.)
+
+Differences between the two cars are irrelevant here because the paint is applied as
+component appearance names on components that exist in the shared `.ent`/mesh.
+
+## Saved selection as of 2026-11-24
+
+`ayarlar.json` (the manager's own settings, keyed by car `key`) had:
+
+```json
+"amv": { "renk2": "orijinal", "jant": "orijinal", "kaplama": "rosso_dino", "film": "yok" }
+```
+
+`rosso_dino` is Ferrari **Rosso Dino** (rgb 242,96,42 — the bright orange-red), *not*
+Rosso Fiorano (`rosso_fiorano`, rgb 98,16,26). If the car comes out orange after
+spawning, that is the stored choice working, not a bug.
+
+For the requested look, pick in the pane:
+
+| Slot | Group | Entry | rgb |
+|---|---|---|---|
+| Livery / paint | Ferrari | **Rosso Fiorano** | 98, 16, 26 (metallic 0.55 / rough 0.25) |
+| Second colour | `Metallic` or `Special` | **Bronze** | 181,128,84 (`metallic_bronze`) or 163,111,59 (`bronze`) |
+
 ## Applied 2026-11-23 (local, needs in-game confirmation)
 
 The one-liner is in place on the test machine — `init.lua` line 225 now reads
