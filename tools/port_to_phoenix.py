@@ -746,7 +746,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 18
+BUILD = 20
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -830,20 +830,17 @@ STABILITY_OVERLAY = (
     # plant-gain lever - they scale the tyre's slip response, i.e. cornering stiffness. Step 8's
     # measured trade (wobble 72 -> 57, ceiling 72 -> 78) is the frequency effect of extra load, so
     # scaling these from 2 to 1 takes the stiffness back down without giving up the load.
-    # Step 11 (2026-11-24): the wobble is a BAND (55-58 m/s), not a threshold, and that band sits
-    # inside the downforce ramp (20 -> 80 m/s). A ramp means the aerodynamic load is changing with
-    # speed, so the plant's stiffness, yaw frequency and damping all MOVE as the car accelerates; a
-    # closed loop whose phase margin varies with speed can dip below zero in a band and recover either
-    # side of it. That is what a wobble between two speeds looks like, and it explains why raising the
-    # factor made the band lower and wider - it steepened the sweep.
-    # The experiment separates level from sweep: load it 3x harder than the known-good build, but
-    # FINISH the ramp at 45 m/s so the band has constant aero instead of moving aero.
-    #   maxSpeed 80 -> 45        ramp complete at 162 km/h: constant load above it
-    #   maxSpeedFactorGround 0.7 -> 2.0
-    # Outcomes: band moves UP or disappears -> the sweep was the problem, load is free, crank it.
-    #           band moves DOWN -> absolute load is the problem and downforce is not the lever.
-    ("maxSpeedFactorGround", "0.7", "2.0"),
-    ("maxSpeed", "80", "45"),
+    # Step 11 REVERTED (2026-11-24, measured): constant 2.0 load (ramp finished at 45 m/s, so no
+    # moving aero at all) still wobbled - at 65 m/s, against 72 for 0.7 @ 80. So the SWEEP was not
+    # the problem; the absolute LEVEL is. Downforce is not an ADE-stability lever in this car and the
+    # aero is back to the known-good 0.7 @ 80 for good; only the ladder build will touch it again,
+    # and only for grip above 80 m/s where the car is currently gear-limited anyway.
+    #
+    # Measured, all cold-boot:
+    #   aero 0.7 @ 80,  no step 9   -> ADE 72, hand 77   (step 5)
+    #   aero 3.0 @ 139, no step 9   -> ADE 55-58, hand 78 (step 8)
+    #   aero 2.0 @ 45,  with step 9 -> ADE 65, hand 77    (step 11)
+    #   aero 0.7 @ 80,  with step 9 -> to measure        (step 12 - this build)
     ("slipAngleCurveScale", "2", "1"),
     ("slipRatioCurveScale", "2", "1"),
     ("antiSwaybarDampingScalor", "0.75", "1.15"),   # Pagani's
@@ -1136,7 +1133,19 @@ def rewrite_gear7(line: str, suffix: str) -> str:
 
 
 def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
-    """Rewrite stock physics values to the v2 Phoenix table (PORT.md §3)."""
+    """Rewrite stock physics values to the v2 Phoenix table (PORT.md §3).
+
+    With RESTORE_STOCK_PHYSICS nothing physical is rewritten at all: the YAML keeps the stock
+    mod's own numbers (they are the best measured car) and so does the redscript's virtual
+    gearbox, whose gear-7 ceiling must agree with the ladder or the HUD revs lie. The redscript
+    still gets the true speedometer - that is a display fix, not a physics one.
+    """
+    if RESTORE_STOCK_PHYSICS:
+        if suffix in (".yaml", ".yml"):
+            return text
+        if suffix == ".reds":
+            return apply_mph_as_mps(apply_true_speedometer(text))
+        return text
     out = []
     for line in text.splitlines(keepends=True):
         written = rewrite_line_values(line, suffix, STOCK_TO_F1)
@@ -1161,6 +1170,8 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         text = text.replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
         return ensure_steering_return(ensure_engine_fields(text))
     if suffix == ".reds":
+        if RESTORE_STOCK_PHYSICS:
+            return apply_mph_as_mps(apply_true_speedometer(text))
         return apply_mph_as_mps(apply_true_speedometer(apply_virtual_gearbox(text)))
     return text
 
@@ -1226,6 +1237,24 @@ VEHICLE_RECORD = "Vehicle.phoenix_aston_valkyrie:"
 SUB_RE = re.compile(r"^(?P<indent>[ \t]{2})(?P<key>vehWheelDimensionsSetup|vehDriveModelData|vehEngineData):[ \t]*\r?\n")
 
 
+# ---------------------------------------------------------------------------
+# Physics source
+# ---------------------------------------------------------------------------
+# 2026-11-24: THE REFERENCE CAR WAS A LIE, AND ITS CHASSIS WAS WORSE.
+#
+# The Jesko's 500+ km/h turned out to be the game's speedometer inflating 2.07x - timed, it did
+# 277 km/h, the same as our copy of it. So "copy the fastest car" was copying an engine that was not
+# faster, attached to a drive model that was worse: measured on the same road, the STOCK mod's own
+# Aston does 80 m/s under ADE and 85 by hand, against the Jesko's 63 and 77. Eight builds of damping,
+# steering-rate, inertia and grip-floor work climbed from 63 to at best 72 - still short of the
+# number the stock car shipped with.
+#
+# So the stock mod's own physics is the base again: it is the best car we have measured, and it was
+# authored for this exact entity. Everything we learned stays in the tool as overlays, ready to be
+# re-applied on a chassis that starts from a better place (docs/STABILITY.md).
+RESTORE_STOCK_PHYSICS = True
+
+
 def hoist_subrecords(text: str) -> str:
     """Move the three inline physics blocks into named records, reference them instead."""
     lines = text.splitlines(keepends=True)
@@ -1278,7 +1307,7 @@ def port_text(text: str, suffix: str, physics: bool,
               warn: list[str] | None = None) -> str:
     if physics:
         text = apply_physics(text, suffix, warn)
-    else:
+    elif not RESTORE_STOCK_PHYSICS:
         text = "".join(rewrite_gear7(line, suffix) for line in text.splitlines(keepends=True))
 
     # Rename in code only: the source's Turkish engineering notes stay verbatim
@@ -1291,9 +1320,12 @@ def port_text(text: str, suffix: str, physics: bool,
     text = explicit_gears("".join(out))
     # the hoist needs the *renamed* record name, so it runs after the rename pass
     if physics and suffix in (".yaml", ".yml"):
-        # CONTROL BUILD: the whole physics section is replaced with the Jesko's own records,
-        # so the chassis tune must not run - it would edit records that no longer exist.
-        text = apply_build_stamp(apply_stability(apply_explicit_vehicle_record(apply_jesko_control(hoist_subrecords(text)))))
+        if not RESTORE_STOCK_PHYSICS:
+            # CONTROL BUILD: the whole physics section is replaced with the Jesko's own records,
+            # so the chassis tune must not run - it would edit records that no longer exist.
+            text = apply_stability(apply_explicit_vehicle_record(
+                apply_jesko_control(hoist_subrecords(text))))
+        text = apply_build_stamp(text)
     return text
 
 
@@ -1329,7 +1361,8 @@ def check_text(text: str, label: str, suffix: str) -> list[str]:
         m = LINE_RE.match(code)
         if m:
             key, value = m.group(2).rsplit(".", 1)[-1], m.group(4)
-            if (key, value) in STOCK_TO_F1 and (key, value) not in STABILITY_TARGETS:
+            if (not RESTORE_STOCK_PHYSICS and (key, value) in STOCK_TO_F1
+                    and (key, value) not in STABILITY_TARGETS):
                 problems.append(f"{label}:{no}: stock physics leftover {key}: {value}")
     return problems
 

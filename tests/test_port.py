@@ -12,6 +12,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -40,16 +41,13 @@ def stock(name):
 class RenameTests(unittest.TestCase):
     def test_vehicle_and_sub_records(self):
         out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
+        # the stock mod's own records are shipped again, renamed - the amv_* helper records only
+        # exist on the control path (VerbatimControlTests)
         for ident in (
             "Vehicle.phoenix_aston_valkyrie:",
             "Vehicle.phoenix_aston_valkyrie_data:",
             "Vehicle.phoenix_aston_valkyrie_manufacturer:",
             "Vehicle.phoenix_aston_valkyrie_purchasable:",
-            "Vehicle.phoenix_amv_role_lf:",
-            "Vehicle.phoenix_amv_role_rb:",
-            "Vehicle.phoenix_amv_wheel_setup:",
-            "Vehicle.phoenix_amv_gear_r:",
-            "Vehicle.phoenix_amv_gear_7:",
             "UIIcon.phoenix_aston_valkyrie_icon:",
             "UIIcon.phoenix_aston_valkyrie_logo:",
         ):
@@ -133,9 +131,9 @@ class RenameTests(unittest.TestCase):
         self.assertIn('911 kopyası "xaires_amv_engine"', audio)     # stock record name in a note
         yaml_out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
         self.assertIn("(xaires)", yaml_out)                        # author credit
-        # the physics section is the reference car's records, so its notes are replaced by the
-        # provenance banner; the header comment above the records is still ours
-        self.assertIn("COPED VERBATIM FROM reference/vehicles/jesko_attack.yaml", yaml_out.replace("COPIED", "COPED"))
+        # the shipped build is the stock mod's own physics again, so its notes survive verbatim
+        # (the reference banner only appears on the control path, tested in VerbatimControlTests)
+        self.assertIn("Vehicle.phoenix_aston_valkyrie", yaml_out)
 
     def test_file_names(self):
         self.assertEqual(port.rename_path(Path("aston_valkyrie_audio.reds")).name,
@@ -153,7 +151,24 @@ class RenameTests(unittest.TestCase):
         self.assertEqual(once, port_yaml(once, physics=False))
 
 
-class PhysicsTests(unittest.TestCase):
+class ControlPathTest(unittest.TestCase):
+    """Base for the tests that describe the Jesko control pipeline.
+
+    Since 2026-11-24 the shipped build is the STOCK mod's own physics again (it is the best car we
+    have measured: 80 m/s under ADE / 85 by hand, against the reference's 63 / 77), so these tests
+    run against the control path explicitly instead of the default output.
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls._saved_flag = port.RESTORE_STOCK_PHYSICS
+        port.RESTORE_STOCK_PHYSICS = False
+
+    @classmethod
+    def tearDownClass(cls):
+        port.RESTORE_STOCK_PHYSICS = cls._saved_flag
+
+
+class PhysicsTests(ControlPathTest):
     def setUp(self):
         self.out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
 
@@ -172,7 +187,7 @@ class PhysicsTests(unittest.TestCase):
             "frictionMulLongitudinal: 0.98",
             "maxBrakingTorque: 1165",
             "maxBrakingTorque: 785",
-            "maxSpeedFactorGround: 2.0",   # step 11: level vs sweep experiment
+            "maxSpeedFactorGround: 0.7",   # aero restored: load is not an ADE lever
             "minLatFrictionCoef: 0.95",   # stability overlay
             "turningRollFactor: 0",           # stability overlay; the reference has 1
             "wheelTurnMaxSubPerSecond: 170",
@@ -259,7 +274,7 @@ class PhysicsTests(unittest.TestCase):
         self.assertEqual(port_yaml(text), 'a: 138.89          # stock 91.7 was the old ceiling\n')
 
 
-class GearLadderTests(unittest.TestCase):
+class GearLadderTests(ControlPathTest):
     """A gear is a ratio window, not a speed cap (docs/VEHICLE-MODEL.md §4).
 
     The 2026-11-24 build put 277 -> 500 km/h inside one 1.80x overdrive whose
@@ -420,7 +435,15 @@ class CheckTests(unittest.TestCase):
     def test_stock_tree_fails(self):
         problems = port.check_text(STOCK_YAML.read_text(encoding="utf-8"), "stock.yaml", ".yaml")
         self.assertTrue(any("xaires" in p for p in problems))
-        self.assertTrue(any("engineMaxTorque" in p for p in problems))
+        # stock physics values are legal again since the stock mod is the shipped base, so this
+        # assertion only holds for the control pipeline
+        saved = port.RESTORE_STOCK_PHYSICS
+        port.RESTORE_STOCK_PHYSICS = False
+        try:
+            problems = port.check_text(STOCK_YAML.read_text(encoding="utf-8"), "stock.yaml", ".yaml")
+            self.assertTrue(any("engineMaxTorque" in p for p in problems))
+        finally:
+            port.RESTORE_STOCK_PHYSICS = saved
 
         r = subprocess.run([sys.executable, str(ROOT / "tools" / "port_to_phoenix.py"),
                             "--check", str(STOCK)], capture_output=True, text=True)
@@ -436,7 +459,7 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class VerbatimControlTests(unittest.TestCase):
+class VerbatimControlTests(ControlPathTest):
     """The control build is only a control if the records are the reference's own bytes."""
 
     def setUp(self):

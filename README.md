@@ -44,24 +44,29 @@ docs/                            install + test matrix, packaging, rename map, f
 
 ## Physics (stock → Phoenix)
 
-| | Stock | Phoenix |
-|---|---|---|
-| Scanner hp / torque | 680 / 1300 | **2000 / 1000** — the control: the scanner still says 2000 hp, the physics is the reference's 1000 |
-| Redline | 10100 | **7900**, top gear ceiling 7800, shift at 0.90 of range = 7020 |
-| Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **the Jesko's ladder, verbatim: top window 62.47→78.5 m/s (283 km/h declared). The game lets that car run to 500+ from it** |
-| Mass | 1750 | **1800** (the Jesko's) |
-| Drag | 1.35 | **0.66** (the Jesko's) |
-| Front grip | 1.29 / 1.15 | **1.30 / 0.95** (the Jesko's) |
-| Rear grip | 1.33 / 1.20 | **1.28 / 0.98** (the Jesko's) |
-| Drivetrain | RWD | **RWD** — the control uses the Jesko's wheel roles |
-| Rear friction helper | 0.95 / 0.95 | **0.62 / 0.80** (the Jesko's) |
-| Downforce (`maxSpeedFactorGround`) | 0.60 | **0.70** (was 1.40 — twice every reference car) |
-| Sway F/R · braking F/R | 11/16 · 1410/1200 | **18/15 · 1165/785** (the Jesko's) |
-| Springs / damping | 23/22, 2000 | **27/26, 3000/3200**, rebound 3300/3500 (the Jesko's) |
-| Steering (add / return / threshold / mul) | 94 / inherited / 26 / 0.33 | **137 / 170 / 45 / 0.21**, `turnUpdateMidSpeedTurnMul` 0.62, `useAlternativeTurnUpdate` (the Jesko's) |
+**As of build 900020 the shipped car IS the stock Aston mod's physics, unchanged.** Only two
+things differ, and neither is a handling number: the scanner's `horsepower` field carries the build
+stamp, and the speedometer is ours (true km/h for every car). Everything the car does — gearbox
+91.7 m/s top gear, drag 1.35, mass 1750, torque 1300, steering 94, grip, springs, swaybars — is
+the car that was measured at **~80 m/s under ADE and ~85 m/s by hand**, the best result on record.
 
-Unchanged: reverse gear, mass 1750 + chassis 1750, inertia,
-centre of mass, `turningRollFactor 0`, tyre dimensions, wheel setup geometry.
+| | Stock (the mod) | Phoenix (shipped, 900020) |
+|---|---|---|
+| Gearbox | 7 gears, top window 77→91.7 m/s (330 km/h declared) | **identical** |
+| Mass · Drag | 1750 · 1.35 | **identical** |
+| Torque · Redline | 1300 · 10 100 | **identical** |
+| Grip F/R | 1.29/1.15 · 1.33/1.20 | **identical** |
+| Downforce (`maxSpeedFactorGround`) | 0.60 | **identical** |
+| Steering (add / threshold / mul) | 94 / 26 / 0.33 | **identical** |
+| Springs · damping · swaybar | 23/22 · 2000 · 11/16 | **identical** |
+| Scanner hp | 680 | **900020** — build stamp, not a power claim |
+| Speedometer | the game's 2.07× curve | **true km/h, all vehicles** |
+
+The earlier "Phoenix" column — the Jesko Attack's physics copied verbatim, plus a five-field
+stability overlay — is **reverted**. It measured **63 m/s ADE / 77 manual** against the stock car's
+**80 / 85**; eight builds of tuning got it to 72 at best. `docs/STABILITY.md` keeps the full ladder
+as a record of what was falsified. `RESTORE_STOCK_PHYSICS = True` in `tools/port_to_phoenix.py`
+holds this state; the whole Jesko control path is still in the file, one flag away.
 
 ## Build stamp in the scanner
 

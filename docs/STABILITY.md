@@ -455,6 +455,28 @@ Borrowed or inferred:
   the reference sets it to 1. It is the one field in the overlay I would bisect last.
 - ADE's actual poll rate; the table above spans the plausible range rather than claiming one.
 
+## Step 12 — back to the stock mod (build 900020)
+
+Step 11 finished the argument. Three aero levels on the same chassis gave 72 / 65 / 55-58, and the
+one constant-load build wobbled *worse* than the ramped one, so aero was never the mechanism. What
+was left was the chassis itself, and a control measurement settled it: the **stock Aston mod**, on
+the same road with the same driver, does **~80 m/s under ADE and ~85 by hand**. The Jesko-derived
+chassis, after eight builds of tuning, peaked at **72**.
+
+So the tuning was not converging on a better car — it was climbing out of a hole it had dug. The
+shipped car is now **the stock mod's own physics, byte for byte**, with only two differences that
+are not handling numbers: the scanner carries the build stamp, and the speedometer is true km/h.
+
+This is a *baseline*, not a result. It has not been driven yet; the first job is to confirm it
+reproduces 80 / 85. If it does, the pipeline is proven behaviour-preserving and every later build
+is measured against a car known to be good.
+
+Next on this base, highest value first: **the step-9 gain bundle alone** — inertia
+3450/1020/3995, `wheelTurnMaxAddPerSecond` 94 → 85, slip-angle scales 1. That is the one
+combination that was never isolated, and every individual gain in it (inertia up, steering rate
+down, slip scale down) came from *reducing* loop gain, which is the only category that ever
+produced progress.
+
 ## What to try next, in order
 
 If it still weaves, in order of likely payoff:

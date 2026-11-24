@@ -32,22 +32,22 @@ class TestProfile(unittest.TestCase):
     def test_finds_the_car(self):
         self.assertIsNotNone(self.row)
 
-    def test_top_gear_is_the_reference_ceiling(self):
-        """CONTROL BUILD: the shipped top gear is the Jesko's 78.5 m/s (283 km/h). The game lets
-        that car run to 500+, and the point of the control is to see whether ours does the same
-        from the same numbers rather than from a 138.89 table of our own."""
-        self.assertAlmostEqual(self.row["top"], 78.5, places=2)
-        self.assertEqual(round(self.row["top"] * 3.6), 283)
+    def test_top_gear_is_the_stock_mods_ceiling(self):
+        """The shipped car is the stock mod's own physics again: top gear 91.7 m/s = 330 km/h,
+        the car that measured 80 m/s under ADE and 85 by hand (the reference did 63 / 77)."""
+        self.assertAlmostEqual(self.row["top"], 91.7, places=2)
+        self.assertEqual(round(self.row["top"] * 3.6), 330)
 
     def test_gear_count(self):
         self.assertEqual(self.row["gears"], 8, "7 forward + reverse")
 
     def test_the_deciding_fields(self):
-        self.assertEqual(self.row["airResistanceFactor"], "0.66")
-        self.assertEqual(self.row["engineMaxTorque"], "1000")
-        self.assertEqual(self.row["total_mass"], "1800")
-        self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "85")    # stability overlay
-        self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")   # stability overlay: gain at speed
+        # stock mod's own numbers: the best car measured so far
+        self.assertEqual(self.row["airResistanceFactor"], "1.35")
+        self.assertEqual(self.row["engineMaxTorque"], "1300")
+        self.assertEqual(self.row["total_mass"], "1750")
+        self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "94")
+        self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.33")
 
     def test_vehicle_record_not_its_satellites(self):
         self.assertEqual(self.row["records"], ["Vehicle.phoenix_aston_valkyrie"])
@@ -78,7 +78,7 @@ class TestIndex(unittest.TestCase):
             cv.write_index(cv.collect(ROOT / "Phoenix_aston_cheats" / "r6" / "tweaks", True, tmp), tmp)
             again = cv.index_from_corpus(tmp)
             self.assertEqual(len(again), 1)
-            self.assertAlmostEqual(again[0]["top"], 78.5, places=2)
+            self.assertAlmostEqual(again[0]["top"], 91.7, places=2)   # stock mod's gearbox
 
 
 class TestCommittedCorpus(unittest.TestCase):

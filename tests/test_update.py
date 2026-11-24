@@ -74,7 +74,12 @@ class DrivetrainTests(unittest.TestCase):
         sys.path.insert(0, str(root / "tools"))
         import port_to_phoenix as port
         self.port = port
+        self._saved_flag = port.RESTORE_STOCK_PHYSICS
+        port.RESTORE_STOCK_PHYSICS = False      # this class describes the Jesko control pipeline
         self.stock = (root / "reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml").read_text(encoding="utf-8")
+
+    def tearDown(self):
+        self.port.RESTORE_STOCK_PHYSICS = self._saved_flag
 
     def _role(self, out, name):
         return out.split(f"Vehicle.phoenix_amv_role_{name}:")[1].split("Vehicle.")[0]
