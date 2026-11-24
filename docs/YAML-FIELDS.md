@@ -2,6 +2,8 @@
 
 Now that the stock file is in the repo (`reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml`),
 every row below is confirmed against the actual record tree instead of guessed.
+For what each of these fields *does* — the drive model, the steering bands, how the
+gearbox and speed units work — see [`VEHICLE-MODEL.md`](VEHICLE-MODEL.md).
 
 | PORT.md §3 | Stock | Phoenix | Where in the stock YAML | Confidence |
 |---|---|---|---|---|

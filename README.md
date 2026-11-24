@@ -38,7 +38,8 @@ tools/collect_vehicles.py        corpus + index of every installed vehicle tweak
 tools/localization/en-us.json    CR2W onscreens source -> "Phoenix AMV LMH"
 tests/                           41 tests (port + packaging + archive inspection)
 docs/                            install + test matrix, packaging, rename map, field map,
-                                 localisation, archive provenance, status
+                                 vehicle model reference, localisation, archive
+                                 provenance, status
 ```
 
 ## Physics (stock → Phoenix)
@@ -73,6 +74,9 @@ to xaires) are left verbatim on purpose.
 * [`docs/INSTALL.md`](docs/INSTALL.md) — two-mod install, summon, 7-test matrix, logs.
 * [`compat/xaires_car_manager/`](compat/xaires_car_manager/README.md) — one-line patch so the
   Car Manager paints the Phoenix (all 149 colours, no art).
+* [`docs/VEHICLE-MODEL.md`](docs/VEHICLE-MODEL.md) — how a vehicle actually works in
+  CP2077: the record tree, drive model, the three-band steering model, gearboxes,
+  speed units, and the engine-level speed limiter.
 * [`docs/PAINT.md`](docs/PAINT.md) — how the two-tone paint can actually be changed
   (runtime Car Manager vs baked materials vs CrystalCoat).
 * [`docs/WOLVENKIT.md`](docs/WOLVENKIT.md) — the one-time, click-by-click pack that turns

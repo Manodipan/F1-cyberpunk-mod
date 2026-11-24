@@ -3,6 +3,8 @@
 Goal: prove the v2 physics reach the **138.89 m/s (500 km/h)** ceiling in gear 7, with no
 human input in the loop. Auto Drive drives the car with the game's own AI, so the throttle
 is applied smoothly and consistently — better evidence than a keyboard hold.
+Background on what sets the ceiling (gears, drag, and the engine-level speed limiter):
+[`VEHICLE-MODEL.md`](VEHICLE-MODEL.md) §4–§5.
 
 Test mod: **Auto Drive Enhanced** (Nexus 23157, by nobo). Requires ArchiveXL, redscript,
 Input Loader, TweakXL; Mod Settings is optional but is where the knobs live.
