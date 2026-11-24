@@ -1,0 +1,291 @@
+UIIcon.zonda_revo:
+  $type: UIIcon_Record
+  atlasPartName: zonda_revo_original_summon
+  atlasResourcePath: author\zonda_revo\ui\variants.inkatlas
+
+UIIcon.zonda_revo_livery_13_clean:
+  $type: UIIcon_Record
+  atlasPartName: zonda_revo_livery_13_clean_summon
+  atlasResourcePath: author\zonda_revo\ui\variants.inkatlas
+
+UIIcon.zonda_revo_livery_13:
+  $type: UIIcon_Record
+  atlasPartName: zonda_revo_livery_13_summon
+  atlasResourcePath: author\zonda_revo\ui\variants.inkatlas
+
+UIIcon.zonda_revo_livery_06:
+  $type: UIIcon_Record
+  atlasPartName: zonda_revo_livery_06_summon
+  atlasResourcePath: author\zonda_revo\ui\variants.inkatlas
+
+UIIcon.zonda_revo_blue_black:
+  $type: UIIcon_Record
+  atlasPartName: zonda_revo_blue_black_summon
+  atlasResourcePath: author\zonda_revo\ui\variants.inkatlas
+
+UIIcon.zonda_revo_livery_15:
+  $type: UIIcon_Record
+  atlasPartName: zonda_revo_livery_15_summon
+  atlasResourcePath: author\zonda_revo\ui\variants.inkatlas
+
+Vehicle.zonda_revo:
+  $base: Vehicle.v_sport2_porsche_911turbo
+  appearanceName: zonda_revo_default
+  destroyedAppearance: zonda_revo_default
+  displayName: zonda_revo_display_name
+  icon: UIIcon.zonda_revo
+  entityTemplatePath: author\zonda_revo\zonda_revo__basic_01.ent
+  widgetStyleSheetPath: user\erenn77\2011_pagani_zonda_r_carbon\gui\speedometer\2011_pagani_zonda_r_carbon_stylesheet.inkstyle
+  player_audio_resource: author_zonda_revo
+  headlightColor: [ 255, 255, 255, 255 ]
+  brakelightColor: [ 255, 0, 0, 255 ]
+  vehDataPackage:
+    $base: Vehicle.v_sport2_porsche_911turbo_inline7
+    additionalAnimFeatures: []
+    windowsRollDown: false
+    canStoreBody: false
+    interactiveHood: true
+    interactiveTrunk: true
+  hasVisualCustomization: false
+  hasUniqueCustomization: false
+  vehWheelDimensionsSetup:
+    $type: VehicleWheelDimensionsSetup
+    frontPreset:
+      $type: VehicleWheelDimensionsPreset
+      tireRadius: 0.318
+      rimRadius: 0.235
+      tireWidth: 0.255
+      wheelOffset: 0.0
+    backPreset:
+      $type: VehicleWheelDimensionsPreset
+      tireRadius: 0.337
+      rimRadius: 0.255
+      tireWidth: 0.335
+      wheelOffset: 0.0
+  vehDriveModelData:
+    $base: Vehicle.VehicleDriveModelData_911Turbo
+    chassis_mass: 1280
+    total_mass: 1280
+    center_of_mass_offset:
+      x: 0
+      y: -0.05
+      z: -0.06
+    momentOfInertiaScale:
+      x: 1.35
+      y: 1.25
+      z: 1.2
+    wheelTurnMaxAddPerSecond: 100
+    wheelTurnMaxSubPerSecond: 135
+    wheelSetup:
+      $base: Vehicle.VehicleDriveModelData_911Turbo_inline0
+      frontPreset:
+        $base: Vehicle.VehicleDriveModelData_911Turbo_inline1
+        frictionMulLateral: 1.05
+        frictionMulLongitudinal: 1.02
+        logicalSuspensionCompressionLength: 0.318
+        visualSuspensionCompressionLength: 0.05
+        visualSuspensionDroop: 0.0
+        wheelsVerticalOffset: 0.0
+        springStiffness: 22
+        springDamping: 3000
+        springReboundDamping: 3200
+        springBoundDampingLowRate: 2000
+        springReboundDampingLowRate: 2100
+        tenderSpringLength: 0.0
+        maxBrakingTorque: 1350
+        tireFrictionCoef: 1.0
+        springDampingHighRateCompression: 0.36
+        springDampingLowRateCompression: 0.18
+        swaybarStiffness: 16
+        swaybarDisplacementLimit: 0.12
+      backPreset:
+        $base: Vehicle.VehicleDriveModelData_911Turbo_inline2
+        frictionMulLateral: 1.05
+        frictionMulLongitudinal: 1.04
+        logicalSuspensionCompressionLength: 0.337
+        visualSuspensionCompressionLength: 0.05
+        visualSuspensionDroop: 0.0
+        wheelsVerticalOffset: 0.0
+        springStiffness: 24
+        springDamping: 3300
+        springReboundDamping: 3500
+        springBoundDampingLowRate: 2300
+        springReboundDampingLowRate: 2300
+        tenderSpringLength: 0.0
+        maxBrakingTorque: 1150
+        tireFrictionCoef: 1.0
+        springDampingHighRateCompression: 0.4
+        springDampingLowRateCompression: 0.2
+        swaybarStiffness: 18
+        swaybarDisplacementLimit: 0.12
+    antiSwaybarDampingScalor: 1.15
+    driveHelpers:
+      - !append-once Vehicle.zonda_revo_aero_contact
+
+  vehEngineData:
+    $base: Vehicle.VehicleEngineData_4_SuperSport
+    maxRPM: 8600
+    minRPM: 900
+    engineMaxTorque: 520
+    resistanceTorque: 200
+    flyWheelMomentOfInertia: 0.25
+    gearChangeTime: 0.16
+    gearChangeCooldown: 0.16
+    gears:
+      [
+        Vehicle.zonda_revo_gear0,
+        Vehicle.zonda_revo_gear1,
+        Vehicle.zonda_revo_gear2,
+        Vehicle.zonda_revo_gear3,
+        Vehicle.zonda_revo_gear4,
+        Vehicle.zonda_revo_gear5,
+        Vehicle.zonda_revo_gear6
+      ]
+  traffic_audio_resource: author_zonda_revo_traffic
+
+Vehicle.zonda_revo.dealerPrice: 1800000
+Vehicle.zonda_revo.dealerCred: 0
+Vehicle.zonda_revo.dealerAtlasPath: "author/zonda_revo/ui/variants.inkatlas"
+Vehicle.zonda_revo.dealerPartName: "zonda_revo_original"
+Vehicle.zonda_revo.dealerVariants:
+  - "Vehicle.zonda_revo"
+  - "Vehicle.zonda_revo_blue_black"
+  - "Vehicle.zonda_revo_livery_06"
+  - "Vehicle.zonda_revo_livery_13"
+  - "Vehicle.zonda_revo_livery_15"
+  - "Vehicle.zonda_revo_livery_13_clean"
+
+Vehicle.vehicle_list.list:
+  - !append Vehicle.zonda_revo
+  - !append-once Vehicle.zonda_revo_blue_black
+  - !append-once Vehicle.zonda_revo_livery_06
+  - !append-once Vehicle.zonda_revo_livery_13
+  - !append-once Vehicle.zonda_revo_livery_15
+  - !append-once Vehicle.zonda_revo_livery_13_clean
+
+Vehicle.zonda_revo_gear0:
+  $type: VehicleGear
+  minSpeed: 0
+  maxSpeed: 10
+  torqueMultiplier: 1
+  minEngineRPM: 900
+  maxEngineRPM: 6000
+
+Vehicle.zonda_revo_gear1:
+  $type: VehicleGear
+  minSpeed: 0
+  maxSpeed: 14
+  torqueMultiplier: 1
+  minEngineRPM: 900
+  maxEngineRPM: 8600
+
+Vehicle.zonda_revo_gear2:
+  $type: VehicleGear
+  minSpeed: 12.5
+  maxSpeed: 23
+  torqueMultiplier: 0.95
+  minEngineRPM: 3300
+  maxEngineRPM: 8600
+
+Vehicle.zonda_revo_gear3:
+  $type: VehicleGear
+  minSpeed: 21.5
+  maxSpeed: 30
+  torqueMultiplier: 0.82
+  minEngineRPM: 3400
+  maxEngineRPM: 8600
+
+Vehicle.zonda_revo_gear4:
+  $type: VehicleGear
+  minSpeed: 28.5
+  maxSpeed: 37
+  torqueMultiplier: 0.65
+  minEngineRPM: 3500
+  maxEngineRPM: 8600
+
+Vehicle.zonda_revo_gear5:
+  $type: VehicleGear
+  minSpeed: 35.5
+  maxSpeed: 44
+  torqueMultiplier: 0.47
+  minEngineRPM: 3700
+  maxEngineRPM: 8600
+
+Vehicle.zonda_revo_gear6:
+  $type: VehicleGear
+  minSpeed: 42.5
+  maxSpeed: 50
+  torqueMultiplier: 0.32
+  minEngineRPM: 3900
+  maxEngineRPM: 8600
+
+Vehicle.zonda_revo_aero_contact:
+  $type: gamedataDynamicDownforceHelper_Record
+  type: Vehicle.DynamicDownforceHelper_HelperType
+  minSpeed: 10
+  maxSpeed: 40
+  maxSpeedFactorGround: 0.35
+  maxSpeedFactorAir: 0.0
+
+
+# Purchasable finishes: inherit every accepted driving/audio/interaction value.
+
+Vehicle.zonda_revo_blue_black:
+  $base: Vehicle.zonda_revo
+  appearanceName: zonda_revo_blue_black
+  destroyedAppearance: zonda_revo_blue_black
+  displayName: zonda_revo_blue_black_display_name
+  icon: UIIcon.zonda_revo_blue_black
+Vehicle.zonda_revo_blue_black.dealerPrice: 0
+Vehicle.zonda_revo_blue_black.dealerCred: 0
+Vehicle.zonda_revo_blue_black.dealerVariants: []
+Vehicle.zonda_revo_blue_black.dealerAtlasPath: "author/zonda_revo/ui/variants.inkatlas"
+Vehicle.zonda_revo_blue_black.dealerPartName: "zonda_revo_blue_black"
+
+Vehicle.zonda_revo_livery_06:
+  $base: Vehicle.zonda_revo
+  appearanceName: zonda_revo_livery_06
+  destroyedAppearance: zonda_revo_livery_06
+  displayName: zonda_revo_livery_06_display_name
+  icon: UIIcon.zonda_revo_livery_06
+Vehicle.zonda_revo_livery_06.dealerPrice: 0
+Vehicle.zonda_revo_livery_06.dealerCred: 0
+Vehicle.zonda_revo_livery_06.dealerVariants: []
+Vehicle.zonda_revo_livery_06.dealerAtlasPath: "author/zonda_revo/ui/variants.inkatlas"
+Vehicle.zonda_revo_livery_06.dealerPartName: "zonda_revo_livery_06"
+
+Vehicle.zonda_revo_livery_13:
+  $base: Vehicle.zonda_revo
+  appearanceName: zonda_revo_livery_13
+  destroyedAppearance: zonda_revo_livery_13
+  displayName: zonda_revo_livery_13_display_name
+  icon: UIIcon.zonda_revo_livery_13
+Vehicle.zonda_revo_livery_13.dealerPrice: 0
+Vehicle.zonda_revo_livery_13.dealerCred: 0
+Vehicle.zonda_revo_livery_13.dealerVariants: []
+Vehicle.zonda_revo_livery_13.dealerAtlasPath: "author/zonda_revo/ui/variants.inkatlas"
+Vehicle.zonda_revo_livery_13.dealerPartName: "zonda_revo_livery_13"
+
+Vehicle.zonda_revo_livery_15:
+  $base: Vehicle.zonda_revo
+  appearanceName: zonda_revo_livery_15
+  destroyedAppearance: zonda_revo_livery_15
+  displayName: zonda_revo_livery_15_display_name
+  icon: UIIcon.zonda_revo_livery_15
+Vehicle.zonda_revo_livery_15.dealerPrice: 0
+Vehicle.zonda_revo_livery_15.dealerCred: 0
+Vehicle.zonda_revo_livery_15.dealerVariants: []
+Vehicle.zonda_revo_livery_15.dealerAtlasPath: "author/zonda_revo/ui/variants.inkatlas"
+Vehicle.zonda_revo_livery_15.dealerPartName: "zonda_revo_livery_15"
+
+Vehicle.zonda_revo_livery_13_clean:
+  $base: Vehicle.zonda_revo
+  appearanceName: zonda_revo_livery_13_clean
+  destroyedAppearance: zonda_revo_livery_13_clean
+  displayName: zonda_revo_livery_13_clean_display_name
+  icon: UIIcon.zonda_revo_livery_13_clean
+Vehicle.zonda_revo_livery_13_clean.dealerPrice: 0
+Vehicle.zonda_revo_livery_13_clean.dealerCred: 0
+Vehicle.zonda_revo_livery_13_clean.dealerVariants: []
+Vehicle.zonda_revo_livery_13_clean.dealerAtlasPath: "author/zonda_revo/ui/variants.inkatlas"
+Vehicle.zonda_revo_livery_13_clean.dealerPartName: "zonda_revo_livery_13_clean"
