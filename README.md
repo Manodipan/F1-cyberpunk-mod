@@ -44,7 +44,7 @@ docs/                            install + test matrix, packaging, rename map, f
 
 ## Physics (stock → Phoenix)
 
-**As of build 900022 the shipped car is the stock Aston mod's physics, with one exception:
+**As of build 900023 the shipped car is the stock Aston mod's physics, with one exception:
 all four wheels drive.** The base measured **80 m/s under ADE / 86 by hand** on this pipeline —
 the reference car's own numbers. AWD is a handling override we keep on purpose; see below. Only two
 things differ, and neither is a handling number: the scanner's `horsepower` field carries the build
@@ -59,8 +59,9 @@ the car that was measured at **~80 m/s under ADE and ~85 m/s by hand**, the best
 | Torque · Redline | 1300 · 10 100 | **identical** |
 | Drivetrain | RWD (front `isDrive: false`) | **AWD** — all four wheels drive, handbrake still rear only |
 | Grip F/R | 1.29/1.15 · 1.33/1.20 | **identical** |
+| Yaw inertia | 3050 / 900 / 3530 | **3355 / 990 / 3883** (step 15, +10 %) |
 | Downforce (`maxSpeedFactorGround`) | 0.60 | **identical** |
-| Steering (add / threshold / mul) | 94 / 26 / 0.33 | **identical** |
+| Steering (add / threshold / mul) | 94 / 26 / 0.33 | **85** / 26 / 0.33 (step 15, −10 %) |
 | Springs · damping · swaybar | 23/22 · 2000 · 11/16 | **identical** |
 | Scanner hp | 680 | **900020** — build stamp, not a power claim |
 | Speedometer | the game's 2.07× curve | **true km/h, all vehicles** |

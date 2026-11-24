@@ -751,7 +751,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 22
+BUILD = 23
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -932,12 +932,16 @@ STABILITY_TARGETS = {(k, new) for k, _old, new in STABILITY_OVERLAY}
 #       input, and the input is exactly what ADE taps. 10 % slower than stock.
 #   momentOfInertia +10 %   yaw frequency goes as 1/sqrt(I_z): 3530 -> 3883 is 4.7 % lower and
 #       the x/y +10 % follows the same scaling. Pushes the yaw mode below ADE's bandwidth.
-# QUEUED (build 900021 shipped them, never driven, pulled again for 900022 so that AWD is the
-# only difference from the measured 80 / 86 car). Both lower the yaw loop gain and both are
-# one line to put back:
-#   ("wheelTurnMaxAddPerSecond", "94", "85"),
-#   ("momentOfInertia", "{ x: 3050, y: 900, z: 3530 }", "{ x: 3355, y: 990, z: 3883 }"),
-STOCK_OVERLAY = ()
+# Step 15 (2026-11-24, measured): AWD did NOT move the onset - still 80 m/s, on the 11.3 km
+# Badlands straight as well as on Route A - but it stopped the car spinning out and it recovers
+# from a weave faster instead of diverging. Onset and divergence are therefore two different
+# problems: onset is the loop (gain/phase), recovery is the plant (yaw damping, how much
+# authority is left once it is sideways). Four driven wheels buy the second for free, so AWD
+# stays. These two levers attack the first, and they are the only ones in the log that ever did.
+STOCK_OVERLAY = (
+    ("wheelTurnMaxAddPerSecond", "94", "85"),
+    ("momentOfInertia", "{ x: 3050, y: 900, z: 3530 }", "{ x: 3355, y: 990, z: 3883 }"),
+)
 STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 
 

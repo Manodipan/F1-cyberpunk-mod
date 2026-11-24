@@ -535,10 +535,65 @@ Expected trade: with the front tyres now steering *and* driving, they have less 
 left at the limit, so tight low-speed corners may push wide. That is the cost side; report it if
 it shows up.
 
+### Measured 2026-11-24, on the 11.3 km Badlands straight (Route B)
+
+> "AWD seems to not reduce wobble, but improve RECOVERY. It still starts at 80 but recovers faster
+> rather than spin out (yes that happened a lot with RWD)."
+
+Two results, and the first one matters more than it looks:
+
+1. **The onset is 80 m/s — again, on a different road, 11.3 km of straight.** Same number as Route
+   A. That finishes three theories at once: it is not the crests (this road has almost none), not
+   Route A's gentle curves, and not ADE lifting for geometry. The onset is **locked to a speed**,
+   not to a road or a manoeuvre. Whatever excites it is a function of `v` alone.
+2. **AWD did not move the onset, and that is informative.** The hypothesis it was testing — that
+   two driven tyres at the friction limit generate the yaw excitation — is now **falsified for
+   onset**. Halving the longitudinal work per tyre changed the onset by zero.
+3. **AWD did fix the divergence.** It "recovers faster rather than spin out", where RWD spun
+   regularly. That is a different property of the car: not *when* it is disturbed, but *what
+   authority is left to catch it*. Four driven wheels keep the front pair able to pull the nose
+   back and the rear pair away from pure longitudinal saturation.
+
+So onset and recovery are separate axes, and they need separate fixes:
+
+| | what it is | which lever |
+|---|---|---|
+| **onset at 80** | the loop — the car's yaw response against a lagging controller's corrections | gain and phase: steering rate, inertia, turn multiplier |
+| **divergence** | the plant — authority remaining once the car is already yawing | yaw damping, balance, driven wheels |
+
+AWD earned its place on the second axis, at zero cost to the first. It stays.
+
 Read the result like this: the 80 m/s number is where ADE's weave begins. If AWD moves it, the
 wobble has a traction component and the RWD-authentic fix is rear grip (or a torque curve that
 does not saturate the rears), not permanent four-wheel drive. If it does not move, the wobble is
 steering/aero — the loop-gain axis — and step 13's two levers come back.
+
+## Step 15 — attack the onset, keep the recovery (build 900023)
+
+AWD fixed divergence and moved onset by nothing, so the onset has to be bought on the gain axis.
+Build 900023 keeps AWD and adds the two levers from step 13, the only changes in this entire log
+that ever moved a wobble *down*:
+
+| field | stock | 900023 | mechanism |
+|---|---|---|---|
+| `wheelTurnMaxAddPerSecond` | 94 | **85** | slower command = first-order lag on the input ADE taps |
+| `momentOfInertia` | 3050 / 900 / 3530 | **3355 / 990 / 3883** | ω_ψ ∝ 1/√I_z → yaw mode −4.7 %, below ADE's bandwidth |
+
+The thing to watch: **inertia cuts both ways.** A slower yaw mode is slower to be excited and also
+slower to settle, so it can make the recovery that AWD just bought slightly lazier. If the onset
+moves up but the recovery gets worse, that is the inertia and it comes back out on its own;
+`wheelTurnMaxAddPerSecond` alone is the pure gain lever.
+
+If the onset does *not* move at 85 / 3883, the next single lever is `turnUpdateMaxSpeedTurnMul`
+0.33 → 0.21 — steering authority above 26 m/s, 36 % less response per correction. If that fails
+too, the onset is not loop gain at all and the next move is to stop tuning and find out what is
+special about 80 m/s: it is the speed where 6th gear ends (80.6) and, on this drive model, roughly
+where the stock downforce helper's ramp is exhausted. Both are cheap to inspect with
+`tools/fastcar-dump.ps1` before another build is spent.
+
+Note what does **not** come back: aero. Three builds moved load up and all three moved the onset
+*down* (0.7 → 72, 2.0 → 65, 3.0 → 55-58). Whatever saturates near 80, more load has never been the
+answer to it.
 
 ## What to try next, in order
 
