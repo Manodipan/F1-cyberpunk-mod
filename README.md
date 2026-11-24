@@ -74,6 +74,8 @@ to xaires) are left verbatim on purpose.
 * [`docs/INSTALL.md`](docs/INSTALL.md) — two-mod install, summon, 7-test matrix, logs.
 * [`compat/xaires_car_manager/`](compat/xaires_car_manager/README.md) — one-line patch so the
   Car Manager paints the Phoenix (all 149 colours, no art).
+* [`docs/VEHICLE-COMPARISON.md`](docs/VEHICLE-COMPARISON.md) — the same fields, side by
+  side, for every car we have a YAML for (generated; `make compare`).
 * [`docs/VEHICLE-MODEL.md`](docs/VEHICLE-MODEL.md) — how a vehicle actually works in
   CP2077: the record tree, drive model, the three-band steering model, gearboxes,
   speed units, and the engine-level speed limiter.

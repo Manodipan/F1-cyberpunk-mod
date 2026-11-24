@@ -254,6 +254,15 @@ class GearLadderTests(unittest.TestCase):
             self.assertLess(lo, hi, g)
             self.assertLessEqual(hi, 10100, g)              # engine maxRPM
 
+    def test_each_gear_tracks_its_own_rpm_band(self):
+        """The shipped 7th was 1.80x of speed over 1.28x of rpm - a gear with two ratios."""
+        for g in range(1, 8):
+            lo, hi, rlo, rhi = self.gears[str(g)][:2] + self.gears[str(g)][3:5]
+            if not lo:
+                continue                       # 1st gear starts from standstill
+            deviation = abs((hi / lo) / (rhi / rlo) - 1)
+            self.assertLess(deviation, 0.02, f"gear {g}: window and rpm band disagree")
+
     def test_virtual_gearbox_matches_the_ladder(self):
         audio = port_reds(stock("aston_valkyrie_audio.reds"))
         for g in range(1, 8):

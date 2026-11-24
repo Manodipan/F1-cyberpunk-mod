@@ -3,9 +3,9 @@ PY ?= python3
 STOCK := reference/stock
 MOD := Phoenix_aston_cheats
 
-.PHONY: all port check test verify-package package check-strings vehicles vehicles-index experiment clean
+.PHONY: all port check test verify-package package check-strings vehicles vehicles-index compare clean
 
-all: port check test verify-package
+all: port check test verify-package compare
 
 port:
 	$(PY) tools/port_to_phoenix.py --from stock $(STOCK)/r6/tweaks/xaires/aston_valkyrie.yaml \
@@ -35,6 +35,10 @@ check-strings:
 # reference corpus: every vehicle tweak installed in the game (local) + the committed index
 vehicles:
 	$(PY) tools/collect_vehicles.py --copy
+
+# side-by-side physics of every car we have a YAML for (docs/VEHICLE-COMPARISON.md)
+compare:
+	$(PY) tools/compare_vehicles.py
 
 vehicles-index:
 	$(PY) tools/collect_vehicles.py --index-only reference/vehicles
