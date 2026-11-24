@@ -80,6 +80,8 @@ to xaires) are left verbatim on purpose.
   Car Manager paints the Phoenix (all 149 colours, no art).
 * [`docs/HOW-CARS-WORK.md`](docs/HOW-CARS-WORK.md) — the long answer: how modders build a
   car, how the game interprets the numbers, and where that maps onto real physics.
+* [`docs/TUNING-FROM-REAL-RACING.md`](docs/TUNING-FROM-REAL-RACING.md) — the real Valkyrie LMH's
+  numbers, the 15 vanilla torque curves, and why 2 000 hp = 500 km/h is honest arithmetic.
 * [`docs/VEHICLE-COMPARISON.md`](docs/VEHICLE-COMPARISON.md) — the same fields, side by
   side, for every car we have a YAML for (generated; `make compare`).
 * [`docs/VEHICLE-MODEL.md`](docs/VEHICLE-MODEL.md) — how a vehicle actually works in

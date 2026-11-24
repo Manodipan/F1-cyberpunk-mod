@@ -128,9 +128,11 @@ Three things people get wrong:
    modded dash with a vanilla one.
 2. **`maxSpeed` per gear is not a top speed.** Measured this week: the Zonda does **355 km/h
    on a gear table whose last gear says 180** (1.97×), the Jesko **500+ on 283** (1.77×).
-3. **`maxRPM` is a label; the torque curve is the engine.** Our record said 10 100 rpm and
-   the car stopped at **~7 850 and ~8 020 rpm in two different gearboxes** — different
-   ratios, same rpm, i.e. the inherited curve's end, not our gearing. (**measured**, twice.)
+3. **The upshift is at 90 % of a gear's range, and the ladder must contain it.** Every shift
+   of ours landed *below* the next gear's floor, so the box grabbed a gear the car was too
+   slow for and the engine braked it — the 308 and 352 km/h plateaus. The curve is not a
+   ceiling: it is a normalised shape (`x` = rpm 0→1) stretched over `[minRPM, maxRPM]`, so it
+   cannot cap rpm at all. (**measured** twice, then **documented** by the file format.)
 
 ## 2.3 `torqueMultiplier` is a gear ratio wearing a disguise
 
@@ -162,6 +164,7 @@ over at 400 km/h. (**documented** fields, **measured** comparison.)
 | "gear `maxSpeed` is the vehicle's ceiling" (redmodding wiki, corpus index) | false — Zonda 1.97×, Jesko 1.77× past it |
 | "there is a native cap around 400" (speed-unlimiter mod) | not in this install — 500+ was reached without it |
 | "internal speed unit ≈ 3.87 km/h" (cheat sheet) | inconsistent with 58.5 m/s ↔ 211 km/h; m/s → km/h matched everything |
+| **our own** theory: "it stops at ~7 850 / ~8 020 rpm, so the curve ends there" | wrong — a curve is normalised; the 308 and 352 km/h plateaus were shift holes |
 | "the wobble is steering authority" | partly: it also needed grip symmetry (all five cars within 6 % front-to-rear; ours was 25 % apart) and rebound damping that isn't 1.72× its bound |
 
 ---
@@ -193,10 +196,11 @@ over at 400 km/h. (**documented** fields, **measured** comparison.)
 * **Power is not conserved.** Two cars with the same power can differ by 200 km/h if one has
   a taller top gear or a shorter curve. Our car had 3.8× the torque of the Jesko and went
   60 % as fast. In reality that is impossible; in TweakDB it is just a badly shaped record.
-* **The rpm ceiling comes from a binary asset** (`gearCurvesPath`, a `.curveset`), not from
-  the numbers in the YAML. That is the single most "un-real" thing about the model: the
-  engine's top end is chosen by an art-side curve file, so a record can claim a redline the
-  engine cannot reach.
+* **The shape of the torque curve lives in a binary asset** (`gearCurvesPath`, a `.curveset`)
+  and is chosen by name from 15 vanilla shapes — but it is *normalised*, so it scales to
+  whatever `maxRPM` says rather than imposing a ceiling of its own. The un-real part is
+  narrower than we first thought: you can say "peaky" or "balanced", you cannot say
+  "peak torque at 7 000 rpm" without authoring a curve yourself.
 
 ## 3.3 The real-physics reality check for 500 km/h
 

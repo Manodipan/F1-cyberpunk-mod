@@ -136,7 +136,7 @@ rate is lower (94 vs 137), which is the more conservative side of that compariso
 |---|---|
 | `engineMaxTorque` | peak torque — the single biggest lever on acceleration |
 | `maxRPM` / `minRPM` | rev range the transmission works inside |
-| `gearCurvesPath` | the **torque curve** (a `.curveset`): torque as a function of RPM. Inherited from the base engine unless you change it — and it, not `maxRPM`, decides how far the engine actually revs |
+| `gearCurvesPath` | the **torque curve** (a `.curveset`): torque fraction as a function of *normalised* rpm (0→1), stretched over `[minRPM, maxRPM]`. 15 vanilla curves exist; swapping one is a text edit |
 | `gears[]` | the gear list — see below |
 | `gearChangeTime`, `gearChangeCooldown` | shift duration and lockout |
 | `flyWheelMomentOfInertia` | how lazily revs build/fall |
@@ -176,14 +176,13 @@ evenings:
    only because its 7th spans 15 m/s and can pull it. Lesson: **spread the ladder, don't
    stretch the top gear** — even steps of ~1.28× across seven gears, top window ~1.4×.
 
-4. **`maxRPM` is a wish; `gearCurvesPath` is the law.** Our engine record inherited the
-   SuperSport torque curve and claimed `maxRPM: 10100`. No curve in the game reaches that,
-   and past the end of the curve the engine makes nothing — so the car stops exactly where
-   it hits the curve's ceiling, whatever the gearing. Measured twice, with two different
-   gearboxes: **~7 850 rpm** (308 km/h in 6th) and **~8 020 rpm** (~300 km/h in 7th). Both
-   working reference cars write their own `gearCurvesPath` and both top out around
-   7 600-7 900 rpm. The box now finishes at 7 800 rpm so that 500 km/h happens *inside* the
-   curve instead of past it.
+4. **The shift point is 0.90, and the ladder has to contain it.** The physics upshifts at
+   about 0.90 of a gear's `maxEngineRPM`, so the next gear only receives the car if that
+   gear's floor is below `0.90 × the previous gear's maxSpeed` — i.e. the window must be at
+   least `step / 0.90`. Ours was 0.728 against a 0.704 limit, so **every** shift landed below
+   the next gear's window and the car braked (engine braking into a void). That is what the
+   308 and 352 km/h plateaus were. Curves, by contrast, cannot cause this: a `.curveset` is a
+   normalised shape (`x` = rpm 0→1) stretched over `[minRPM, maxRPM]`.
 
 ## 5. Speed: units, the HUD, and the limiter
 

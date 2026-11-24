@@ -300,7 +300,14 @@ If it still brakes hard, the remaining suspect is the shift itself: tell me **wh
 number the dash shows when it happens** — if it is 7, the box is upshifting into a gear whose
 window starts above the current speed and the game is retarding rather than accelerating.
 
-## 3g. SOLVED (probably): the engine was revving past its curve
+## 3g. SUPERSEDED — "the engine was revving past its curve"
+
+> **Corrected 2026-11-24.** This section's theory is wrong and is kept only as a record of it.
+> A `.curveset` stores `x` as *normalised* RPM (0→1) and `y` as torque fraction, so a curve can
+> never impose an absolute rpm ceiling — `maxRPM` stretches it. The plateaus at 308 and 352 km/h
+> are explained by the shift-hole (§3j), not by a curve ending. What survived from this
+> investigation is the shift point (0.90 of a gear's range), which is now an invariant test.
+> See [`TUNING-FROM-REAL-RACING.md`](TUNING-FROM-REAL-RACING.md) §2 and §6.
 
 The control run answered the big question first: **the Zonda reaches 355 km/h from a gear
 table that says 180, and the Jesko passes 500 from a table that says 283.** Nothing in this

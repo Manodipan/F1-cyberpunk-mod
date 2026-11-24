@@ -130,3 +130,36 @@ class ExplainerDocTests(unittest.TestCase):
         rho, cda = 1.225, 0.95
         v = (2 * power_w / (rho * cda)) ** (1 / 3)
         self.assertLess(abs(v * 3.6 - 493), 3)
+
+
+class RealRacingDocTests(unittest.TestCase):
+    """docs/TUNING-FROM-REAL-RACING.md must stay consistent with the game's actual curve format."""
+
+    def setUp(self):
+        root = Path(__file__).resolve().parents[1]
+        self.doc = (root / "docs" / "TUNING-FROM-REAL-RACING.md").read_text(encoding="utf-8")
+
+    def test_lists_the_whole_vanilla_catalogue(self):
+        curves = ("large_balanced_na", "large_balanced_sc", "large_balanced_turbo",
+                  "large_torquey_na", "med_balanced_na", "med_balanced_sc",
+                  "med_lowcomp_bigturbo", "med_peaky_na", "med_torquey_na",
+                  "med_torquey_turbo", "small_balanced_na", "small_block_v8_na",
+                  "small_peaky_na", "small_torquey_na", "small_torquey_turbo")
+        self.assertEqual(len(curves), 15)
+        for c in curves:
+            self.assertIn(c, self.doc, c)
+
+    def test_curve_is_normalised_not_an_rpm_range(self):
+        self.assertIn("normalised", self.doc.lower())
+        self.assertIn("0→1", self.doc)
+
+    def test_real_lmh_top_speed_follows_from_its_power(self):
+        """697 hp, CdA 0.95 should land within 5 % of the real car's 340 km/h."""
+        power_w = 697 * 745.7
+        v = (2 * power_w / (1.225 * 0.95)) ** (1 / 3)
+        self.assertLess(abs(v * 3.6 - 340) / 340, 0.05)
+
+    def test_target_needs_about_2000_hp(self):
+        """Holding 500 km/h costs ~1 559 kW; the doc's 2 091 hp must match."""
+        force = 0.5 * 1.225 * 0.95 * 138.89 ** 2
+        self.assertLess(abs(force * 138.89 / 745.7 - 2091), 15)
