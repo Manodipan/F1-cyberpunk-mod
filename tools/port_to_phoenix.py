@@ -736,6 +736,28 @@ def ensure_steering_return(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Scanner build stamp
+# ---------------------------------------------------------------------------
+# The scanner reads VehicleUIData.horsepower, and it is the only number the game puts in front of
+# the player on demand - so it carries the BUILD NUMBER instead of a fictional horsepower. When a
+# new YAML is installed and TweakXL/CET actually reloads it, the scanner number changes; when the
+# old file is still cached, it does not. 900000 + BUILD, so 900015 reads as "build 15".
+#
+# Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
+# out of range for any real car: nobody mistakes 900015 for horsepower.
+BUILD_STAMP_BASE = 900000
+BUILD = 15
+
+HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
+
+
+def apply_build_stamp(text: str) -> str:
+    """Put the build number where the scanner reads horsepower."""
+    return HORSEPOWER_LINE.sub(
+        lambda m: m.group("i") + str(BUILD_STAMP_BASE + BUILD) + m.group("t"), text, count=1)
+
+
+# ---------------------------------------------------------------------------
 # Stability overlay (2026-11-24)
 # ---------------------------------------------------------------------------
 # The verbatim-Jesko car wobbles under ADE, and it is the car's fault, not the driver's: an AI
@@ -1240,7 +1262,7 @@ def port_text(text: str, suffix: str, physics: bool,
     if physics and suffix in (".yaml", ".yml"):
         # CONTROL BUILD: the whole physics section is replaced with the Jesko's own records,
         # so the chassis tune must not run - it would edit records that no longer exist.
-        text = apply_stability(apply_explicit_vehicle_record(apply_jesko_control(hoist_subrecords(text))))
+        text = apply_build_stamp(apply_stability(apply_explicit_vehicle_record(apply_jesko_control(hoist_subrecords(text)))))
     return text
 
 

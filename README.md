@@ -63,6 +63,14 @@ docs/                            install + test matrix, packaging, rename map, f
 Unchanged: reverse gear, mass 1750 + chassis 1750, inertia,
 centre of mass, `turningRollFactor 0`, tyre dimensions, wheel setup geometry.
 
+## Build stamp in the scanner
+
+The car's scanner readout shows **900000 + build number** instead of a horsepower figure, e.g.
+`900015` = build 15. It is the only number the game shows on demand, so it answers "did TweakXL
+actually reload my file?" in one glance: if the number changed, the new YAML is live; if it did not,
+the old one is cached. `BUILD` lives in `tools/port_to_phoenix.py` and is bumped with any change to
+the generated YAML.
+
 ## Stability
 
 The car weaves under ADE because ADE is a lagging controller and the reference damping rates leave

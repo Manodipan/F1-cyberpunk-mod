@@ -34,7 +34,8 @@ Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 | 2 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 | 3 | Reference corpus | every racing car mod's YAML is a worked example of drag/steering at speed, and comparing beats guessing | `make vehicles` (local corpus) + `reference/vehicles/INDEX.md` (committed facts) — see `reference/vehicles/README.md` |
 | 4 | **Wobble / ADE stability** | **v13 SHIPPED** — five-field `STABILITY_OVERLAY` buys damping without touching power, drag, grip, gearing, mass or brakes: low-rate bound/rebound damping to the stock Aston's 2900/5000, `antiSwaybarDampingScalor` 0.75 -> 1, `wheelTurnMaxAddPerSecond` 137 -> 110, `turningRollFactor` 1 -> 0 | `docs/STABILITY.md`; next levers in order: `turnUpdateMaxSpeedTurnChangeMul`, `useAlternativeTurnUpdate`, grip balance |
-| 5 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |
+| 5 | **Scanner build stamp** | the scanner's `horsepower` shows **900000 + BUILD** (currently `900015`) instead of a horsepower claim: it is the one number the game shows on demand, so it proves in one glance whether TweakXL/CET reloaded the installed YAML | bump `BUILD` in `tools/port_to_phoenix.py` with every generated-YAML change |
+| 6 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |
 
 ## Risks worth knowing before the first launch
 

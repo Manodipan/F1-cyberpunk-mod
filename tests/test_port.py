@@ -143,6 +143,11 @@ class RenameTests(unittest.TestCase):
         self.assertEqual(port.rename_path(Path("xaires_aston_valkyrie")).name,
                          "phoenix_aston_valkyrie")
 
+    def test_scanner_shows_the_build_number_not_horsepower(self):
+        yaml_out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
+        self.assertIn(f"horsepower: {port.BUILD_STAMP_BASE + port.BUILD}", yaml_out)
+        self.assertNotIn("horsepower: 2000", yaml_out)
+
     def test_idempotent(self):
         once = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
         self.assertEqual(once, port_yaml(once, physics=False))
