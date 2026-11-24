@@ -19,3 +19,9 @@ dist/
 # Reference corpus (tools/collect_vehicles.py). Tracked deliberately: these are other
 # authors' tweak files, kept for comparison only, never shipped in Phoenix_aston_cheats/.
 # `git add reference/vehicles` is enough now - no -f, no exceptions.
+
+# Local diagnostic output from the tools - never committed
+car_manager_dump.txt
+paint_dump.txt
+gearbox_check.txt
+fastcar.txt
