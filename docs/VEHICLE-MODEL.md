@@ -6,7 +6,8 @@ what limits top speed (and what only looks like it does), and the field to chang
 car wobbles at 400 instead of tracking straight.
 
 Sources are listed at the end; where the community disagrees with itself, this page says so
-instead of picking a winner.
+instead of picking a winner. For the wider picture — how a mod is built, and how these numbers
+relate to real physics — see [`HOW-CARS-WORK.md`](HOW-CARS-WORK.md).
 
 ---
 

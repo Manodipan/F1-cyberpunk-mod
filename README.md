@@ -78,6 +78,8 @@ to xaires) are left verbatim on purpose.
 * [`docs/INSTALL.md`](docs/INSTALL.md) — two-mod install, summon, 7-test matrix, logs.
 * [`compat/xaires_car_manager/`](compat/xaires_car_manager/README.md) — one-line patch so the
   Car Manager paints the Phoenix (all 149 colours, no art).
+* [`docs/HOW-CARS-WORK.md`](docs/HOW-CARS-WORK.md) — the long answer: how modders build a
+  car, how the game interprets the numbers, and where that maps onto real physics.
 * [`docs/VEHICLE-COMPARISON.md`](docs/VEHICLE-COMPARISON.md) — the same fields, side by
   side, for every car we have a YAML for (generated; `make compare`).
 * [`docs/VEHICLE-MODEL.md`](docs/VEHICLE-MODEL.md) — how a vehicle actually works in
