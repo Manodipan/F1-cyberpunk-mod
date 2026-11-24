@@ -482,9 +482,23 @@ class TrueSpeedometerTests(unittest.TestCase):
         self.assertNotIn("IsTarget(this.m_activeVehicle) {", self.out)
         self.assertIn("return IsDefined(vehicle);", self.out)
 
-    def test_real_speed_is_still_m_s_times_3_6_and_respects_km_or_mph(self):
-        self.assertIn("AbsF(speedValue) * 3.6", self.out)
-        self.assertIn("this.m_kmOn ? kmh : kmh / 1.609344", self.out)
+    def test_kmh_mode_is_real_kmh(self):
+        self.assertIn("let mps: Float = AbsF(speedValue);", self.out)
+        self.assertIn("this.m_kmOn ? mps * 3.6 : mps", self.out)
+
+    def test_mph_mode_shows_raw_m_s_instead_of_miles(self):
+        # The owner never uses the imperial setting, so it carries the engine's own unit.
+        self.assertNotIn("1.609344", self.out)
+        self.assertIn(": mps;", self.out)
+
+    def test_flag_off_restores_miles(self):
+        saved = port.MPH_MODE_SHOWS_MPS
+        port.MPH_MODE_SHOWS_MPS = False
+        try:
+            out = port.port_text(self.src, ".reds", True, [])
+        finally:
+            port.MPH_MODE_SHOWS_MPS = saved
+        self.assertIn("kmh / 1.609344", out)
 
     def test_the_phoenix_dash_audio_and_leds_stay_gated_on_our_car(self):
         # Only the HUD number went global. Everything that is ours stays ours.
@@ -511,4 +525,5 @@ class TrueSpeedometerTests(unittest.TestCase):
         shipped = (DELIVERABLE / "r6" / "scripts" / "phoenix_aston_valkyrie"
                    / "phoenix_aston_valkyrie.reds").read_text(encoding="utf-8")
         self.assertIn("if PhoenixAMV_TrueSpeedo(this.m_activeVehicle) {", shipped)
-        self.assertIn("AbsF(speedValue) * 3.6", shipped)
+        self.assertIn("this.m_kmOn ? mps * 3.6 : mps", shipped)
+        self.assertNotIn("1.609344", shipped)

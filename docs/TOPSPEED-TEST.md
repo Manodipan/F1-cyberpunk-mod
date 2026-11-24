@@ -320,7 +320,9 @@ A **vanilla** vehicle (Yaiba Semimaru, not a mod, not ours) reports **372** km/h
 `phoenix_aston_valkyrie.reds` already bypassed the display curve, but only for our car
 ("diger araclara dokunmaz"). `TRUE_SPEEDO_ALL_VEHICLES` (default on, `tools/port_to_phoenix.py`)
 widens the guard to `IsDefined(vehicle)`, so **every** car you drive reports `SpeedValue x 3.6`
-(divide by 1.609344 in mph mode) - the speed it is actually doing. Our dash, rev LEDs and audio
+- the speed it is actually doing. The game's imperial setting shows the raw **m/s** instead of
+miles (`MPH_MODE_SHOWS_MPS`), because the imperial setting is not used here and m/s is the unit
+every number in this repo is quoted in. Our dash, rev LEDs and audio
 stay gated on `PhoenixAMV_IsTarget`. Flip the flag to `False` to return to Phoenix-only.
 
 Read a stock car's dial now and you see what the curve was hiding: a car that "does 210" is

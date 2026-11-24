@@ -760,7 +760,7 @@ HUD_SPEED_ONLY_NOTE = (
     "oyunun km/mph ayarına (m_kmOn) uyar. Diğer araçlara dokunmaz."
 )
 HUD_SPEED_ALL_NOTE = (
-    "// Her araçta Vehicle.SpeedValue (m/s) x 3.6 yazılır, oyunun km/mph ayarına (m_kmOn) uyar:\n"
+    "// Her araçta gerçek hız yazılır: km/h modunda m/s x 3.6, mph modunda ham m/s (m_kmOn):\n"
     "// oyunun speed_to_multiplier eğrisi (277 km/h gerçek hızı 572 gösteriyordu) devre dışı."
 )
 # The rename step runs after this one, so the source still carries the stock prefix.
@@ -778,6 +778,28 @@ public static func PhoenixAMV_TrueSpeedo(vehicle: wref<VehicleObject>) -> Bool {
   return IsDefined(vehicle);
 }
 """
+
+
+# The owner never uses the game's imperial setting, so there is no reason to spend it on miles.
+# In mph mode the dial shows the raw m/s instead - the engine's own unit, the one every number
+# in this repo is quoted in ("278 km/h" is 77.2 m/s, "78.5" is a gear's maxSpeed). km/h mode is
+# untouched. The HUD's "MPH" label is cosmetic and stays as it is.
+MPH_MODE_SHOWS_MPS = True
+
+HUD_SPEED_BODY = """    let kmh: Float = AbsF(speedValue) * 3.6;
+    inkTextRef.SetText(this.m_SpeedValue, IntToString(RoundMath(this.m_kmOn ? kmh : kmh / 1.609344)));"""
+
+HUD_SPEED_BODY_MPS = """    let mps: Float = AbsF(speedValue);
+    // mph modu kullanilmiyor: orada ham m/s yazilir (motorun kendi birimi), km/h modu gercek km/h
+    let shown: Float = this.m_kmOn ? mps * 3.6 : mps;
+    inkTextRef.SetText(this.m_SpeedValue, IntToString(RoundMath(shown)));"""
+
+
+def apply_mph_as_mps(text: str) -> str:
+    """In the game's imperial setting, show m/s instead of miles per hour."""
+    if not MPH_MODE_SHOWS_MPS or HUD_SPEED_BODY not in text:
+        return text
+    return text.replace(HUD_SPEED_BODY, HUD_SPEED_BODY_MPS, 1)
 
 
 def apply_true_speedometer(text: str) -> str:
@@ -946,7 +968,7 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         text = text.replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
         return ensure_steering_return(ensure_engine_fields(text))
     if suffix == ".reds":
-        return apply_true_speedometer(apply_virtual_gearbox(text))
+        return apply_mph_as_mps(apply_true_speedometer(apply_virtual_gearbox(text)))
     return text
 
 

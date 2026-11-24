@@ -81,8 +81,9 @@ nothing physical.
 
 `TRUE_SPEEDO_ALL_VEHICLES` in `tools/port_to_phoenix.py` (default on) extends the Phoenix's
 bypass to **every vehicle**: `hudCarController.OnSpeedValueChanged` writes `SpeedValue × 3.6`
-(÷ 1.609344 in mph mode) for whatever you are driving, so the number is the speed the car is
-actually doing. Set it to `False` for Phoenix-only. The custom dash, rev LEDs and audio stay
+for whatever you are driving, so the number is the speed the car is actually doing. The game's
+imperial setting is spent on something better — it shows the raw **m/s**, the engine's own unit,
+since nobody here drives in miles. `MPH_MODE_SHOWS_MPS = False` restores mph. Set it to `False` for Phoenix-only. The custom dash, rev LEDs and audio stay
 gated on our car either way.
 
 ## How it stays clean

@@ -3,7 +3,7 @@
 
 // Peugeot 9X8 (xaires): oyunun ekran (HUD) hız göstergesinde gerçek hız (Sesto sesto_elemento.reds kopyası).
 // Oyun hızı "speed_to_multiplier" eğrisiyle gösteriyor; yüksek hızda sayı şişiyor.
-// Her araçta Vehicle.SpeedValue (m/s) x 3.6 yazılır, oyunun km/mph ayarına (m_kmOn) uyar:
+// Her araçta gerçek hız yazılır: km/h modunda m/s x 3.6, mph modunda ham m/s (m_kmOn):
 // oyunun speed_to_multiplier eğrisi (277 km/h gerçek hızı 572 gösteriyordu) devre dışı.
 // Diğer araç betikleri de aynı fonksiyonu sarar; redscript sarmalayıcıları zincirler, her biri kendi aracını kontrol eder.
 
@@ -24,8 +24,10 @@ public static func PhoenixAMV_IsTarget(vehicle: wref<VehicleObject>) -> Bool {
 protected cb func OnSpeedValueChanged(speedValue: Float) -> Bool {
   let result: Bool = wrappedMethod(speedValue);
   if PhoenixAMV_TrueSpeedo(this.m_activeVehicle) {
-    let kmh: Float = AbsF(speedValue) * 3.6;
-    inkTextRef.SetText(this.m_SpeedValue, IntToString(RoundMath(this.m_kmOn ? kmh : kmh / 1.609344)));
+    let mps: Float = AbsF(speedValue);
+    // mph modu kullanilmiyor: orada ham m/s yazilir (motorun kendi birimi), km/h modu gercek km/h
+    let shown: Float = this.m_kmOn ? mps * 3.6 : mps;
+    inkTextRef.SetText(this.m_SpeedValue, IntToString(RoundMath(shown)));
   }
   return result;
 }
