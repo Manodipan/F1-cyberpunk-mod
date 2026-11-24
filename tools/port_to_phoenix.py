@@ -736,6 +736,56 @@ def ensure_steering_return(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Stability overlay (2026-11-24)
+# ---------------------------------------------------------------------------
+# The verbatim-Jesko car wobbles under ADE, and it is the car's fault, not the driver's: an AI
+# controller is a lagging controller, and it can only be stable if the plant it steers is damped.
+# A human hides an underdamped car by predicting the next correction; ADE applies the correction
+# it just learned, sees the overshoot, and corrects again - which is exactly a sustained weave.
+#
+# So this overlay buys damping, and nothing else. It does not touch power, drag, grip, gearing,
+# mass or brakes, so the top-speed work and its measurements stay valid.
+#
+#   spring{Bound,Rebound}DampingLowRate  the Jesko runs 2200/2300 front and 2500/2500 rear.
+#       The stock Aston ran 2900/5000, i.e. noticeably more rebound control at low shaft speed -
+#       the regime small steering inputs live in. Restored to the stock car's rates.
+#   antiSwaybarDampingScalor 0.75 -> 1    the reference damps its anti-roll bars to 75 %; that
+#       is a track-car choice, and on a car whose roll inertia is not the Jesko's it lets the
+#       body keep rocking after the car has already stopped turning.
+#   wheelTurnMaxAddPerSecond 137 -> 110   steering rate, 20 % slower. The AI turns in, overshoots
+#       and has to turn back; asking for the wheel more slowly removes most of the excitation.
+#   turningRollFactor 1 -> 0              the reference couples roll into turning (1); every
+#       other car we have data for, including the stock Aston, does not (0).
+STABILITY_OVERLAY_ENABLED = True
+
+STABILITY_OVERLAY = (
+    ("springBoundDampingLowRate", "2200", "2900"),      # front
+    ("springBoundDampingLowRate", "2500", "2900"),      # rear
+    ("springReboundDampingLowRate", "2300", "5000"),    # front, stock Aston's rate
+    ("springReboundDampingLowRate", "2500", "5000"),    # rear
+    ("antiSwaybarDampingScalor", "0.75", "1"),
+    ("wheelTurnMaxAddPerSecond", "137", "110"),
+    ("turningRollFactor", "1", "0"),
+)
+
+
+STABILITY_TARGETS = {(k, new) for k, _old, new in STABILITY_OVERLAY}
+
+
+def apply_stability(text: str) -> str:
+    """Buy damping without touching power, drag, grip, gearing, mass or brakes."""
+    if not STABILITY_OVERLAY_ENABLED:
+        return text
+    for key, old, new in STABILITY_OVERLAY:
+        text = re.sub(
+            rf"(?m)^(?P<i>[ \t]*{key}:[ \t]*){re.escape(old)}(?P<t>[ \t]*\r?)$",
+            lambda m, new=new: m.group("i") + new + m.group("t"),
+            text,
+        )
+    return text
+
+
+# ---------------------------------------------------------------------------
 # True speedometer
 # ---------------------------------------------------------------------------
 # The game's HUD never shows speed. It shows speed run through the `speed_to_multiplier`
@@ -1100,7 +1150,7 @@ def port_text(text: str, suffix: str, physics: bool,
     if physics and suffix in (".yaml", ".yml"):
         # CONTROL BUILD: the whole physics section is replaced with the Jesko's own records,
         # so the chassis tune must not run - it would edit records that no longer exist.
-        text = apply_explicit_vehicle_record(apply_jesko_control(hoist_subrecords(text)))
+        text = apply_stability(apply_explicit_vehicle_record(apply_jesko_control(hoist_subrecords(text))))
     return text
 
 
@@ -1136,7 +1186,7 @@ def check_text(text: str, label: str, suffix: str) -> list[str]:
         m = LINE_RE.match(code)
         if m:
             key, value = m.group(2).rsplit(".", 1)[-1], m.group(4)
-            if (key, value) in STOCK_TO_F1:
+            if (key, value) in STOCK_TO_F1 and (key, value) not in STABILITY_TARGETS:
                 problems.append(f"{label}:{no}: stock physics leftover {key}: {value}")
     return problems
 

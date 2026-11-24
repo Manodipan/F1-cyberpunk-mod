@@ -153,7 +153,7 @@ class PhysicsTests(unittest.TestCase):
         self.out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
 
     def test_control_is_the_jesko(self):
-        """CONTROL BUILD: every physics record is the Jesko's, verbatim."""
+        """The physics is the reference car's, except the damping overlay (see StabilityTests)."""
         for expected in (
             "engineMaxTorque: 1000",
             "maxRPM: 7900",
@@ -169,7 +169,7 @@ class PhysicsTests(unittest.TestCase):
             "maxBrakingTorque: 785",
             "maxSpeedFactorGround: 0.7",
             "minLatFrictionCoef: 0.62",
-            "turningRollFactor: 1",
+            "turningRollFactor: 0",           # stability overlay; the reference has 1
             "wheelTurnMaxSubPerSecond: 170",
             "maxSpeed: 78.5",                 # its declared top gear, not ours
             "torqueMultiplier: 0.227",
@@ -189,7 +189,7 @@ class PhysicsTests(unittest.TestCase):
         for keep in (
             "maxSpeedFactorAir: 0",
             "handbrakeBrakingTorque: 1600",
-            "wheelTurnMaxAddPerSecond: 137",
+            "wheelTurnMaxAddPerSecond: 110",  # stability overlay; the reference has 137
             "wheelTurnMaxSubPerSecond: 170",
             "total_mass: 1800",
             "chassis_mass: 1800",
@@ -437,13 +437,25 @@ class VerbatimControlTests(unittest.TestCase):
     def setUp(self):
         self.out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
 
+    @staticmethod
+    def _without_overlay(block):
+        """Drop the lines the stability overlay rewrites: those are the only permitted values."""
+        keys = {k for k, _old, _new in port.STABILITY_OVERLAY}
+        return "\n".join(l for l in block.splitlines()
+                         if l.split(":")[0].strip() not in keys).strip("\n")
+
     def test_every_record_is_byte_identical_to_the_reference(self):
         recs = port.jesko_records()
+        kept = self._without_overlay(self.out)
         for src, dst in port.JESKO_RECORD_MAP:
             block = recs[src]
             for a, b in port.JESKO_RECORD_MAP:      # the only permitted difference: record IDs
                 block = block.replace(a, b)
-            self.assertIn(block.strip("\n"), self.out, f"{dst} differs from {src}")
+            self.assertIn(self._without_overlay(block), kept, f"{dst} differs from {src}")
+
+    def test_the_only_values_that_differ_are_damping_and_steering_rate(self):
+        for key, _old, new in port.STABILITY_OVERLAY:
+            self.assertIn(f"{key}: {new}", self.out, key)
 
     def test_vehicle_record_has_no_base_of_its_own(self):
         """The last inherited link: the vehicle record carried `$base:

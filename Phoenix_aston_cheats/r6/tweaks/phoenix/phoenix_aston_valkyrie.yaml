@@ -134,12 +134,12 @@ Vehicle.phoenix_amv_wheel_preset_front:
   logicalSuspensionCompressionLength: 0.5
   mass: 23
   maxBrakingTorque: 1165
-  springBoundDampingLowRate: 2200
+  springBoundDampingLowRate: 2900
   springDamping: 3000
   springDampingHighRateCompression: 0.3
   springDampingLowRateCompression: 0.2
   springReboundDamping: 3300
-  springReboundDampingLowRate: 2300
+  springReboundDampingLowRate: 5000
   springStiffness: 27
   swaybarDisplacementLimit: 0.14
   swaybarLengthScalar: 2.3
@@ -161,12 +161,12 @@ Vehicle.phoenix_amv_wheel_preset_back:
   logicalSuspensionCompressionLength: 0.5
   mass: 25
   maxBrakingTorque: 785
-  springBoundDampingLowRate: 2500
+  springBoundDampingLowRate: 2900
   springDamping: 3200
   springDampingHighRateCompression: 0.3
   springDampingLowRateCompression: 0.2
   springReboundDamping: 3500
-  springReboundDampingLowRate: 2500
+  springReboundDampingLowRate: 5000
   springStiffness: 26
   swaybarDisplacementLimit: 0.13
   swaybarLengthScalar: 1.3
@@ -281,7 +281,7 @@ Vehicle.phoenix_amv_burnout:
 Vehicle.phoenix_amv_drive_model:
   $type: gamedataVehicleDriveModelData_Record
   airResistanceFactor: 0.66
-  antiSwaybarDampingScalor: 0.75
+  antiSwaybarDampingScalor: 1
   bankBodyFBTanMultiplier: 0.1
   bankBodyLRTanMultiplier: 0.1
   bodyFriction: 0.6
@@ -311,7 +311,7 @@ Vehicle.phoenix_amv_drive_model:
   slopeTractionReductionMax: 30
   smoothWheelContactDecreaseTime: 0
   smoothWheelContactIncreseTime: 0
-  turningRollFactor: 1
+  turningRollFactor: 0
   turningRollFactorWeakContactMul: 1
   turningRollFactorWeakContactThresholdMax: 0.6
   turningRollFactorWeakContactThresholdMin: 0.9
@@ -331,7 +331,7 @@ Vehicle.phoenix_amv_drive_model:
   waterParams: Vehicle.VehicleWaterDefault_4w
   wheelSetup: Vehicle.phoenix_amv_wheel_setup
   wheelsFrictionMap: CarDrivingFrictionMap.Default
-  wheelTurnMaxAddPerSecond: 137
+  wheelTurnMaxAddPerSecond: 110
   wheelTurnMaxSubPerSecond: 170
 
 Vehicle.phoenix_amv_engine:
