@@ -45,9 +45,11 @@ unloads the car by `v²/R`, so at 78 m/s any R below 620 m puts the car weightle
 highway has sub-kilometre crests — the car is repeatedly going light and landing, which is a yaw
 impulse every few seconds. That was a live hypothesis for the wobble for four builds (steps 6-8).
 
-**Route B — Badlands edge to the south of the map (found 2026-11-24).** A far longer run of
-straights with only **three perpendicular turns** between the start and the south end. Not yet
-surveyed for length or gradient.
+**Route B — Badlands edge to the south of the map (found 2026-11-24).** **11.3 km** as the
+waypoint measures it (surveyed from the map, 2026-11-24), one nearly continuous straight through
+the Badlands with **three perpendicular turns** in the whole run. At 330 km/h that is a **123 s**
+traverse; at 500 km/h, **81 s**. Compare Route A's 4.6 km, which was 46 s at 330 and ended before
+the car was done accelerating.
 
 Route B is the better instrument for three reasons:
 
@@ -65,9 +67,23 @@ Route B is the better instrument for three reasons:
   | 1.0 m/s² (0.10 g) | 5.4 km |
   | 0.5 m/s² (0.05 g) | 10.9 km |
 
-  These are optimistic: thrust falls as `1 − (v/v_term)²`, so the real approach to terminal speed
-  is asymptotic and costs more than the table says. A car with under ~0.1 g of margin at 138 m/s
-  cannot demonstrate 500 on any road — that is a force problem, not a road problem.
+  Those are optimistic. Thrust falls as `1 − (v/v_term)²`, so the approach to terminal speed is
+  asymptotic and the real distance is `d = (v_t² / 2a₀) · ln[(v_t² − v₁²)/(v_t² − v₂²)]`, which is
+  much worse than a constant-acceleration estimate near the top. On Route B's 11.3 km the question
+  becomes: how much thrust does 500 km/h need to still fit?
+
+  | terminal speed | excess accel needed at 330 km/h to reach 500 in 11.3 km |
+  |---|---|
+  | 522 km/h | 1.85 m/s² (0.19 g) |
+  | 540 km/h | 1.47 m/s² (0.15 g) |
+  | 576 km/h | 1.14 m/s² (0.12 g) |
+  | 648 km/h | 0.87 m/s² (0.09 g) |
+
+  Read it backwards: **the shipped car needs roughly 0.12–0.19 g of margin at 330 km/h, with a
+  terminal speed 20–60 km/h above the target**, to demonstrate 500 on the longest straight on the
+  map. A car that is merely *capable* of 500 has infinite distance — it reaches it asymptotically
+  and never arrives. This is why every real record car is built for a terminal speed well above
+  the number it is named after, and it is the sizing constraint for the 500 build.
 
 To make Route B reusable, note the **fast-travel point at each end** and the three turns the first
 time it is driven properly; the table above is only useful if the same road is measured twice.
