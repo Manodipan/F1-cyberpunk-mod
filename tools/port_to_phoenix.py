@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 30
+BUILD = 31
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -1015,6 +1015,15 @@ STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 #   gear 6  66 -> 110, mult 0.254       gear 7  100 -> 160, mult 0.174
 #   engineMaxTorque 1300 -> 4900, drag 0.55
 # 7th thrust = 8 439 N, terminal 149.3 m/s = 538 km/h, 500 reached 2.8 km into 7th.
+#
+# Step 19 (build 900031): "it DID stop" - the car hits a wall, not a display cap. Drag at 0.55 left
+# 4 654 N (2.66 m/s2) on the table at 100 m/s, which is enough that a stop there has to be explained
+# by something other than force. So the probe removes drag from the argument: 0.55 -> 0.10 means
+# 688 N of drag and 7 751 N of net thrust at 100 m/s. If the car still dies at ~100 with 0.45 g in
+# hand, the wall is a limit in the game (clamp or drive cut), not a force balance, and no torque,
+# gearing or aero number can move it. The dash now reads the physics velocity, so the wall is also
+# measured at 1 km/h resolution: 360 km/h = exactly 100.0 m/s, and a drag wall cannot land on that
+# twice from two different configurations.
 STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 69.4, 110.0, 160.0]
 STOCK_LADDER_PAIRS = (
     ("maxSpeed", "80.6", "110"),        # gear 6 ceiling 290 -> 396 km/h (7th floor 100: 10 m/s overlap)
@@ -1024,7 +1033,7 @@ STOCK_LADDER_PAIRS = (
     ("torqueMultiplier", "0.306", "0.174"),   # gear 7: 27.9 / 160
     ("minEngineRPM", "7600", "5940"),         # gear 6: 9900 x 66/110
     ("minEngineRPM", "7800", "6219"),         # gear 7: 9950 x 100/160
-    ("airResistanceFactor", "1.35", "0.55"),
+    ("airResistanceFactor", "1.35", "0.10"),
     ("engineMaxTorque", "1300", "4900"),
 )
 

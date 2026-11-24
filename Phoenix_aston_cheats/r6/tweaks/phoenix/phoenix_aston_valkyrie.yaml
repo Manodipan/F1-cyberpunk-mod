@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900030
+  horsepower: 900031
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 
@@ -131,7 +131,7 @@ Vehicle.phoenix_aston_valkyrie:
     total_mass: 1750
     chassis_mass: 1750
     # 2026-11-13 tester: 260 km/h ustune cikmiyordu -> hava direnci 911 1.93 -> 1.35; el freni hafif 1000 -> 2600
-    airResistanceFactor: 0.55
+    airResistanceFactor: 0.10
     handbrakeBrakingTorque: 2600
     momentOfInertiaScale: { x: 1, y: 1, z: 1 }
     # Caliburn atalet (2026-10-29; onceki Apollo x kutle 4030/1200/4410 fazlaydi)

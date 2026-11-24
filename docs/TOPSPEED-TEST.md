@@ -566,6 +566,46 @@ be exhausted there. Whatever happens at 100 is therefore not drag.
 
 Note the dash is 3 digits, so it saturates at 999 km/h (277 m/s) — far above anything here.
 
+## 2n. The wall is the car, so take drag out of it (build 900031)
+
+Owner, correcting my instrument argument: *"i didnt FEEl it stop, it DID stop."* Right — a capped
+needle does not stop a car. The stop is in the physics, so the question is not what the readout
+says but **what is absorbing the thrust at ~100 m/s**. Three candidates, and only one of them is a
+number we can tune:
+
+| candidate | at 100 m/s the car should | tunable? |
+|---|---|---|
+| **force** (drag equals thrust) | creep: net force → 0 | yes, torque and drag |
+| **clamp** (a hard velocity limit) | sit dead flat with thrust to spare | only if the field is found |
+| **cut** (drive lost: fuel/gear/engine) | fall back below the wall, repeatedly | maybe, gearing |
+
+At `airResistanceFactor` 0.55 this could not be settled: 900029 has 4 654 N of net thrust at 100 m/s
+but only 2.66 m/s², and a car that creeps the last 2 m/s looks stopped.
+
+**900031 changes one number: drag 0.55 → 0.10.** At 100 m/s that leaves **688 N of drag against
+8 439 N of thrust — 7 751 N net, 0.45 g.** A car with almost half a g in hand does not stop because
+of air.
+
+### Reading it
+
+The dash now reports the physics velocity (`GetLinearVelocity` dot forward) in km/h, so the wall is
+measured to **1 km/h = 0.28 m/s**:
+
+- **~576 km/h** (7th's ceiling) → it was force after all; model C stands and 900029's 538 km/h was
+  the honest answer. Set drag back and finish.
+- **~635 km/h** (350 m/s, the drag-only terminal at 0.10) → same conclusion, gear ceiling aside.
+- **exactly 360 km/h = 100.0 m/s, and nothing above** → a **limit**, not a force. Two different
+  builds cannot land on the same round number by drag.
+  - speed holds flat with revs up → **clamp**
+  - speed falls back below 360 and climbs again → **cut** (and that is the stall, back again)
+
+If it is a limit, no torque, gearing or aero number will move it. The next moves would be to find
+the field that enforces it (needs the game's own TweakDB record dump, not the mod) or to fight it
+from redscript/CET — both of which I would want to name honestly before starting.
+
+One external cause I cannot see from here: **any other vehicle mod installed** (a speed-limit,
+traffic-realism or vehicle-overhaul mod can clamp globally).
+
 ## 3. What to record
 
 | Reading | Pass | Notes |
