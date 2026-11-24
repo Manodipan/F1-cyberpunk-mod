@@ -34,6 +34,44 @@ the car refuses to pass ~150 km/h, that is the version, not the car.
 4. Watch the car's own HUD read-out (the Phoenix dash is scripted, so it reports km/h
    directly) and the gear indicator.
 
+## 2b. The test roads
+
+Two routes, both used, recorded here so a number always comes with the road it was taken on.
+Every speed in this repo is only comparable within one route.
+
+**Route A — the 4.6 km Badlands highway.** Gentle crests, straight or very gentle curves. The
+route every number up to build 900021 was measured on. Its defect: crests. A crest of radius R
+unloads the car by `v²/R`, so at 78 m/s any R below 620 m puts the car weightless, and a 4.6 km
+highway has sub-kilometre crests — the car is repeatedly going light and landing, which is a yaw
+impulse every few seconds. That was a live hypothesis for the wobble for four builds (steps 6-8).
+
+**Route B — Badlands edge to the south of the map (found 2026-11-24).** A far longer run of
+straights with only **three perpendicular turns** between the start and the south end. Not yet
+surveyed for length or gradient.
+
+Route B is the better instrument for three reasons:
+
+- **It exonerates or convicts the crest hypothesis for free.** If the wobble appears on a long flat
+  straight too, crests are not the mechanism and the remaining steps of that theory can be closed.
+- **It can show a terminal speed.** Route A ends before the car is done accelerating; a run long
+  enough to flat-line turns "top speed" from *where the wobble started* into a measured plateau.
+- **It scales to the 500 km/h build.** Reaching 138.9 m/s from the stock car's 91.7 needs distance,
+  and `d = (v₂² − v₁²) / 2a` is brutal up there:
+
+  | excess thrust | constant-a distance 91.7 → 138.9 m/s |
+  |---|---|
+  | 2.0 m/s² (0.20 g) | 2.7 km |
+  | 1.5 m/s² (0.15 g) | 3.6 km |
+  | 1.0 m/s² (0.10 g) | 5.4 km |
+  | 0.5 m/s² (0.05 g) | 10.9 km |
+
+  These are optimistic: thrust falls as `1 − (v/v_term)²`, so the real approach to terminal speed
+  is asymptotic and costs more than the table says. A car with under ~0.1 g of margin at 138 m/s
+  cannot demonstrate 500 on any road — that is a force problem, not a road problem.
+
+To make Route B reusable, note the **fast-travel point at each end** and the three turns the first
+time it is driven properly; the table above is only useful if the same road is measured twice.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |
