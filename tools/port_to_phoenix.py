@@ -761,9 +761,9 @@ STABILITY_OVERLAY_ENABLED = True
 STABILITY_OVERLAY = (
     ("springBoundDampingLowRate", "2200", "2900"),      # front
     ("springBoundDampingLowRate", "2500", "2900"),      # rear
-    ("springReboundDampingLowRate", "2300", "5000"),    # front, stock Aston's rate
-    ("springReboundDampingLowRate", "2500", "5000"),    # rear
-    ("antiSwaybarDampingScalor", "0.75", "1"),
+    ("springReboundDampingLowRate", "2300", "6500"),    # front, zeta 0.93
+    ("springReboundDampingLowRate", "2500", "6500"),    # rear
+    ("antiSwaybarDampingScalor", "0.75", "1.15"),   # Pagani's
     ("turningRollFactor", "1", "0"),
     # Step 2 (2026-11-24, from measurement): the reference's alternative turn-update is an
     # input-derivative-sensitive steering model and it is the ONLY car in the corpus that has it.
@@ -772,7 +772,6 @@ STABILITY_OVERLAY = (
     # the stock car's cruising steering authority is the one change that separates the two cars.
     ("useAlternativeTurnUpdate", "true", "false"),
     ("turnUpdateMaxSpeedThreshold", "45", "26"),      # stock Aston's
-    ("turnUpdateMaxSpeedTurnMul", "0.21", "0.33"),    # stock Aston's
     # Step 3 (2026-11-24): the remaining things ONLY the wobbling car has. Measured limits again -
     # stock Aston 80/85, Jesko 63/77, ours 63/77. The Pagani (Zonda Revo) is a weak control: it
     # tops at 48 m/s against a 50 m/s gear, so it never reaches the speeds where this matters. But
@@ -803,7 +802,22 @@ STABILITY_OVERLAY = (
     ("driftLimit", "2.3", "1.6"),
     ("handbrakeLimit", "2.49", "1.6"),
     ("momentOfInertia", "{ x: 2600, y: 780, z: 3000 }", "{ x: 3137, y: 926, z: 3631 }"),
-)
+    # Step 5 (2026-11-24). The wobble happens on STRAIGHTS, which rules out cornering and tyre
+    # saturation: with near-zero steering angle it is a limit cycle between ADE's lane-keeping
+    # corrections and the yaw mode. On a straight there are only two levers - yaw damping and
+    # loop gain - and damping has already been spent (step 1 -> no change, steps 2-4 -> 63 to 72).
+    # So this step spends loop gain, then adds margin on the damping axis as backup:
+    #   turnUpdateMaxSpeedTurnMul back to the reference's 0.21 (step 2 briefly used the stock
+    #       Aston's 0.33): this is the steering authority above 26 m/s, i.e. the gain
+    #       ADE's error signal is multiplied by. 36 % less response per correction, for a loop
+    #       whose phase margin was the problem. Below 26 m/s nothing changes, so the car keeps its
+    #       low-speed agility. (Step 2 adopted 0.33 from the stock Aston; with the alternative turn
+    #       update now OFF the field sits in the other steering model, where the low value is the
+    #       one that damps response rather than sharpening it.)
+    #   antiSwaybarDampingScalor 1 -> 1.15       the Pagani's value - the highest of the three cars,
+    #       and the Pagani is the one that never wobbles
+    #   springReboundDampingLowRate 5000 -> 6500 body-mode zeta 0.72 -> 0.93 on the 1.23 Hz mode
+        )
 
 
 STABILITY_TARGETS = {(k, new) for k, _old, new in STABILITY_OVERLAY}

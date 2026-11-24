@@ -139,7 +139,7 @@ Vehicle.phoenix_amv_wheel_preset_front:
   springDampingHighRateCompression: 0.3
   springDampingLowRateCompression: 0.2
   springReboundDamping: 3300
-  springReboundDampingLowRate: 5000
+  springReboundDampingLowRate: 6500
   springStiffness: 27
   swaybarDisplacementLimit: 0.14
   swaybarLengthScalar: 2.3
@@ -166,7 +166,7 @@ Vehicle.phoenix_amv_wheel_preset_back:
   springDampingHighRateCompression: 0.3
   springDampingLowRateCompression: 0.2
   springReboundDamping: 3500
-  springReboundDampingLowRate: 5000
+  springReboundDampingLowRate: 6500
   springStiffness: 26
   swaybarDisplacementLimit: 0.13
   swaybarLengthScalar: 1.3
@@ -281,7 +281,7 @@ Vehicle.phoenix_amv_burnout:
 Vehicle.phoenix_amv_drive_model:
   $type: gamedataVehicleDriveModelData_Record
   airResistanceFactor: 0.66
-  antiSwaybarDampingScalor: 1
+  antiSwaybarDampingScalor: 1.15
   bankBodyFBTanMultiplier: 0.1
   bankBodyLRTanMultiplier: 0.1
   bodyFriction: 0.6
@@ -323,7 +323,7 @@ Vehicle.phoenix_amv_drive_model:
   turnUpdateInputSlowChangeSpeed: 0.15
   turnUpdateMaxSpeedThreshold: 26
   turnUpdateMaxSpeedTurnChangeMul: 2.15
-  turnUpdateMaxSpeedTurnMul: 0.33
+  turnUpdateMaxSpeedTurnMul: 0.21
   turnUpdateMidSpeedThreshold: 22
   turnUpdateMidSpeedTurnChangeMul: 1.58
   turnUpdateMidSpeedTurnMul: 0.62

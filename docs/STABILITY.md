@@ -153,6 +153,27 @@ not going to guess twice in a row: `slipAngleCurveScale: 2`, `slipRatioCurveScal
 shape the tyre slip curves, and a 2x scale could plausibly widen the linear region (good) or
 sharpen the peak (bad). That is a question for a build, not for a paragraph.
 
+## Step 5 (shipped): straights change the diagnosis
+
+Every measurement so far has been **straight-line driving**. That rules out cornering, limit
+handling and tyre saturation as explanations: at near-zero steering angle there is no steady-state
+cornering to destabilise, so what is happening is a **limit cycle** - ADE corrects a lane error, the
+yaw mode answers with overshoot, ADE corrects the overshoot, and the pair settles into oscillation
+at some frequency of their own.
+
+On a straight, a vehicle only has two knobs against that: **yaw damping** and **loop gain**.
+Damping has been spent (63 -> 72 across steps 2-4). Step 5 spends loop gain:
+
+| field | reference | Phoenix | why |
+|---|---|---|---|
+| `turnUpdateMaxSpeedTurnMul` | 0.21 | **0.21** (kept) | authority above 26 m/s = the gain ADE's error signal is multiplied by. Step 2 briefly adopted the stock Aston's 0.33; with the alternative turn update off, 0.21 is 36 % less response per correction, and phase margin is the thing being bought. Low-speed agility is untouched because it applies only above the threshold. |
+| `antiSwaybarDampingScalor` | 0.75 | **1.15** | the Pagani's value, the highest of the three, on the only car that never wobbles |
+| `springReboundDampingLowRate` | 2300 / 2500 | **6500 / 6500** | body-mode ζ = 0.93 on the 1.23 Hz mode, from 0.72 |
+
+The trade is explicitly a *feel* trade: less authority above 26 m/s means the car answers the wheel
+more lazily at speed. If it turns out dull rather than stable, that is the line to give back first,
+in 0.03 steps (`0.21 -> 0.24 -> 0.27`).
+
 ## The physical basis, quantified
 
 Take the game's numbers at face value as SI-ish: `springStiffness` 27 as N/mm wheel rate, damping
