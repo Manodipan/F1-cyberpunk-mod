@@ -616,9 +616,15 @@ Two things fall out of that number, and both are good news:
    close the loop sits to the axis. The 4.6 km road's crests were *a* modulator; the 11.3 km
    straight shows the onset is the same 80 m/s without them.
 
-The corollary is a measurement worth making: **the bottom of the sawtooth** (how far ADE lets the
-speed fall) turns the period into a net-force figure at ~77 m/s - see `docs/TOPSPEED-TEST.md` §2e.
-That is the first in-game thrust number this project would have, and the 500 km/h design needs it.
+The corollary was a measurement, and it has now been made (build 900022, 2026-11-24): the sawtooth
+runs **61 -> 81 m/s** with a **86 m/s** manual plateau, which turns into a net force of **2 188 N at
+71 m/s** and a fitted thrust of **6 870 N at terminal**. That is the first in-game thrust number this
+project has ever had, and `docs/TOPSPEED-TEST.md` §2f turns it into the 500 km/h design: drag factor
+1.35 -> 0.55, torque x1.25, and 500 km/h in 3.3 km.
+
+The onset measures **77-81 m/s**, spread by terrain, against a terminal of 86 - so it sits at 0.94
+of terminal where the Jesko control sat at 0.80. Weak, but it is the one pattern that predicts the
+two problems might share a cure.
 
 ## Step 15 — attack the onset, keep the recovery (builds 900023, 900024)
 

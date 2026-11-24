@@ -231,6 +231,60 @@ the whole 11.3 km and watch whether the number stops at 86.** A plateau at 86 me
 and the 500 build is a drag-and-gearing job. A number that creeps toward 91.7 and then stops means
 the gearbox is the cap, and the 500 build is a gearing job with drag as the secondary.
 
+## 2f. MEASURED: the stock car is drag-limited at 86 m/s, and the 500 build follows from it
+
+Build 900022, Route B, 2026-11-24:
+
+| reading | value |
+|---|---|
+| flat-out plateau, manual, 11.3 km | **86 m/s** (310 km/h) |
+| ADE sawtooth top | **81 m/s best**, 77-75 on some terrain, 80 typical |
+| ADE sawtooth trough | **61 m/s** (31-41 only after hitting a barrier - exclude those, it is external) |
+| cycle, brake to brake | 18-22 s |
+
+The plateau is **86, not the top gear's 91.7** - so the car runs out of thrust before it runs out
+of gearing. **The 500 km/h problem is a drag-and-thrust problem, not a gearbox problem.**
+
+### The fit
+
+Two readings give the whole force curve, assuming constant thrust in the top gear and
+`D = k·v²`:
+
+- sawtooth: 61 -> 81 m/s in ~16 s = 1.25 m/s² over 1750 kg = **2 188 N net at 71 m/s**
+- terminal: net force is zero at **86 m/s**
+
+`k = 2188 / (86² - 71²) = 0.929 N/(m/s)²`, `T = k·86² = 6 870 N` at the top of the run.
+
+### The design points
+
+Drag force scales with the `airResistanceFactor` dial in proportion to the dial (the field is *a*
+drag dial, not a CdA - see `docs/TOPSPEED-DESIGN.md` §4), and thrust scales with `engineMaxTorque`.
+Distance is `d = (m/2k')·ln[(T - k'v₁²)/(T - k'v₂²)]` from 91.7 to 138.9 m/s:
+
+| drag factor | torque | terminal | distance to 500 | power at 500 |
+|---|---|---|---|---|
+| **0.55** | **×1.25 (1 625 Nm)** | **542 km/h** | **3.3 km** | **1 193 kW = 1 599 hp** |
+| 0.55 | ×1.50 (1 950 Nm) | 594 km/h | 2.0 km | 1 431 kW = 1 919 hp |
+| 0.65 | ×1.50 (1 950 Nm) | 546 km/h | 2.7 km | 1 431 kW = 1 919 hp |
+| 0.75 | ×1.75 (2 275 Nm) | 549 km/h | 2.2 km | 1 670 kW = 2 239 hp |
+
+**The first row is the recommendation, and it lands on the real cars by itself:** 1 599 hp at
+500 km/h is the Chiron Super Sport's 1 578 hp, and the assumed CdA was the Jesko Absolut's 0.523.
+The game's own numbers, fitted from a sawtooth on a desert highway, agree with the record cars to
+1 %. That is the strongest evidence yet that the sizing is right.
+
+It also fits the road: 3.3 km of acceleration inside an 11.3 km straight leaves two thirds as
+margin, so the run demonstrates the plateau rather than arriving at it.
+
+### What it predicts about the wobble
+
+Onset / terminal: stock **81 / 86 = 0.94**; the Jesko control was **63 / 78.5 = 0.80**. Two points
+are not a law, but if the weave begins at a fixed fraction of terminal speed, then **cutting drag
+raises the terminal *and* the onset together** - the 500 build would be a stability build by
+accident. Cheap to check: the first build that moves the plateau above 86 should move the weave
+onset by the same ratio. If the onset stays at 81 while the plateau climbs, the two are independent
+and the wobble stays a steering problem.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |
