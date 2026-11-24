@@ -70,6 +70,34 @@ If the file is clean and the logs are silent, the A/B test settles it: set gear 
 ceiling and the append is being ignored; still 330 means it is drag, and
 `airResistanceFactor` comes down from 0.90.
 
+## 3c. Borrowed reference: a 572 km/h car
+
+There is a mod car known to reach **572 km/h** and stay driveable on straights (though not
+hairpin-at-500 stable — nobody's is). That car is proof the engine will go past the vanilla
+gear ceiling, and its numbers are a far better starting point than our guesses.
+
+`tools/fastcar-dump.ps1` scans every vehicle YAML installed in the game, **ranks them by
+top gear** and prints the deciding fields for anything above 400 km/h:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\fastcar-dump.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\fastcar-dump.ps1 -Tweaks "G:\...\r6\tweaks\that_mod"
+```
+
+What we borrow, in order of value:
+
+| Field | Why it matters |
+|---|---|
+| top gear `maxSpeed` + `gears` count | how it gets past 91.7 m/s — more gears, or a longer last gear |
+| `airResistanceFactor` | the actual drag wall at that speed |
+| `wheelTurnMaxAddPerSecond` / `turnUpdateMaxSpeedTurnMul` | its steering authority at 500+ |
+| `frictionMulLateral`, `swaybarStiffness`, `springDamping` | how it stays planted while doing it |
+| downforce helper (`maxSpeedFactorGround`) | 1.40 for us, unknown for it |
+
+Realistic target, given that reference: **500 km/h stable on a straight**, hands-off, in
+7th. Hairpin stability at 500 is not a goal — it is a physical impossibility at that
+speed and no mod car has it.
+
 ## 4. If it wobbles while autodriving
 
 That is the useful result of removing human input: **any** yaw oscillation is now
