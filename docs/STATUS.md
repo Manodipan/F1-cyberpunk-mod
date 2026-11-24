@@ -30,7 +30,7 @@ Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 
 | # | Item | Why | Unblocks it |
 |---|---|---|---|
-| 1 | **v2 handling test** (top speed, launch, hairpin) | needs the game; 2000 hp / 500 km/h on 94/26/0.33 steering is the part only driving can judge. **two reported symptoms 2026-11-24**: high-speed wobble (→ `tools/stability-tweak.ps1`) and a hard plateau at ~330 km/h = the *stock* 91.7 m/s gear ceiling (→ `tools/gearbox-check.ps1`) | `docs/TOPSPEED-TEST.md` (hands-off Auto Drive Enhanced protocol) + §4 matrix; top speed must reach ~138.89 m/s in gear 7 |
+| 1 | **v2 handling test** (top speed, launch, hairpin) | needs the game. Two symptoms reported 2026-11-24: wobble (→ `tools/stability-tweak.ps1`) and a plateau at ~330 km/h, i.e. the stock car's own ceiling — caused by inherited gears via `!remove`/`!append`. **Fixed in the deliverable 2026-11-24:** `tools/port_to_phoenix.py` now emits one explicit `gears: [ … ]` list (test-covered); awaiting an in-game run | `docs/TOPSPEED-TEST.md`; if it still stops at 330, drag is next (`stability-tweak.ps1 -Drag 0.55`) |
 | 2 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 | 3 | Reference corpus | every racing car mod's YAML is a worked example of drag/steering at speed, and comparing beats guessing | `make vehicles` (local corpus) + `reference/vehicles/INDEX.md` (committed facts) — see `reference/vehicles/README.md` |
 | 4 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |

@@ -221,23 +221,7 @@ Vehicle.phoenix_aston_valkyrie:
     engineMaxTorque: 3824
     maxRPM: 10100
     minRPM: 1000
-    gears:
-      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline0
-      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline1
-      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline2
-      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline3
-      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline4
-      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline5
-      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline6
-      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline7
-      - !append Vehicle.phoenix_amv_gear_r
-      - !append Vehicle.phoenix_amv_gear_1
-      - !append Vehicle.phoenix_amv_gear_2
-      - !append Vehicle.phoenix_amv_gear_3
-      - !append Vehicle.phoenix_amv_gear_4
-      - !append Vehicle.phoenix_amv_gear_5
-      - !append Vehicle.phoenix_amv_gear_6
-      - !append Vehicle.phoenix_amv_gear_7
+    gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]
 
 # Arac cagirma menusu gorseli (ui\amv_icon.inkatlas)
 UIIcon.phoenix_aston_valkyrie_icon:

@@ -45,7 +45,9 @@ python tools/collect_vehicles.py --index-only reference/vehicles
 * `mass` — `total_mass`; torque is `engineMaxTorque`
 
 For the Phoenix: **500 km/h / 138.89 m/s, 8 gears, drag 0.90, 3824 Nm, 1750 kg,
-steering 94 / 0.33.**
+steering 94 / 0.33.** Its gearbox is written as one explicit `gears: [ … ]` list (unlike
+the stock mod's `!remove`/`!append` surgery), for the reason spelled out in
+`docs/TOPSPEED-TEST.md` §3c.
 
 Nothing in this folder is part of the mod payload. `Phoenix_aston_cheats/` stays entirely
 ours; `make verify-package` enforces that.

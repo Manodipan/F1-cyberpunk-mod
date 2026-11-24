@@ -259,6 +259,45 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
     return "".join(out)
 
 
+# ---------------------------------------------------------------------------
+# Structural fix: explicit gear list instead of inherited-gears surgery
+# ---------------------------------------------------------------------------
+# The stock mod declares its gearbox as
+#     gears:
+#       - !remove Vehicle.VehicleEngineData_4_SuperSport_inline0   (x8)
+#       - !append Vehicle.xaires_amv_gear_r                        (x8)
+# i.e. "delete the base engine's eight inline gears, then add mine". If a single
+# !remove misses its target (inline record renamed in a game patch), the inherited
+# gear set survives in front of ours and the car drives the gearbox it inherited
+# from. The Phoenix reproduced exactly that: a 500 km/h record that plateaued on
+# the stock car's 330 km/h (2026-11-24).
+#
+# The reference car that does 572 km/h (reference/vehicles/jesko_attack) does not
+# touch inherited gears at all - its engine record carries one explicit list. So
+# the port emits that form: no !remove, no !append, eight gear records, in order.
+GEARS_BLOCK = re.compile(
+    r"(?m)^(?P<indent>[ \t]*)gears:[ \t]*\r?\n"
+    r"(?P<body>(?:(?P=indent)[ \t]+-[^\r\n]*(?:\r?\n|\Z))+)"
+)
+GEAR_ITEM = re.compile(r"^[ \t]*-[ \t]*!(?:append|remove)\b")
+
+
+def explicit_gears(text: str) -> str:
+    """Rewrite the remove/append gear surgery into one explicit `gears: [ ... ]`."""
+    def repl(m: re.Match) -> str:
+        body = m.group("body")
+        items = [ln for ln in body.splitlines() if ln.strip()]
+        if not all(GEAR_ITEM.match(ln) for ln in items):
+            return m.group(0)                      # not the shape we expect: leave it alone
+        names = [n for n in re.findall(r"!\s*append\s+(\S+)", body)]
+        if not names:
+            return m.group(0)
+        eol = "\r\n" if "\r\n" in m.group(0) else "\n"
+        return f"{m.group('indent')}gears: [ {', '.join(names)} ]{eol}"
+
+    return GEARS_BLOCK.sub(repl, text, count=1)
+
+
 def _rename_code(code: str) -> str:
     """Apply the identifier rules to a single code fragment."""
     masked, kept = _mask(code)
@@ -281,7 +320,7 @@ def port_text(text: str, suffix: str, physics: bool,
         body, newline = _split_eol(line)
         code, comment = split_comment(body, suffix)
         out.append(_rename_code(code) + comment + newline)
-    return "".join(out)
+    return explicit_gears("".join(out))
 
 
 FILE_RENAME = [

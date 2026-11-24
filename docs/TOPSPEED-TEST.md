@@ -100,26 +100,33 @@ Two conclusions, and one of them kills our earlier theory:
    stays **in front of** ours and the transmission drives the car it inherited from. The
    Jesko avoids this entirely: one explicit list, no inherited gears at all.
 
-That is what `experiments/phoenix_engine_explicit.yaml` is: the deliverable, byte for byte,
-except `gears:` becomes one explicit eight-entry list (`make experiment` regenerates it).
+**Fixed in the deliverable, 2026-11-24.** The port tool now emits that form itself
+(`explicit_gears()` in `tools/port_to_phoenix.py`), so the shipped YAML carries
+
+```yaml
+gears: [ Vehicle.phoenix_amv_gear_r, …, Vehicle.phoenix_amv_gear_7 ]
+```
+
+with no `!remove` and no `!append`, and two tests enforce it
+(`test_gearbox_is_one_explicit_list`, plus the existing "committed tree == tool output").
+Nothing to install by hand: `git pull`, copy the deliverable YAML over the game's copy,
+restart.
 
 ```powershell
 $d = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty\r6\tweaks\phoenix"
-Copy-Item "$d\phoenix_aston_valkyrie.yaml" "$d\phoenix_aston_valkyrie.yaml.stock" -Force
-Copy-Item "$HOME\f1-cyberpunk-mod\experiments\phoenix_engine_explicit.yaml" "$d\phoenix_aston_valkyrie.yaml" -Force
+Copy-Item "$d\phoenix_aston_valkyrie.yaml" "$d\phoenix_aston_valkyrie.yaml.stock" -Force   # once, as insurance
+Copy-Item "$HOME\f1-cyberpunk-mod\Phoenix_aston_cheats\r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml" $d -Force
 ```
 
-Restart, run the straight once. Revert by copying `.stock` back.
+What the result tells us:
 
-Order of experiments, cheapest attribution first:
-
-| # | What | If it changes the plateau |
+| Outcome | Meaning | Next |
 |---|---|---|
-| 1 | `tools/gearbox-check.ps1` | tells you the installed file's gear 7 and any TweakXL complaint — do this before editing anything |
-| 2 | explicit gears (above) | plateau moves → the inherited gear set was the problem; fold it into the port tool |
-| 3 | `tools/stability-tweak.ps1 -Drag 0.55` | plateau moves with drag → it was the drag wall all along; tune drag to hit exactly 500 |
+| tops out **past 330** | the inherited gear set was the wall — the diagnosis was right | tune drag so it lands on exactly 500 |
+| still **exactly 330** | the gear table was never the limit; it is the drag wall | `tools\stability-tweak.ps1 -Drag 0.55`, then trim |
 
-Do them **one at a time**: each restart is one data point, and two at once tells us nothing.
+And if it is still 330, `tools\gearbox-check.ps1` also settles whether the installed file
+is what we think it is (`occurrences of 138.89`, `gears block`) before any more tuning.
 
 ## 4. If it wobbles while autodriving
 

@@ -32,10 +32,6 @@ check-strings:
 	$(PY) tools/inspect_archive.py $(MOD)/archive/pc/mod/phoenix_strings.archive \
 		--json-only --expect 'phoenix\aston_valkyrie\en-us.json'
 
-# experimental YAML variants (never part of the payload) - docs/TOPSPEED-TEST.md
-experiment:
-	$(PY) tools/engine_explicit.py
-
 # reference corpus: every vehicle tweak installed in the game (local) + the committed index
 vehicles:
 	$(PY) tools/collect_vehicles.py --copy

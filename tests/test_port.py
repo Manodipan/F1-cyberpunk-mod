@@ -62,6 +62,21 @@ class RenameTests(unittest.TestCase):
         self.assertIn("- !append Vehicle.phoenix_aston_valkyrie_purchasable\n", out)
         self.assertIn("$base: Vehicle.phoenix_aston_valkyrie\n", out)
 
+    def test_gearbox_is_one_explicit_list(self):
+        """Inherited gear surgery is what made the car plateau on the stock 330 km/h."""
+        out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
+        self.assertNotIn("!remove Vehicle.VehicleEngineData_4_SuperSport_inline", out)
+        self.assertNotIn("!append Vehicle.phoenix_amv_gear_r", out)
+        line = [l for l in out.splitlines() if l.strip().startswith("gears: [")][0]
+        for g in ("r", "1", "2", "3", "4", "5", "6", "7"):
+            self.assertIn(f"Vehicle.phoenix_amv_gear_{g}", line)
+        self.assertEqual(line.count("Vehicle.phoenix_amv_gear_"), 8)
+
+    def test_drive_helpers_still_append_like_the_stock_file(self):
+        """driveHelpers is a different list - it must stay as the stock file had it."""
+        out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
+        self.assertIn("driveHelpers:", out)
+
     def test_shared_assets_kept(self):
         out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
         self.assertIn("entityTemplatePath: xaires\\aston_valkyrie\\aston_valkyrie.ent", out)
