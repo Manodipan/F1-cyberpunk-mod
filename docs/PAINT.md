@@ -1,8 +1,12 @@
 # Paint and livery — what actually changes the colours
 
-Status: **route 1 available** (one-line compat patch, `compat/xaires_car_manager/`).
-This page records what the stock mod does, why our car is excluded from it, and the
-three routes — cheapest first.
+Status: **done — confirmed in game 2026-11-24.** The Phoenix paints from the
+*Aston Martin Valkyrie LMH* pane of **Xaires's Car Manager** with the v3 compat patch
+(`compat/xaires_car_manager/repatch.ps1`). No art, no textures, no dependency mod.
+
+This page records what the stock mod does, why our car was excluded from it, the patch
+(v1 → v2 → v3, including the two bugs that made the first attempts fail), and the two
+fallbacks that are no longer needed.
 
 ## What the stock mod does (Nexus, mod 38493)
 

@@ -8,6 +8,10 @@ Because the Phoenix shares the stock `.ent` and mesh, the appearance names the m
 switches (`paint_<colour>`, `k_<colour>`, `rim_<colour>`) already exist for our car. One
 added id is all that is needed — no art, no new records.
 
+> **Confirmed in game 2026-11-24 with v3.** The Phoenix repaints from the *Aston Martin
+> Valkyrie LMH* pane (Rosso Fiorano on the body). The choice is stored per manager entry,
+> so the Phoenix and the stock Aston always share one paint.
+
 ## What the file looks like
 
 `…\bin\x64\plugins\cyber_engine_tweaks\mods\xaires_car_manager\init.lua`, line 225:

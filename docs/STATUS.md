@@ -1,6 +1,6 @@
 # Status — where PORT.md stands
 
-Updated 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main` @ `3a6d0b1`
+Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main` @ `3a6d0b1`
 · target game **2.5** (Phantom Liberty)
 (the real unpacked mod).
 
@@ -19,7 +19,9 @@ Updated 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 | Pretty name (optional) | `docs/WOLVENKIT.md`, `tools/localization/en-us.json`, `make check-strings` | pack `phoenix_strings.archive` once in WolvenKit; `tools/inspect_archive.py` proves the path landed |
 | Target game | Cyberpunk 2077 **2.5** (Phantom Liberty) | payload is version-agnostic; the WolvenKit step needs WK **10.x** (9.1.1 has no 2.5 support) |
 | Mod packaging | `tools/package.py`, `make verify-package`, `make package` | game-root mirror only: no docs/junk in the payload, archive + `.xl` paired, tweaks/scripts in their subfolders; builds `dist/Phoenix_aston_cheats.zip` |
-| Tests | `tests/test_port.py`, `tests/test_package.py` | 41 tests, incl. "committed tree == tool output" and the packaging rules |
+| **Paint / livery in both slots** | `compat/xaires_car_manager/repatch.ps1` (v3) | **confirmed in game 2026-11-24** — the Phoenix paints from the *Aston Martin Valkyrie LMH* pane, all 149 colours, no art, no dependency mod. Colour choice is shared with the stock Aston (same `amv` entry) |
+| Both mods boot together | — | **confirmed**: `redscript_rCURRENT.log` compiled both `xaires_*` and `phoenix_*`; game session clean with both archives + both `.xl` |
+| Tests | `tests/test_port.py`, `tests/test_package.py`, `tests/test_compat.py` | 57 tests, incl. "committed tree == tool output", the packaging rules, and the compat-patch regressions (double comma, bare record id) |
 
 `red4ext/` is deliberately absent: the Phoenix scripts load the stock bank at
 `red4ext/plugins/AudioXL/sounds/XairesAMV_Wwise/xaires_amv.bnk`.
@@ -28,11 +30,9 @@ Updated 2026-11-23 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 
 | # | Item | Why | Unblocks it |
 |---|---|---|---|
-| 1 | Pretty name ("Phoenix AMV LMH") — **confirmed in game 2026-11-23** (card + scanner info) | the strings live in a CR2W `JsonResource` **inside** the archive — the stock archive has none at all, so the card falls back to the record name (`PHOENIX_ASTON_VALKYRIE`, already distinct) | `docs/LOCALISATION.md` — pack `tools/localization/en-us.json` into the archive (WolvenKit, one file) |
-| 2 | Paint / livery in the two slots (Rosso Fiorano + bronze) | the manager paints the stock Aston but not the Phoenix; the dump showed v2 had a Lua syntax error (double comma) **and** a bare record id where `carOf` needs the full `Vehicle.` name | run `compat/xaires_car_manager/repatch.ps1` (v3), reload mods, spawn, pick the colours |
-| 3 | **v2 handling test** (hairpin, top speed, launch) | needs the game | `docs/INSTALL.md` §4 matrix |
-| 4 | Confirm both mods boot together cleanly | CT/LM: two archives, two `.xl`, two `ScriptableService`s, both loading the same bank | first launch — check `cyber_engine_tweaks.log` and `archivexl.log` |
-| 5 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
+| 1 | **v2 handling test** (hairpin, top speed, launch) | needs the game; 2000 hp / 500 km/h on 94/26/0.33 steering is the part only driving can judge | `docs/INSTALL.md` §4 matrix — top speed must reach ~138.89 m/s in gear 7 |
+| 2 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
+| 3 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |
 
 ## Risks worth knowing before the first launch
 
