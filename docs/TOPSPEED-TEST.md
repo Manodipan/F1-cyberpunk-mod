@@ -291,6 +291,30 @@ Consequences:
   earlier real-physics anchor (2,000 hp + CdA 0.95 -> 493 km/h) says the game's force model can
   represent it, but the 350 km/h "brake" event of v9 has to be cracked first.
 
+### The curve, measured on a vanilla car too
+
+A **vanilla** vehicle (Yaiba Semimaru, not a mod, not ours) reports **372** km/h and actually does
+**160**: 2.33x. With the two known points the display curve fits a clean power law -
+
+    displayed = 6.96 * real^0.784
+
+| real km/h | old dial | multiplier |
+|---|---|---|
+| 160 | 372 | 2.33x |
+| 200 | 443 | 2.22x |
+| 233 | 499 | 2.14x |
+| 277 | 572 | 2.06x |
+| 350 | 687 | 1.96x |
+| 500 | 909 | 1.82x |
+
+- It is **not** near 1.0 at low speed (an earlier guess in this file): at a car's 160 km/h it is
+  still 2.33x. The curve does not inflate harder as speed rises, it **compresses the top end** -
+  roughly double everywhere, a little less the faster you go. Below ~150 km/h we have no data.
+- **A real 233 km/h displays as 500.** The car already does 277 real, which the game's own HUD
+  would print as 572 - the same number the Jesko shows, since it is the same machine underneath.
+- That also fixes the shape of the build job: with a truthful dashboard, a dial reading of 500
+  means **500 km/h real**, not 233.
+
 ### Delivered: a TRUE speedometer, for every vehicle
 
 `phoenix_aston_valkyrie.reds` already bypassed the display curve, but only for our car
