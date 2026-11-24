@@ -42,6 +42,34 @@ the car refuses to pass ~150 km/h, that is the version, not the car.
 | Steering behaviour | tracks straight hands-off | any **wobble here is the car**, because no human is steering |
 | Audio / LEDs | revs climb, LEDs sweep, no cut-out | audio ceiling = 138.89 |
 
+## 3b. Known: it plateaus at ~330 km/h (reported 2026-11-24)
+
+**330 km/h = 91.7 m/s = the *stock* Valkyrie's gear-7 `maxSpeed`.** Our record sets that
+same field to **138.89**, so a hard plateau on 91.7 is a **ceiling being enforced**, not
+the car running out of power: with `engineMaxTorque 3824` and `airResistanceFactor 0.90`
+the terminal velocity is north of 450, nowhere near 330.
+
+Three candidates, cheap to separate:
+
+| Candidate | Check |
+|---|---|
+| the installed YAML is stale (old gear set) | `tools/gearbox-check.ps1` prints the **installed** file's gear 7 and counts `138.89` |
+| the `gears:` `!remove` / `!append` block did not take (TweakXL error) | same file shows the TweakXL log lines; an `Ambiguous`/`not found` on the gear records is the answer |
+| drag wall after all | negative result of both, *and* the engine sits **mid-rev** at the plateau |
+
+In-game tell, no tools: at the plateau, are the rev lights pinned (engine maxed → the game
+thinks that is top gear) or mid-scale (engine has headroom → drag)?
+
+```powershell
+cd $HOME\f1-cyberpunk-mod
+powershell -ExecutionPolicy Bypass -File .\tools\gearbox-check.ps1
+```
+
+If the file is clean and the logs are silent, the A/B test settles it: set gear 7
+`maxSpeed` to `100` (360 km/h) and rerun — plateau moves to 360 means it is the gear
+ceiling and the append is being ignored; still 330 means it is drag, and
+`airResistanceFactor` comes down from 0.90.
+
 ## 4. If it wobbles while autodriving
 
 That is the useful result of removing human input: **any** yaw oscillation is now

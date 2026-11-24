@@ -32,6 +32,7 @@ tools/package.py                 payload-layout validator + Nexus zip builder
 tools/inspect_archive.py         list/lookup paths inside a .archive (no WolvenKit needed)
 tools/dump-car-manager.ps1       one-file evidence dump for the paint/compat work
 tools/stability-tweak.ps1        optional high-speed steering profile (game copy only)
+tools/gearbox-check.ps1          why does it stop at 330 km/h? installed YAML + TweakXL logs
 tools/localization/en-us.json    CR2W onscreens source -> "Phoenix AMV LMH"
 tests/                           41 tests (port + packaging + archive inspection)
 docs/                            install + test matrix, packaging, rename map, field map,
