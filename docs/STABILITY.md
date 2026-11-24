@@ -596,6 +596,30 @@ Three things follow:
 So the target is unchanged - raise the weave onset above 80 - but the metric is now "does the top
 of the sawtooth move", not "does the plateau move".
 
+### The period is 18-22 s, and it is not the yaw mode (measured 2026-11-24)
+
+Brake to brake is **18-22 s**, varying with terrain (shorter on convex crests, longer in
+concave compression). That is twenty-five times the yaw mode's 0.8 s period, so the sawtooth is
+not the oscillation - it is the **envelope**: the time to re-accelerate from wherever ADE's brake
+left the car back up to 80, plus the time for the weave to grow to ADE's braking threshold.
+
+Two things fall out of that number, and both are good news:
+
+1. **The instability is only just unstable.** If the weave needs 12-18 s (15-22 cycles at 0.8 s) to
+   grow from a nudge to a brake, the growth rate is `σ = ln(10)/t` ≈ **0.11-0.19 s⁻¹**, i.e. a time
+   constant of 5-9 s. A mode with that little growth is sitting a hair on the wrong side of the
+   axis, and a small gain reduction is enough to move it - which is exactly the size of change
+   build 900024 makes (steering authority -36 %, rate -10 %, inertia +10 %). A violently unstable
+   car would give a 2-3 s envelope, not 20.
+2. **Terrain modulates the margin, it does not cause the failure.** The period swings 20 % between
+   compression and crest, which is consistent with everything measured: vertical load changes how
+   close the loop sits to the axis. The 4.6 km road's crests were *a* modulator; the 11.3 km
+   straight shows the onset is the same 80 m/s without them.
+
+The corollary is a measurement worth making: **the bottom of the sawtooth** (how far ADE lets the
+speed fall) turns the period into a net-force figure at ~77 m/s - see `docs/TOPSPEED-TEST.md` §2e.
+That is the first in-game thrust number this project would have, and the 500 km/h design needs it.
+
 ## Step 15 — attack the onset, keep the recovery (builds 900023, 900024)
 
 AWD fixed divergence and moved onset by nothing, so the onset has to be bought on the gain axis.

@@ -195,6 +195,42 @@ All three runs on one build, changing only Mod Settings (they apply live):
 Run 2 is the single most informative test in this document: it is the only setting that can make
 the "80 m/s onset" vanish without touching the car at all.
 
+## 2e. The sawtooth is a free thrust bench
+
+ADE's limit cycle is: climb to 80 m/s, weave, brake, fall, climb again, every **18-22 s**. The
+climb half is a full-throttle acceleration run that the controller performs for us, repeatedly,
+on the same road. Two readings turn it into data:
+
+- **the trough speed** `v_min` - how far the brake lets it fall
+- **the climb time** - how long from `v_min` back to 80
+
+Then `a = (80 - v_min) / t_climb` and the **net force** at ~77 m/s is `F = m·a` with m = 1750 kg:
+
+| Δv (80 → trough) | climb time | mean accel | net force |
+|---|---|---|---|
+| 5 m/s | 16 s | 0.31 m/s² | 547 N |
+| 10 m/s | 16 s | 0.62 m/s² | 1 094 N |
+| 15 m/s | 16 s | 0.94 m/s² | 1 641 N |
+| 20 m/s | 16 s | 1.25 m/s² | 2 188 N |
+| 20 m/s | 20 s | 1.00 m/s² | 1 750 N |
+
+That is the surplus over drag, in the game's own units, at the speed where the 500 km/h problem
+lives. Nothing else in this project has ever measured it.
+
+### Why it matters: the sizing question, in one line
+
+If the stock car's **86 m/s manual hold is its terminal speed** (the top gear allows 91.7, so the
+car either runs out of thrust at 86 or is gear-capped at 91.7 - see the test below), then drag
+force goes as `factor · v²` and reaching 138.9 m/s needs:
+
+- **the drag factor down from 1.35 to ~0.52** (force × 0.385), or
+- **2.6× the force** with drag left alone.
+
+Which of those is the real job depends on one observation, and it costs nothing: **flat out down
+the whole 11.3 km and watch whether the number stops at 86.** A plateau at 86 means drag-limited,
+and the 500 build is a drag-and-gearing job. A number that creeps toward 91.7 and then stops means
+the gearbox is the cap, and the 500 build is a gearing job with drag as the secondary.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |
