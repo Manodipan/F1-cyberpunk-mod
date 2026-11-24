@@ -91,6 +91,7 @@ RENAME = [
 STOCK_TO_F1 = {
     ("horsepower", "680"): "2000",                 # scanner hp        (VehicleUIData)
     ("engineMaxTorque", "1300"): "3824",           # torque
+    ("maxRPM", "10100"): "7900",                   # the curve's real ceiling, not the wish
     ("airResistanceFactor", "1.35"): "0.60",       # drag (0.90 could not pass 300)
     ("turnUpdateMaxSpeedThreshold", "26"): "45",   # steering: authority still alive at 162 km/h
     ("turnUpdateMaxSpeedTurnMul", "0.33"): "0.21",  # ...then cut to 21% - the 572 km/h car's band
@@ -175,15 +176,25 @@ GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
 # torque-multiplier curve that tapers instead of falling off a cliff. The virtual
 # gearbox in the redscript (PhoenixAMV_GearSpeed) is regenerated from the same table,
 # so HUD revs and shift points stay honest.
+# 2026-11-24, after the second in-game run: the box revved to 10 050 rpm because that is
+# what a record can *say*. Two different gearboxes both stopped at ~7 850 and ~8 020 rpm -
+# 308 km/h in 6th of this ladder, ~300 km/h in 7th of the previous one. Different gearing,
+# same rpm. That is not gearing: it is the **torque curve**. Our engine inherits the
+# SuperSport `gearCurvesPath`, and no curve in the game reaches 10 100 - past its top the
+# engine makes nothing, so the car stops wherever it hits the end of the curve.
+#
+# Both working reference cars write their own `gearCurvesPath` and both top out around
+# 7 600-7 900 rpm. So the box is now geared to finish at 7 800 rpm: 500 km/h at 130 km/h
+# per 1 000 rpm is reachable *inside* the curve instead of past it.
 PHOENIX_GEARBOX = {
     #  gear: (minSpeed, maxSpeed, torqueMultiplier, minEngineRPM, maxEngineRPM)
-    "1": (0.0,    32.0,  0.780, 1000, 9800),
-    "2": (29.8,   40.9,  0.720, 7150, 9800),
-    "3": (38.0,   52.2,  0.665, 7150, 9850),
-    "4": (48.5,   66.6,  0.610, 7150, 9850),
-    "5": (61.9,   85.0,  0.560, 7200, 9900),
-    "6": (79.1,  108.6,  0.530, 7250, 9950),
-    "7": (101.0, 138.89, 0.500, 7300, 10050),
+    "1": (0.0,    32.0,  0.780,  900, 7800),
+    "2": (29.8,   40.9,  0.720, 5680, 7800),
+    "3": (38.0,   52.2,  0.665, 5680, 7800),
+    "4": (48.5,   66.6,  0.610, 5680, 7800),
+    "5": (61.9,   85.0,  0.560, 5680, 7800),
+    "6": (79.1,  108.6,  0.530, 5680, 7800),
+    "7": (101.0, 138.89, 0.500, 5670, 7800),
 }
 GEAR_FIELDS = ("minSpeed", "maxSpeed", "torqueMultiplier", "minEngineRPM", "maxEngineRPM")
 

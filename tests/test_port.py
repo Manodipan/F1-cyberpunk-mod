@@ -171,6 +171,7 @@ class PhysicsTests(unittest.TestCase):
             "minLatFrictionCoef: 1.45",
             "minLongFrictionCoef: 1.45",
             "maxSpeedFactorGround: 0.70",
+            "maxRPM: 7900",
         ):
             self.assertIn(expected, self.out, expected)
 
@@ -180,7 +181,6 @@ class PhysicsTests(unittest.TestCase):
             "handbrakeBrakingTorque: 2600",
             "wheelTurnMaxAddPerSecond: 94",
             "wheelTurnMaxSubPerSecond: 150",
-            "maxRPM: 10100",
             "total_mass: 1750",
             "chassis_mass: 1750",
             "turningRollFactor: 0",
@@ -279,7 +279,7 @@ class GearLadderTests(unittest.TestCase):
         for g in range(1, 8):
             lo, hi = self.gears[str(g)][3], self.gears[str(g)][4]
             self.assertLess(lo, hi, g)
-            self.assertLessEqual(hi, 10100, g)              # engine maxRPM
+            self.assertLessEqual(hi, 7900, g)               # engine maxRPM
 
     def test_each_gear_tracks_its_own_rpm_band(self):
         """The shipped 7th was 1.80x of speed over 1.28x of rpm - a gear with two ratios."""

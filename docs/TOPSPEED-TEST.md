@@ -226,6 +226,34 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
+## 3g. SOLVED (probably): the engine was revving past its curve
+
+The control run answered the big question first: **the Zonda reaches 355 km/h from a gear
+table that says 180, and the Jesko passes 500 from a table that says 283.** Nothing in this
+install clamps speed, and gear `maxSpeed` is not a ceiling — those two cars run ~1.8-2× past
+their own declared top gear.
+
+That left our car's plateau with a very specific address. Two runs, two different gearboxes:
+
+| Run | Speed | Gear it was in | RPM at that speed |
+|---|---|---|---|
+| previous ladder | ~300 km/h | 7th (77 → 138.89 m/s, 7800 → 9950 rpm) | **~8 020 rpm** |
+| installed ladder | 308 km/h | 6th (79.1 → 108.6 m/s, 7250 → 9950 rpm) | **~7 845 rpm** |
+
+Different ratios, same rpm. **That is the torque curve, not the gearing.** Our engine record
+claimed `maxRPM: 10100` but inherited the SuperSport `gearCurvesPath`; no curve in the game
+reaches 10 100, and past the end of a curve the engine produces nothing. Both reference cars
+write their own curve and both top out near 7 600-7 900 rpm.
+
+**Shipped:** `maxRPM` 10100 → **7900**, and every forward gear re-geared to finish at
+**7 800 rpm**, so 138.89 m/s now lands inside the curve instead of past it.
+
+| Outcome | Meaning |
+|---|---|
+| **~500 or beyond** | the curve was the wall. Trim drag so it lands on 500 |
+| ~390 / ~310 again | read the revs where it stops — if it is still ~7 800, the curve ends there and we need a different `gearCurvesPath`; tell me the number and I will pick a curve that reaches higher |
+| slower but stable | we lost speed to the rpm drop; raise the multipliers before touching anything else |
+
 ## 3f. Wobble build: AWD + downforce + damping (shipped 2026-11-24)
 
 Three changes, all aimed at the wobble, none of them aimed at top speed. If the car gets

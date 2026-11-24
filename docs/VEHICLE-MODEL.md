@@ -135,7 +135,7 @@ rate is lower (94 vs 137), which is the more conservative side of that compariso
 |---|---|
 | `engineMaxTorque` | peak torque — the single biggest lever on acceleration |
 | `maxRPM` / `minRPM` | rev range the transmission works inside |
-| `gearCurvesPath` | the **torque curve** (a `.curveset`): torque as a function of RPM. Inherited from the base engine unless you change it |
+| `gearCurvesPath` | the **torque curve** (a `.curveset`): torque as a function of RPM. Inherited from the base engine unless you change it — and it, not `maxRPM`, decides how far the engine actually revs |
 | `gears[]` | the gear list — see below |
 | `gearChangeTime`, `gearChangeCooldown` | shift duration and lockout |
 | `flyWheelMomentOfInertia` | how lazily revs build/fall |
@@ -151,7 +151,7 @@ rate is lower (94 vs 137), which is the more conservative side of that compariso
 | `minEngineRPM` / `maxEngineRPM` | RPM window used in that gear |
 | `torqueMultiplier` | how hard the engine pulls **through** that window |
 
-Three things the community keeps relearning, and the third one is what cost us two
+Four things the community keeps relearning. The last one is what actually cost us the
 evenings:
 
 1. **`maxSpeed` is not a hard speed cap.** A car whose last gear says 78.5 m/s can still
@@ -174,6 +174,15 @@ evenings:
    where its last pullable gear ended, twice. The stock car looked "capped at 91.7 m/s"
    only because its 7th spans 15 m/s and can pull it. Lesson: **spread the ladder, don't
    stretch the top gear** — even steps of ~1.28× across seven gears, top window ~1.4×.
+
+4. **`maxRPM` is a wish; `gearCurvesPath` is the law.** Our engine record inherited the
+   SuperSport torque curve and claimed `maxRPM: 10100`. No curve in the game reaches that,
+   and past the end of the curve the engine makes nothing — so the car stops exactly where
+   it hits the curve's ceiling, whatever the gearing. Measured twice, with two different
+   gearboxes: **~7 850 rpm** (308 km/h in 6th) and **~8 020 rpm** (~300 km/h in 7th). Both
+   working reference cars write their own `gearCurvesPath` and both top out around
+   7 600-7 900 rpm. The box now finishes at 7 800 rpm so that 500 km/h happens *inside* the
+   curve instead of past it.
 
 ## 5. Speed: units, the HUD, and the limiter
 

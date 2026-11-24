@@ -9,7 +9,7 @@ gearbox and speed units work — see [`VEHICLE-MODEL.md`](VEHICLE-MODEL.md).
 |---|---|---|---|---|
 | Scanner hp | 680 | 2000 | `VehicleUIData.horsepower` (`_data` record) | Confirmed |
 | Engine torque | 1300 | 3824 | `vehEngineData.engineMaxTorque` (`$base: VehicleEngineData_4_SuperSport`) | Confirmed |
-| Redline | 10100 | 10100 | `vehEngineData.maxRPM` (unchanged) | Confirmed |
+| Redline | 10100 | **7900** | `vehEngineData.maxRPM` + every gear's `maxEngineRPM`. Two in-game runs stopped at ~7 850 and ~8 020 rpm regardless of gearing — the inherited torque curve's end, not ours | Confirmed in game 2026-11-24 |
 | Gearbox ladder | 7 gears, top 91.7 | 7 gears, **even 1.28× steps**, top 138.89 | per-gear `minSpeed`/`maxSpeed`/`torqueMultiplier`/`min|maxEngineRPM` in `Vehicle.xaires_amv_gear_1…7` **and** `XairesAMV_GearSpeed` in `aston_valkyrie_audio.reds` | Confirmed — the window is the ratio, and both places must move together (see `VEHICLE-MODEL.md` §4.3) |
 | Drag | 1.35 | 0.60 | `vehDriveModelData.airResistanceFactor` (911 base record was 1.93) | Confirmed |
 | Front grip | 1.29 / 1.15 | 1.60 / 1.50 | `wheelSetup.frontPreset.frictionMulLateral` / `.frictionMulLongitudinal` | Confirmed |

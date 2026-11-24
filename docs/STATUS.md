@@ -30,7 +30,7 @@ Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 
 | # | Item | Why | Unblocks it |
 |---|---|---|---|
-| 1 | **v5 wobble build** (stability first) | shipped 2026-11-24: **AWD** (`DRIVETRAIN`), downforce 1.40 → **0.70** (was twice every reference car), rebound damping made consistent at ~1.25× bound (stock had 5000 front vs 2900 rear on the same part) — aimed at the wobble, not at top speed. Top speed still unresolved (~308) pending the two-car control run | `docs/TOPSPEED-TEST.md` §3f reads the result; §3e (Zonda + Jesko speedos) still decides native-cap vs our-file |
+| 1 | **v6 rpm-ceiling build** | the control run proved nothing caps speed (Zonda 355 on a 180 table, Jesko 500+ on a 283 table), and located our plateau at **~7 850 rpm twice, in two different gearboxes** — the inherited torque curve's end, not our gearing. Shipped: `maxRPM` 10100 → 7900 and every gear re-geared to finish at 7 800 rpm; plus AWD, downforce 0.70 and consistent rebound damping for the wobble | `docs/TOPSPEED-TEST.md` §3g reads the result; `docs/VEHICLE-MODEL.md` §4.4 has the rule |
 | 2 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 | 3 | Reference corpus | every racing car mod's YAML is a worked example of drag/steering at speed, and comparing beats guessing | `make vehicles` (local corpus) + `reference/vehicles/INDEX.md` (committed facts) — see `reference/vehicles/README.md` |
 | 4 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |
