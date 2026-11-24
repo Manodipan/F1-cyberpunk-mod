@@ -1,5 +1,9 @@
 # Install + test — Phoenix_aston_cheats
 
+
+> **Updating an existing install?** Don't work through this page again —
+> run [`UPDATE.md`](UPDATE.md)'s one command, which pulls, copies and verifies.
+
 Target: stock Valkyrie **and** Phoenix installed side by side, one car each,
 2000 hp vs 680 hp in the scanner footer (PORT.md §5).
 

@@ -71,6 +71,8 @@ to xaires) are left verbatim on purpose.
 
 ## Read before installing
 
+* **Updating:** [`docs/UPDATE.md`](docs/UPDATE.md) — one command (pull + install +
+  verify): `powershell -ExecutionPolicy Bypass -File .\tools\update.ps1`
 * [`docs/INSTALL.md`](docs/INSTALL.md) — two-mod install, summon, 7-test matrix, logs.
 * [`compat/xaires_car_manager/`](compat/xaires_car_manager/README.md) — one-line patch so the
   Car Manager paints the Phoenix (all 149 colours, no art).
