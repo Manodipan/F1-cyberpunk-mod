@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900023
+  horsepower: 900024
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 
@@ -145,7 +145,7 @@ Vehicle.phoenix_aston_valkyrie:
     # Direksiyon (Apollo "cok agir" sonrasi): 86 derece/s, 24 m/s ustu %29
     wheelTurnMaxAddPerSecond: 85
     turnUpdateMaxSpeedThreshold: 26
-    turnUpdateMaxSpeedTurnMul: 0.33
+    turnUpdateMaxSpeedTurnMul: 0.21
     driveHelpers:
       - $base: Vehicle.RotationLimiter_Exotic
         maxAngularSpeedRad: 2.6

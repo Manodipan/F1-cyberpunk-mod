@@ -751,7 +751,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 23
+BUILD = 24
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -941,6 +941,13 @@ STABILITY_TARGETS = {(k, new) for k, _old, new in STABILITY_OVERLAY}
 STOCK_OVERLAY = (
     ("wheelTurnMaxAddPerSecond", "94", "85"),
     ("momentOfInertia", "{ x: 3050, y: 900, z: 3530 }", "{ x: 3355, y: 990, z: 3883 }"),
+    # Step 15: the third and largest gain lever. Steering authority above
+    # `turnUpdateMaxSpeedThreshold` (26 m/s) - the multiplier on every steering command the
+    # controller sends once the car is quick. 0.33 is the stock car's; 0.21 is the reference's,
+    # and with the alternative turn-update OFF (as it is here) the low value damps response
+    # rather than sharpening it. -36 % response per correction, which for a limit cycle is the
+    # thing that decides whether a correction settles or rings.
+    ("turnUpdateMaxSpeedTurnMul", "0.33", "0.21"),
 )
 STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 

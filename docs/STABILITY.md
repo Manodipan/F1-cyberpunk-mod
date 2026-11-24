@@ -568,16 +568,51 @@ wobble has a traction component and the RWD-authentic fix is rear grip (or a tor
 does not saturate the rears), not permanent four-wheel drive. If it does not move, the wobble is
 steering/aero — the loop-gain axis — and step 13's two levers come back.
 
-## Step 15 — attack the onset, keep the recovery (build 900023)
+### What the ADE number actually looks like (2026-11-24, owner's correction)
+
+> "ADE doesn't hold there, it reaches, wobbles, brakes, slows down."
+
+That is not a ceiling, it is a **hysteresis limit cycle**, and it changes the reading of every ADE
+figure in this document:
+
+```
+accelerate -> weave starts at 80 -> ADE brakes -> speed falls -> weave decays
+          -> accelerate -> weave at 80 again -> ...
+```
+
+Three things follow:
+
+1. **80 is the weave onset, confirmed a fourth time.** It is the top of the sawtooth, so it is a
+   real property of car + controller, not a target ADE sits at.
+2. **"ADE top speed" is not a capability measurement at all.** It is the peak of a relaxation
+   cycle whose amplitude ADE chooses. The manual number (86) is the capability, because a human
+   nudges through the same weave without braking.
+3. **The loop closes through the brake.** ADE is not a passive observer of the instability - it
+   detects it and responds, which means the one measurement that would be most useful is the
+   **period** of the cycle: how many seconds from weave to brake to full speed again. That period
+   is the yaw mode's period as the car actually experiences it, and it can be compared against the
+   1.23 rad/s body-mode estimate (0.8 s per cycle) that all the damping arithmetic assumed.
+
+So the target is unchanged - raise the weave onset above 80 - but the metric is now "does the top
+of the sawtooth move", not "does the plateau move".
+
+## Step 15 — attack the onset, keep the recovery (builds 900023, 900024)
 
 AWD fixed divergence and moved onset by nothing, so the onset has to be bought on the gain axis.
 Build 900023 keeps AWD and adds the two levers from step 13, the only changes in this entire log
 that ever moved a wobble *down*:
 
-| field | stock | 900023 | mechanism |
+| field | stock | 900024 | mechanism |
 |---|---|---|---|
 | `wheelTurnMaxAddPerSecond` | 94 | **85** | slower command = first-order lag on the input ADE taps |
 | `momentOfInertia` | 3050 / 900 / 3530 | **3355 / 990 / 3883** | ω_ψ ∝ 1/√I_z → yaw mode −4.7 %, below ADE's bandwidth |
+| `turnUpdateMaxSpeedTurnMul` | 0.33 | **0.21** | steering authority above 26 m/s, −36 % response per correction |
+
+900023 (the first two) went out and was superseded before it was driven: a limit cycle is worth
+the whole gain axis at once, and with a restart per build the owner's time is the scarce resource.
+900024 is the three together. **If it works, bisect downwards in this order** - inertia first (it
+is the one that trades recovery for onset), then the steering rate, then the multiplier - to find
+the smallest set that holds the gain.
 
 The thing to watch: **inertia cuts both ways.** A slower yaw mode is slower to be excited and also
 slower to settle, so it can make the recovery that AWD just bought slightly lazier. If the onset

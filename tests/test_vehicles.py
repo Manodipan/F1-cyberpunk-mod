@@ -47,7 +47,7 @@ class TestProfile(unittest.TestCase):
         self.assertEqual(self.row["engineMaxTorque"], "1300")
         self.assertEqual(self.row["total_mass"], "1750")
         self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "85")   # step 15: 10 % below stock
-        self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.33")
+        self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")   # step 15: the reference's, damps
 
     def test_vehicle_record_not_its_satellites(self):
         self.assertEqual(self.row["records"], ["Vehicle.phoenix_aston_valkyrie"])
