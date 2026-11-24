@@ -98,6 +98,30 @@ The cost, stated honestly: `rearWheelsLatFrictionCoef` 0.9 -> 1 removes some of 
 rotation, so handbrake turns will be less lurid. That is a deliberate trade - rotation bias is
 exactly what makes a 280 km/h car bite.
 
+## Step 4, staged and ready (not shipped — step 3 is untested)
+
+Sweeping the fields nobody had looked at yet turns up one that names itself:
+
+| field | Jesko | stock Aston | Pagani |
+|---|---|---|---|
+| `driftLimit` | **2.3** | **1.6** | absent |
+| `handbrakeLimit` | 2.49 | absent | absent |
+
+`driftLimit` lives in the rotation limiter helper (`gamedataRotationLimiter_Record`) - it is the
+game's own anti-spin system, the angular rate the car is allowed to reach before the helper
+intervenes. The reference raises it **44 %** above the stock Aston's. A car permitted 44 % more
+rotation before the safety net engages is a car that spins *before* the net catches it, and it
+costs nothing to give that back:
+
+    driftLimit  2.3 -> 1.6      (stock Aston's)
+    handbrakeLimit 2.49 -> 1.6  (or remove; it is Jesko-only too)
+
+Also found and **deliberately left alone**, because their semantics are not documented and I am
+not going to guess twice in a row: `slipAngleCurveScale: 2`, `slipRatioCurveScale: 2`,
+`slipAngleMinSpeedThreshold: 3`, `slipRatioMinSpeedThreshold: 5` - all four are Jesko-only. They
+shape the tyre slip curves, and a 2x scale could plausibly widen the linear region (good) or
+sharpen the peak (bad). That is a question for a build, not for a paragraph.
+
 ## The physical basis, quantified
 
 Take the game's numbers at face value as SI-ish: `springStiffness` 27 as N/mm wheel rate, damping
