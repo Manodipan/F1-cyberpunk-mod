@@ -55,7 +55,7 @@ docs/                            install + test matrix, packaging, rename map, f
 | Drivetrain | RWD | **AWD** (`DRIVETRAIN` flag; the real LMH is RWD) |
 | Rear friction helper | 0.95 / 0.95 | **1.45 / 1.45** |
 | Downforce (`maxSpeedFactorGround`) | 0.60 | **0.70** (was 1.40 — twice every reference car) |
-| Sway F/R · braking F/R | 11/16 · 1410/1200 | **15/19 · 1850/1550** |
+| Sway F/R · braking F/R | 11/16 · 1410/1200 | **15/19 · 1400/1150** (ours were the strongest of five cars) |
 | Springs / damping | 23/22, 2000 | **30/28, 3000** |
 | Steering (add / return / threshold / mul) | 94 / inherited / 26 / 0.33 | **94 / 150 / 45 / 0.21** (the 572 km/h car's band, explicit return rate) |
 

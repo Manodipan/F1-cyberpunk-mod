@@ -226,6 +226,23 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
+## 3h. The car braking itself at 350 (2026-11-24)
+
+Reported right after 3g worked: *"it hits 350+ but as soon as it does it hits the brakes,
+brakes are too good."* Two things, and the five-car table named both:
+
+| Cause | Evidence |
+|---|---|
+| **brakes too strong** | ours were 1850 / 1550 Nm — the highest of all five cars (next: 1410/1200; Jesko 1165/785; Zonda 1350/1150; Quadra 1203/802). Handbrake was 2600 against 1600 (Jesko) and 1156 (Quadra) |
+| **engine braking inherited, then doubled by AWD** | `resistanceTorque` — documented as "the decrease in torque during throttle lift-off" — was never written in our engine record, so it came from the SuperSport base with an unknown value. In 3f we made **all four wheels driven**, so that unseen brake now acts through four wheels instead of two. Auto Drive lifts at the end of a fast section; that is the moment the car "hits the brakes" by itself |
+
+**Shipped:** `maxBrakingTorque` → **1400 / 1150**, `handbrakeBrakingTorque` → **1600**,
+`resistanceTorque` → **150** (explicit, the Jesko's value).
+
+If it still brakes hard, the remaining suspect is the shift itself: tell me **which gear
+number the dash shows when it happens** — if it is 7, the box is upshifting into a gear whose
+window starts above the current speed and the game is retarding rather than accelerating.
+
 ## 3g. SOLVED (probably): the engine was revving past its curve
 
 The control run answered the big question first: **the Zonda reaches 355 km/h from a gear

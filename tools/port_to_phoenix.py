@@ -99,8 +99,11 @@ STOCK_TO_F1 = {
     ("frictionMulLongitudinal", "1.15"): "1.50",   # front grip, longitudinal
     ("frictionMulLateral", "1.33"): "1.70",        # rear grip, lateral (25% over the
     ("frictionMulLongitudinal", "1.20"): "1.68",   # rear grip, longitudinal
-    ("maxBrakingTorque", "1410"): "1850",          # front brakes
-    ("maxBrakingTorque", "1200"): "1550",          # rear brakes
+    # 2026-11-24: ours were the strongest brakes of the five cars we have (1850/1550 against
+    # 1165-1410 everywhere else) - "the car hits the brakes at 350 and stops" literally.
+    ("maxBrakingTorque", "1410"): "1400",          # front brakes (was 1850)
+    ("maxBrakingTorque", "1200"): "1150",          # rear brakes  (was 1550)
+    ("handbrakeBrakingTorque", "2600"): "1600",    # 1.6x nothing: the Jesko runs 1600, the Quadra 1156
     ("springStiffness", "23"): "30",               # front spring
     ("springStiffness", "22"): "28",               # rear spring
     ("springDamping", "2000"): "3000",             # damping (both axles)
@@ -237,6 +240,12 @@ ENGINE_EXPLICIT = {
     "gearChangeCooldown": "0.15",
     "fastR1GearChange": "true",
     "wheelsResistanceRatio": "15",                # vanilla sample value; docs do not say more
+    # Engine braking. Documented as "the decrease in torque during throttle lift-off", so a
+    # large inherited value is a brake you never asked for - and with AWD it now acts through
+    # four driven wheels instead of two, which is exactly the moment the car started parkinging
+    # itself at 350. Reference values: Jesko 150, Quadra 202.78. Inherited value unknown, so
+    # it is written out (2026-11-24).
+    "resistanceTorque": "150",
 }
 ENGINE_BLOCK_RE = re.compile(r"(?m)^(?P<indent>[ \t]+)vehEngineData:[ \t]*\r?\n")
 ENGINE_HEAD_RE = re.compile(r"(?m)^(?P<indent>[ \t]+)engineMaxTorque:[^\r\n]*\r?\n")

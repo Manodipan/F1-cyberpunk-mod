@@ -161,8 +161,8 @@ class PhysicsTests(unittest.TestCase):
             "frictionMulLongitudinal: 1.50",
             "frictionMulLateral: 1.70",
             "frictionMulLongitudinal: 1.68",
-            "maxBrakingTorque: 1850",
-            "maxBrakingTorque: 1550",
+            "maxBrakingTorque: 1400",
+            "maxBrakingTorque: 1150",
             "springStiffness: 30",
             "springStiffness: 28",
             "springDamping: 3000",
@@ -172,13 +172,14 @@ class PhysicsTests(unittest.TestCase):
             "minLongFrictionCoef: 1.45",
             "maxSpeedFactorGround: 0.70",
             "maxRPM: 7900",
+            "resistanceTorque: 150",
         ):
             self.assertIn(expected, self.out, expected)
 
     def test_untouched_values(self):
         for keep in (
             "maxSpeedFactorAir: 0",
-            "handbrakeBrakingTorque: 2600",
+            "handbrakeBrakingTorque: 1600",
             "wheelTurnMaxAddPerSecond: 94",
             "wheelTurnMaxSubPerSecond: 150",
             "total_mass: 1750",

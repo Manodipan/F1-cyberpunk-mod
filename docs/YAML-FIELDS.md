@@ -11,13 +11,14 @@ gearbox and speed units work — see [`VEHICLE-MODEL.md`](VEHICLE-MODEL.md).
 | Engine torque | 1300 | 3824 | `vehEngineData.engineMaxTorque` (`$base: VehicleEngineData_4_SuperSport`) | Confirmed |
 | Redline | 10100 | **7900** | `vehEngineData.maxRPM` + every gear's `maxEngineRPM`. Two in-game runs stopped at ~7 850 and ~8 020 rpm regardless of gearing — the inherited torque curve's end, not ours | Confirmed in game 2026-11-24 |
 | Gearbox ladder | 7 gears, top 91.7 | 7 gears, **even 1.28× steps**, top 138.89 | per-gear `minSpeed`/`maxSpeed`/`torqueMultiplier`/`min|maxEngineRPM` in `Vehicle.xaires_amv_gear_1…7` **and** `XairesAMV_GearSpeed` in `aston_valkyrie_audio.reds` | Confirmed — the window is the ratio, and both places must move together (see `VEHICLE-MODEL.md` §4.3) |
-| Drag | 1.35 | 0.60 | `vehDriveModelData.airResistanceFactor` (911 base record was 1.93) | Confirmed |
+| Drag | 1.35 | 0.60 |
+| Engine braking | inherited | **150** (`resistanceTorque` — the throttle-lift-off torque penalty) | `vehDriveModelData.airResistanceFactor` (911 base record was 1.93) | Confirmed |
 | Front grip | 1.29 / 1.15 | 1.60 / 1.50 | `wheelSetup.frontPreset.frictionMulLateral` / `.frictionMulLongitudinal` | Confirmed |
 | Rear grip | 1.33 / 1.20 | 1.70 / 1.68 | `wheelSetup.backPreset.…` | Confirmed |
 | Rear helper | 0.95 | 1.45 | `driveHelpers` → `RearWheelsFrictionModifier_Exotic.minLatFrictionCoef` **and** `.minLongFrictionCoef` (both 0.95) | Confirmed |
 | Downforce | 0.60 | 0.70 | `driveHelpers` → `DynamicDownforceHelper_Exotic.maxSpeedFactorGround` (`maxSpeedFactorAir: 0` stays) | Confirmed |
 | Sway F/R | 11 / 16 | 15 / 19 | `frontPreset` / `backPreset` `swaybarStiffness` | Confirmed |
-| Braking F/R | 1410 / 1200 | 1850 / 1550 | `frontPreset` / `backPreset` `maxBrakingTorque` | Confirmed |
+| Braking F/R | 1410 / 1200 | 1400 / 1150 | `frontPreset` / `backPreset` `maxBrakingTorque` | Confirmed |
 | Steering | 94 / 26 / 0.33 | 94 / **150** / **45** / **0.21** | `wheelTurnMaxAddPerSecond` / `wheelTurnMaxSubPerSecond` (added) / `turnUpdateMaxSpeedThreshold` / `turnUpdateMaxSpeedTurnMul` (source note: "86 derece/s, 24 m/s üstü %29") | Confirmed — "45" is a speed threshold in m/s, **not** the steering return rate; the pair now matches the 572 km/h reference car |
 | Springs F/R | 23 / 22 | 30 / 28 | `springStiffness` | Confirmed |
 | Damping | 2000 | 3000 | `springDamping`, plus `springReboundDamping` 3750/3900 and `…LowRate` 3600/3600 — the stock rebound pair was 5000 front vs 2900 rear against the same 2900 bound | Confirmed |
