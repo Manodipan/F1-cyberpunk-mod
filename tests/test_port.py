@@ -190,6 +190,23 @@ class PhysicsTests(unittest.TestCase):
         ):
             self.assertIn(keep, self.out, keep)
 
+    def test_physics_is_attached_by_reference(self):
+        """Both working reference mods attach physics by naming the record, not by nesting
+        it. Same values either way - but this is the shape a proven mod ships."""
+        for ref in ("vehEngineData: Vehicle.phoenix_amv_engine",
+                    "vehDriveModelData: Vehicle.phoenix_amv_drive_model",
+                    "vehWheelDimensionsSetup: Vehicle.phoenix_amv_wheel_dimensions"):
+            self.assertIn(ref, self.out, ref)
+        for rec in ("Vehicle.phoenix_amv_engine:",
+                    "Vehicle.phoenix_amv_drive_model:",
+                    "Vehicle.phoenix_amv_wheel_dimensions:"):
+            self.assertIn(rec, self.out, rec)
+
+    def test_gears_inherit_from_nothing(self):
+        """TweakXL docs: inlineX bases shift between patches without warning."""
+        self.assertNotIn("v_sport1_quadra_turbo_r_inline", self.out)
+        self.assertEqual(self.out.count("$type: gamedataVehicleGear_Record"), 8)
+
     def test_grip_is_near_symmetric_front_to_back(self):
         """Every car we have data for runs the axles within 6% laterally; the old 2.00/1.60
         was 25% apart and was the last unexplained source of yaw nervousness."""

@@ -207,6 +207,41 @@ def ensure_engine_fields(text: str) -> str:
     return text[:head.end()] + add + text[head.end():]
 
 
+# The stock mod bases every gear on a *game-internal inline record*:
+#     $base: Vehicle.v_sport1_quadra_turbo_r_inline10 ... _inline14
+# (gears 4, 5, 6 and 7 all base on the SAME one). TweakXL's own docs are blunt about this:
+# "NEVER use inlineX records as base in your items ... the number generated will be
+# dependent on the position of the inline record inside another record and can change
+# without ANY warning on every single game update." If that base fails to resolve, the
+# gear record is not registered - and a gear list pointing at records that do not exist
+# leaves the engine record unusable, i.e. the car silently keeps its parent's physics.
+# Which is one of the two explanations left for a car that ignores every number we change.
+#
+# We already write all five gear fields explicitly, so the base bought us nothing: the
+# records now declare their type (as the working Jesko mod does) and inherit nothing.
+GEAR_TYPE = "gamedataVehicleGear_Record"
+GEAR_BASE_RE = re.compile(
+    r"(?m)^(?P<indent>[ \t]+)\$base:[ \t]*Vehicle\.[A-Za-z0-9_]*_inline[0-9]+[ \t]*\r?\n")
+
+
+def declare_gear_type(text: str) -> str:
+    """Inside the forward/reverse gear records, swap the inlineX $base for a $type."""
+    out: list[str] = []
+    gear = False
+    for line in text.splitlines(keepends=True):
+        if GEAR_RECORD_RE.match(line) or re.match(r"(?m)^Vehicle\.[A-Za-z0-9_]*_gear_r:[ \t]*$", line):
+            gear = True
+        elif line[:1] and not line[0].isspace() and not line.lstrip().startswith("#"):
+            gear = False
+        if gear:
+            m = GEAR_BASE_RE.match(line)
+            if m:
+                out.append(f"{m.group('indent')}$type: {GEAR_TYPE}\n")
+                continue
+        out.append(line)
+    return "".join(out)
+
+
 def apply_gearbox(text: str) -> str:
     """Rewrite every forward gear's window/multiplier from PHOENIX_GEARBOX."""
     out: list[str] = []
@@ -421,7 +456,8 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         out.append(written)
     text = "".join(out)
     if suffix in (".yaml", ".yml"):
-        text = apply_gearbox(text).replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
+        text = declare_gear_type(apply_gearbox(text))
+        text = text.replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
         return ensure_steering_return(ensure_engine_fields(text))
     if suffix == ".reds":
         return apply_virtual_gearbox(text)
@@ -467,6 +503,68 @@ def explicit_gears(text: str) -> str:
     return GEARS_BLOCK.sub(repl, text, count=1)
 
 
+# ---------------------------------------------------------------------------
+# 3d. Named records instead of inline blocks
+# ---------------------------------------------------------------------------
+# Both working references attach physics by *reference*:
+#     Quadra (vanilla retune): vehDriveModelData: Vehicle.turbor_afterburn_drive_model
+#                              vehEngineData: Vehicle.turbor_afterburn_engine
+#     Jesko:                   vehDriveModelData: Vehicle.jesko_attack_drive_model
+#                              vehEngineData: Vehicle.jesko_attack_engine
+# Ours (inherited from the stock mod) nests them inline, and the nested records base
+# themselves on game-internal inlines (VehicleDriveModelData_911Turbo_inline0/1/2/7).
+# Inline blocks are legal YAML, so this is not a syntax fix - it is removing the last
+# place where our physics depends on the *position* of someone else's record. The values
+# are identical either way; the shape is what a working mod ships.
+HOISTED = (
+    ("vehWheelDimensionsSetup", "Vehicle.phoenix_amv_wheel_dimensions"),
+    ("vehDriveModelData", "Vehicle.phoenix_amv_drive_model"),
+    ("vehEngineData", "Vehicle.phoenix_amv_engine"),
+)
+VEHICLE_RECORD = "Vehicle.phoenix_aston_valkyrie:"
+SUB_RE = re.compile(r"^(?P<indent>[ \t]{2})(?P<key>vehWheelDimensionsSetup|vehDriveModelData|vehEngineData):[ \t]*\r?\n")
+
+
+def hoist_subrecords(text: str) -> str:
+    """Move the three inline physics blocks into named records, reference them instead."""
+    lines = text.splitlines(keepends=True)
+    try:
+        start = next(i for i, ln in enumerate(lines) if ln.strip() == VEHICLE_RECORD)
+    except StopIteration:
+        return text
+
+    named: list[str] = []
+    out = lines[:start]
+    i = start
+    changed = False
+    while i < len(lines):
+        m = SUB_RE.match(lines[i])
+        if m and lines[i].startswith("  ") and not lines[i].startswith("   "):
+            key = m.group("key")
+            new_id = dict(HOISTED).get(key)
+            # collect the block: everything more indented than the key
+            j = i + 1
+            while j < len(lines) and (not lines[j].strip() or lines[j].startswith(("    ", "\t"))):
+                j += 1
+            if new_id:
+                body = lines[i + 1:j]
+                dedented = [ln[2:] if ln.startswith("  ") else ln for ln in body]
+                named.append(f"{new_id}:\n" + "".join(dedented))
+                out.append(f"  {key}: {new_id}\n")
+                changed = True
+                i = j
+                continue
+        out.append(lines[i])
+        i += 1
+    if not changed:
+        return text
+    return "".join(out[:-len(lines) + start] if False else out).replace(
+        VEHICLE_RECORD + "\n",
+        "\n".join(n.rstrip("\n") + "\n" for n in named) + "\n" + VEHICLE_RECORD + "\n",
+        1,
+    )
+
+
 def _rename_code(code: str) -> str:
     """Apply the identifier rules to a single code fragment."""
     masked, kept = _mask(code)
@@ -489,7 +587,11 @@ def port_text(text: str, suffix: str, physics: bool,
         body, newline = _split_eol(line)
         code, comment = split_comment(body, suffix)
         out.append(_rename_code(code) + comment + newline)
-    return explicit_gears("".join(out))
+    text = explicit_gears("".join(out))
+    # the hoist needs the *renamed* record name, so it runs after the rename pass
+    if physics and suffix in (".yaml", ".yml"):
+        text = hoist_subrecords(text)
+    return text
 
 
 FILE_RENAME = [

@@ -197,6 +197,23 @@ Practical rule for us: **trust relative changes, not absolute numbers.** If the 
 moves when we change a value, that value is the limit. If it does not move, it isn't —
 including the case where the limiter in (c) is the thing holding it.
 
+## 5c-bis. How the physics actually attaches
+
+Three ways exist to give a car its numbers, and they are not equally safe:
+
+| Shape | Who does it | Note |
+|---|---|---|
+| named records + reference (`vehEngineData: Vehicle.x_engine`) | Quadra vanilla retune, Jesko | what a proven mod ships; the record exists under its own name |
+| inline block under the vehicle record | Zonda, this mod (until 2026-11-24) | legal TweakXL, but the nested records base themselves on game-internal `inlineN` records |
+| `$base: <something>_inline7` | Zonda, this mod, stock mod | TweakXL's docs: inline indices "can change **without ANY warning** on every single game update" |
+
+Our gears were `$base: Vehicle.v_sport1_quadra_turbo_r_inline10…14` — and gears 4, 5, 6 and
+7 all based on **the same** inline. If that base ever stops resolving, the gear record is not
+registered, the gear list points at nothing, and the engine record is unusable — which would
+look exactly like a car that ignores every number you change. The gears now declare
+`$type: gamedataVehicleGear_Record` and inherit nothing; the drive model, engine and wheel
+dimensions are named records referenced from the vehicle record.
+
 ## 5d. What four cars say
 
 With four YAMLs in the repo (ours, the stock car we forked, a 572 km/h Jesko Attack and a

@@ -197,6 +197,35 @@ Restart the game (TweakXL reads YAML at boot; CET reload alone does not take).
 | stalls **~300 again** | ratio and engine-record theories are both dead | it is the engine-level speed limiter (`docs/VEHICLE-MODEL.md` §5c) — that needs the RED4ext unlimiter, not YAML. Report it; we decide whether the Phoenix ships with that dependency |
 | still wobbly at 400+ | steering band and grip symmetry are both now fixed, so the remaining suspects are downforce (1.40 vs 0.35-0.7 in every reference) and damping | report the speed it starts at; `stability-tweak.ps1` is the fallback |
 
+## 3e. The experiment that ends the guessing: drive the OTHER cars
+
+Every change to torque (×2.9), gear windows, drag (0.90 → 0.60) and the engine record has
+moved the plateau by noise: ~300, ~330, 308. Numbers that ignore a 2.9× torque change are
+not being limited by force. There are only two explanations left:
+
+* the game clamps vehicle speed natively (`docs/VEHICLE-MODEL.md` §5c), or
+* our physics records are not the ones the car is driving.
+
+**Both are settled by one run in a car you already have installed.** Same protocol as §2 —
+Auto Drive Enhanced at 100 %, long straight, hands off:
+
+| Car | Its YAML says | If it reads this | Then |
+|---|---|---|---|
+| **Pagani Zonda Revo** | 180 km/h (last gear 50 m/s) | **~180** | physics applies normally in this install, and its YAML is structurally near-identical to ours (same 911 base, same inline record bases) — so the fault is something specific to the Phoenix |
+| | | **~330** | inline/`$base` physics is being ignored by the install for this whole family of mods, ours included |
+| **Koenigsegg Jesko Attack** | 283 km/h (last gear 78.5 m/s) | **~572** | nothing clamps the game; speed above 330 is reachable and our file is wrong |
+| | | **~283** | the 572 number was never real (or was HUD-inflated) |
+| | | **~330** | a native cap, exactly as the speed-unlimiter mod implies |
+
+Two cars, two numbers, and the answer is unambiguous. No reinstall, no restart — just drive
+them the way you drive the Phoenix and read the speedo.
+
+**Shipped in the same build as this section:** the physics blocks are now *named records*
+referenced from the vehicle (`vehEngineData: Vehicle.phoenix_amv_engine`, matching the
+Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record` instead of
+inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
+depends on the position of somebody else's record.
+
 ## 4. If it wobbles while autodriving
 
 That is the useful result of removing human input: **any** yaw oscillation is now

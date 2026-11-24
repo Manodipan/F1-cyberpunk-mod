@@ -29,7 +29,7 @@ Vehicle.phoenix_amv_wheel_back:
 
 # 7 ileri sirali (hizlar m/s), V12 10000 devir sinirli. Vites = oran penceresi, hiz siniri degil: araliklar ~1.28x, son vites 101 -> 138.89 m/s (500 km/h)
 Vehicle.phoenix_amv_gear_r:
-  $base: Vehicle.v_sport1_quadra_turbo_r_inline10
+  $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.765
   minSpeed: 0
   maxSpeed: 15
@@ -37,7 +37,7 @@ Vehicle.phoenix_amv_gear_r:
   maxEngineRPM: 8300
 
 Vehicle.phoenix_amv_gear_1:
-  $base: Vehicle.v_sport1_quadra_turbo_r_inline11
+  $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.78
   minSpeed: 0
   maxSpeed: 32
@@ -45,7 +45,7 @@ Vehicle.phoenix_amv_gear_1:
   maxEngineRPM: 9800
 
 Vehicle.phoenix_amv_gear_2:
-  $base: Vehicle.v_sport1_quadra_turbo_r_inline12
+  $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.72
   minSpeed: 29.8
   maxSpeed: 40.9
@@ -53,7 +53,7 @@ Vehicle.phoenix_amv_gear_2:
   maxEngineRPM: 9800
 
 Vehicle.phoenix_amv_gear_3:
-  $base: Vehicle.v_sport1_quadra_turbo_r_inline13
+  $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.665
   minSpeed: 38
   maxSpeed: 52.2
@@ -61,7 +61,7 @@ Vehicle.phoenix_amv_gear_3:
   maxEngineRPM: 9850
 
 Vehicle.phoenix_amv_gear_4:
-  $base: Vehicle.v_sport1_quadra_turbo_r_inline14
+  $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.61
   minSpeed: 48.5
   maxSpeed: 66.6
@@ -69,7 +69,7 @@ Vehicle.phoenix_amv_gear_4:
   maxEngineRPM: 9850
 
 Vehicle.phoenix_amv_gear_5:
-  $base: Vehicle.v_sport1_quadra_turbo_r_inline14
+  $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.56
   minSpeed: 61.9
   maxSpeed: 85
@@ -77,7 +77,7 @@ Vehicle.phoenix_amv_gear_5:
   maxEngineRPM: 9900
 
 Vehicle.phoenix_amv_gear_6:
-  $base: Vehicle.v_sport1_quadra_turbo_r_inline14
+  $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.53
   minSpeed: 79.1
   maxSpeed: 108.6
@@ -85,31 +85,141 @@ Vehicle.phoenix_amv_gear_6:
   maxEngineRPM: 9950
 
 Vehicle.phoenix_amv_gear_7:
-  $base: Vehicle.v_sport1_quadra_turbo_r_inline14
+  $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.5
   minSpeed: 101
   maxSpeed: 138.89
   minEngineRPM: 7300
   maxEngineRPM: 10050
 
+Vehicle.phoenix_amv_wheel_dimensions:
+  $type: VehicleWheelDimensionsSetup
+  frontPreset:
+    $type: VehicleWheelDimensionsPreset
+    tireRadius: 0.392
+    rimRadius: 0.251
+    tireWidth: 0.341
+    wheelOffset: 0.10
+  backPreset:
+    $type: VehicleWheelDimensionsPreset
+    tireRadius: 0.392
+    rimRadius: 0.251
+    tireWidth: 0.374
+    wheelOffset: 0.08
+
+Vehicle.phoenix_amv_drive_model:
+  $base: Vehicle.VehicleDriveModelData_911Turbo
+  total_mass: 1750
+  chassis_mass: 1750
+  # 2026-11-13 tester: 260 km/h ustune cikmiyordu -> hava direnci 911 1.93 -> 1.35; el freni hafif 1000 -> 2600
+  airResistanceFactor: 0.60
+  handbrakeBrakingTorque: 2600
+  momentOfInertiaScale: { x: 1, y: 1, z: 1 }
+  # Caliburn atalet (2026-10-29; onceki Apollo x kutle 4030/1200/4410 fazlaydi)
+  momentOfInertia: { x: 3050, y: 900, z: 3530 }
+  # ortadan motorlu, %43/57: agirlik merkezi arka aksa dogru; yapay viraj yatmasi kapali
+  # z teker merkezi (Root) yuksekligine gore: vanilla 911 +0.14 (yerden ~0.49 m). Apollodan gelen -0.18 agirlik merkezini yerden
+  # ~0.17 m, akslarin ALTINA koyuyordu -> kaldirim/rampada arac agirliksiz gibi ucuyordu (oyun testi 2026-10-28, Apollo da).
+  # Countach ile ayni +0.08 (yerden ~0.43 m); y Caliburn (-0.13, ortadan motorlu)
+  center_of_mass_offset: { x: 0.0, y: -0.13, z: 0.08 }
+  turningRollFactor: 0
+  # Direksiyon (Apollo "cok agir" sonrasi): 86 derece/s, 24 m/s ustu %29
+  wheelTurnMaxAddPerSecond: 94
+  wheelTurnMaxSubPerSecond: 150
+  turnUpdateMaxSpeedThreshold: 45
+  turnUpdateMaxSpeedTurnMul: 0.21
+  driveHelpers:
+    - $base: Vehicle.RotationLimiter_Exotic
+      maxAngularSpeedRad: 2.6
+      driftLimit: 1.6
+    # Exotic: kayan arka tekerin yanal tutusu %62'ye duser (bilerek oversteer) -> %95
+    - $base: Vehicle.RearWheelsFrictionModifier_Exotic
+      minLatFrictionCoef: 1.45
+      minLongFrictionCoef: 1.45
+    - Vehicle.DriveWheelsAccelerateNoise_Sport
+    - Vehicle.HandbrakeFrictionModifier_Exotic
+    - Vehicle.UphillDriveHelper_Standard
+    - $base: Vehicle.DynamicDownforceHelper_Exotic
+      maxSpeedFactorGround: 1.40
+      maxSpeedFactorAir: 0
+    # havada yere cekme: 911'in kendi kaydi (InAirGravityModifier), Bolide/Apollo agir ayari
+    - $base: Vehicle.VehicleDriveModelData_911Turbo_inline7
+      baseAddedGravity: 1.0
+      driveSpeedAddedGravity: 0.4
+  wheelSetup:
+    $base: Vehicle.VehicleDriveModelData_911Turbo_inline0
+    LF: Vehicle.phoenix_amv_wheel_front
+    RF: Vehicle.phoenix_amv_wheel_front
+    LB: Vehicle.phoenix_amv_wheel_back
+    RB: Vehicle.phoenix_amv_wheel_back
+    # karbon frenler; Apollo 660/560 @ 1350 kg kutle oraniyla. yay/sonum/viraj demiri Caliburn
+    frontPreset:
+      $base: Vehicle.VehicleDriveModelData_911Turbo_inline1
+      frictionMulLateral: 1.60
+      frictionMulLongitudinal: 1.50
+      maxBrakingTorque: 1850
+      mass: 25
+      springStiffness: 30
+      springDamping: 3000
+      springReboundDamping: 4300
+      springBoundDampingLowRate: 2900
+      springReboundDampingLowRate: 5000
+      springDampingLowRateCompression: 0.2
+      springDampingHighRateCompression: 0.35
+      swaybarStiffness: 15
+      swaybarLengthScalar: 2
+      swaybarDisplacementLimit: 0.2
+      extremeCompressionEventScalor: 0.74
+      logicalSuspensionCompressionLength: 0.45
+      visualSuspensionCompressionLength: 0.02
+      tenderSpringLength: 0
+      wheelsVerticalOffset: 0.08
+      visualSuspensionDroop: 0.05
+    backPreset:
+      $base: Vehicle.VehicleDriveModelData_911Turbo_inline2
+      frictionMulLateral: 1.70
+      frictionMulLongitudinal: 1.68
+      maxBrakingTorque: 1550
+      mass: 20
+      springStiffness: 28
+      springDamping: 3000
+      springReboundDamping: 4500
+      springBoundDampingLowRate: 2900
+      springReboundDampingLowRate: 2900
+      springDampingLowRateCompression: 0.2
+      springDampingHighRateCompression: 0.35
+      swaybarStiffness: 19
+      swaybarLengthScalar: 2
+      extremeCompressionEventScalor: 0.67
+      swaybarDisplacementLimit: 0.2
+      logicalSuspensionCompressionLength: 0.45
+      visualSuspensionCompressionLength: 0.02
+      tenderSpringLength: 0
+      wheelsVerticalOffset: 0.08
+      visualSuspensionDroop: 0.05
+
+Vehicle.phoenix_amv_engine:
+  $base: Vehicle.VehicleEngineData_4_SuperSport
+  # 2026-11-13 tester: hizlanma zayif -> tork 960 (SuperSport) -> 1300
+  engineMaxTorque: 3824
+  # 2026-11-24: motor kaydinin gizli yarisi (son vites torku, debriyaj ataleti,
+  # sanziman suresi) SuperSport'tan miras kaliyordu; 572 km/h'lik referans arabanin
+  # degerleri acikca yazildi.
+  flyWheelMomentOfInertia: 0.12
+  finalGearTorqueDecimationScalor: 1.0
+  gearChangeTime: 0.1
+  gearChangeCooldown: 0.15
+  fastR1GearChange: true
+  wheelsResistanceRatio: 15
+  maxRPM: 10100
+  minRPM: 1000
+  gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]
+
 Vehicle.phoenix_aston_valkyrie:
   $base: Vehicle.v_sport2_porsche_911turbo
   player_audio_resource: phoenix_amv_engine
   # Sirali cagirma bug'i dersi: 911'in ic kayitlari araca ozel kopya. Lastik yaricapi modelden (LMH 18 inc: on 30/68-18, arka 34/71-18).
-  vehWheelDimensionsSetup:
-    $type: VehicleWheelDimensionsSetup
-    frontPreset:
-      $type: VehicleWheelDimensionsPreset
-      tireRadius: 0.392
-      rimRadius: 0.251
-      tireWidth: 0.341
-      wheelOffset: 0.10
-    backPreset:
-      $type: VehicleWheelDimensionsPreset
-      tireRadius: 0.392
-      rimRadius: 0.251
-      tireWidth: 0.374
-      wheelOffset: 0.08
+  vehWheelDimensionsSetup: Vehicle.phoenix_amv_wheel_dimensions
   vehDataPackage:
     $base: Vehicle.VehicleDataPackageSport2
     useAuxiliary: true
@@ -126,113 +236,8 @@ Vehicle.phoenix_aston_valkyrie:
   manufacturer: Vehicle.phoenix_aston_valkyrie_manufacturer
   vehicleUIData: Vehicle.phoenix_aston_valkyrie_data
   icon: UIIcon.phoenix_aston_valkyrie_icon
-  vehDriveModelData:
-    $base: Vehicle.VehicleDriveModelData_911Turbo
-    total_mass: 1750
-    chassis_mass: 1750
-    # 2026-11-13 tester: 260 km/h ustune cikmiyordu -> hava direnci 911 1.93 -> 1.35; el freni hafif 1000 -> 2600
-    airResistanceFactor: 0.60
-    handbrakeBrakingTorque: 2600
-    momentOfInertiaScale: { x: 1, y: 1, z: 1 }
-    # Caliburn atalet (2026-10-29; onceki Apollo x kutle 4030/1200/4410 fazlaydi)
-    momentOfInertia: { x: 3050, y: 900, z: 3530 }
-    # ortadan motorlu, %43/57: agirlik merkezi arka aksa dogru; yapay viraj yatmasi kapali
-    # z teker merkezi (Root) yuksekligine gore: vanilla 911 +0.14 (yerden ~0.49 m). Apollodan gelen -0.18 agirlik merkezini yerden
-    # ~0.17 m, akslarin ALTINA koyuyordu -> kaldirim/rampada arac agirliksiz gibi ucuyordu (oyun testi 2026-10-28, Apollo da).
-    # Countach ile ayni +0.08 (yerden ~0.43 m); y Caliburn (-0.13, ortadan motorlu)
-    center_of_mass_offset: { x: 0.0, y: -0.13, z: 0.08 }
-    turningRollFactor: 0
-    # Direksiyon (Apollo "cok agir" sonrasi): 86 derece/s, 24 m/s ustu %29
-    wheelTurnMaxAddPerSecond: 94
-    wheelTurnMaxSubPerSecond: 150
-    turnUpdateMaxSpeedThreshold: 45
-    turnUpdateMaxSpeedTurnMul: 0.21
-    driveHelpers:
-      - $base: Vehicle.RotationLimiter_Exotic
-        maxAngularSpeedRad: 2.6
-        driftLimit: 1.6
-      # Exotic: kayan arka tekerin yanal tutusu %62'ye duser (bilerek oversteer) -> %95
-      - $base: Vehicle.RearWheelsFrictionModifier_Exotic
-        minLatFrictionCoef: 1.45
-        minLongFrictionCoef: 1.45
-      - Vehicle.DriveWheelsAccelerateNoise_Sport
-      - Vehicle.HandbrakeFrictionModifier_Exotic
-      - Vehicle.UphillDriveHelper_Standard
-      - $base: Vehicle.DynamicDownforceHelper_Exotic
-        maxSpeedFactorGround: 1.40
-        maxSpeedFactorAir: 0
-      # havada yere cekme: 911'in kendi kaydi (InAirGravityModifier), Bolide/Apollo agir ayari
-      - $base: Vehicle.VehicleDriveModelData_911Turbo_inline7
-        baseAddedGravity: 1.0
-        driveSpeedAddedGravity: 0.4
-    wheelSetup:
-      $base: Vehicle.VehicleDriveModelData_911Turbo_inline0
-      LF: Vehicle.phoenix_amv_wheel_front
-      RF: Vehicle.phoenix_amv_wheel_front
-      LB: Vehicle.phoenix_amv_wheel_back
-      RB: Vehicle.phoenix_amv_wheel_back
-      # karbon frenler; Apollo 660/560 @ 1350 kg kutle oraniyla. yay/sonum/viraj demiri Caliburn
-      frontPreset:
-        $base: Vehicle.VehicleDriveModelData_911Turbo_inline1
-        frictionMulLateral: 1.60
-        frictionMulLongitudinal: 1.50
-        maxBrakingTorque: 1850
-        mass: 25
-        springStiffness: 30
-        springDamping: 3000
-        springReboundDamping: 4300
-        springBoundDampingLowRate: 2900
-        springReboundDampingLowRate: 5000
-        springDampingLowRateCompression: 0.2
-        springDampingHighRateCompression: 0.35
-        swaybarStiffness: 15
-        swaybarLengthScalar: 2
-        swaybarDisplacementLimit: 0.2
-        extremeCompressionEventScalor: 0.74
-        logicalSuspensionCompressionLength: 0.45
-        visualSuspensionCompressionLength: 0.02
-        tenderSpringLength: 0
-        wheelsVerticalOffset: 0.08
-        visualSuspensionDroop: 0.05
-      backPreset:
-        $base: Vehicle.VehicleDriveModelData_911Turbo_inline2
-        frictionMulLateral: 1.70
-        frictionMulLongitudinal: 1.68
-        maxBrakingTorque: 1550
-        mass: 20
-        springStiffness: 28
-        springDamping: 3000
-        springReboundDamping: 4500
-        springBoundDampingLowRate: 2900
-        springReboundDampingLowRate: 2900
-        springDampingLowRateCompression: 0.2
-        springDampingHighRateCompression: 0.35
-        swaybarStiffness: 19
-        swaybarLengthScalar: 2
-        extremeCompressionEventScalor: 0.67
-        swaybarDisplacementLimit: 0.2
-        logicalSuspensionCompressionLength: 0.45
-        visualSuspensionCompressionLength: 0.02
-        tenderSpringLength: 0
-        wheelsVerticalOffset: 0.08
-        visualSuspensionDroop: 0.05
-  vehEngineData:
-    $base: Vehicle.VehicleEngineData_4_SuperSport
-    # 2026-11-13 tester: hizlanma zayif -> tork 960 (SuperSport) -> 1300
-    engineMaxTorque: 3824
-    # 2026-11-24: motor kaydinin gizli yarisi (son vites torku, debriyaj ataleti,
-    # sanziman suresi) SuperSport'tan miras kaliyordu; 572 km/h'lik referans arabanin
-    # degerleri acikca yazildi.
-    flyWheelMomentOfInertia: 0.12
-    finalGearTorqueDecimationScalor: 1.0
-    gearChangeTime: 0.1
-    gearChangeCooldown: 0.15
-    fastR1GearChange: true
-    wheelsResistanceRatio: 15
-    maxRPM: 10100
-    minRPM: 1000
-    gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]
-
+  vehDriveModelData: Vehicle.phoenix_amv_drive_model
+  vehEngineData: Vehicle.phoenix_amv_engine
 # Arac cagirma menusu gorseli (ui\amv_icon.inkatlas)
 UIIcon.phoenix_aston_valkyrie_icon:
   $type: UIIcon_Record
