@@ -378,40 +378,53 @@ sometimes and not others. That fits a hunting loop rather than a hard limit - wh
 settle above the downshift threshold depends on the load at that instant, so the same car on the
 same road either catches the gear or hunts for it.
 
-**Why a gearbox does this.** The top gear is the one gear with nothing above it, so the shift logic
-can hunt at its boundary: upshift, the revs land under the downshift threshold, downshift, upshift
-again. Every cycle is a torque transient, and a torque transient through driven tyres is a yaw
-kick - which the loop then amplifies into the weave ADE reacts to. It also explains the terrain
-sensitivity: whether the engine can pull the tall gear at all depends on load, so the hunt starts
-sooner or later depending on the road.
+**RETRACTED IN PART (2026-11-24, same build).** With 900025 in the car for longer, the owner
+reported two things that break this reading:
 
-It explains every failed build, too. Nothing done to the steering, the dampers, the inertia or the
-driven wheels can stop a gearbox hunting.
+- the weave **still starts at 80 m/s**, and 900025 has no gear boundary anywhere near 80 (its 5th
+  ends at 69.4, its 6th at 100)
+- **the engine stalls at 100 m/s**, on manual as well as ADE
 
-## 2j. Step 17 — never reach the top gear (build 900026)
+So the law is wrong as a general claim: it fitted the stock car (6th ended 80.6, weave 81) and the
+Jesko control (62.47 / 63) because 80.6 is very nearly 80 and 62.47 is very nearly 63. Two
+coincidences, not a mechanism. The 80 m/s weave is a **separate, speed-related problem** that no
+gearing change has touched.
 
-| field | 900025 | 900026 |
-|---|---|---|
-| gear 5 ceiling | 69.4 | **95** |
-| gear 6 ceiling | 100 | **160** (576 km/h) |
-| gear 7 floor / ceiling | 100 / 155 | **160 / 180** - above the terminal, so the gear is never used |
-| drag, torque | 0.55, 2750 | unchanged |
+The 100 m/s stall, though, is real and it is **a bug in 900025**: 6th's ceiling was set to 100 and
+7th's floor to 100 as well - **zero overlap**. The stock mod's own 6 -> 7 pair overlaps by 3.6 m/s
+(7th starts at 77, under 6th's 80.6), which is why the stock car shifted and reached 86. With no
+overlap the shift cannot happen at all: the car hits its own gear clamp and the drive cuts. That
+is why both manual and ADE stopped at exactly 100.
 
-The car's terminal is ~148 m/s (534 km/h), so **7th becomes unreachable** and the last upshift it
-ever makes is into 6th at 95 m/s.
+## 2j. Step 17, second attempt — fix the stall, keep the ladder honest (build 900027)
 
-- **If the weave appears at ~95 m/s** -> any upshift does it, and the gearing must be arranged so
-  the final upshift happens below the speed range that matters.
-- **If the weave vanishes** -> it is specific to the top gear, which is what the stock car's record
-  says (its 33 / 44 / 55 / 66 m/s upshifts were all harmless), and the 500 km/h car just needs a
-  gear above its terminal that it never reaches.
+| field | stock | 900025 | first 900026 | **900027** |
+|---|---|---|---|
+| gear 5 ceiling | 69.4 | 69.4 | **110** |
+| gear 6 ceiling | 80.6 | 100 | 160 | **180** |
+| gear 7 window | 77 -> 91.7 | 100 -> 155 | 160 -> 180 | **150 -> 215** |
+| overlap 5 -> 6 | 15+ | 34 | 34 | **44** |
+| overlap 6 -> 7 | 3.6 | **0 (the bug)** | **0 (the same bug)** | **30** |
+| drag / torque | 1.35 / 1300 | 0.55 / 2750 | 0.55 / 2750 | 0.55 / **3100** |
 
-Either answer is a design rule; the second one is the deliverable.
+The first 900026 repeated the exact same mistake - 6th ended at 160 and 7th began at 160 - and
+stalled in the car too. That is the useful part: the failure reproduced with the *numbers* changed
+and the *relationship* unchanged, which is what a mechanism looks like rather than a coincidence.
 
-Numbers for 900026: 6th thrust 8 328 N, terminal 148.3 m/s = **534 km/h**, 500 km/h reached
-**3.6 km** into 6th, **1 157 kW = 1 551 hp** at 500. Acceleration in 6th: 2.81 m/s² at 95, 0.59 at
-500. One caution: 5th now makes 14 kN of thrust (~0.8 g) and may spin the tyres - if it does, the
-torque comes down before the gearing does.
+Two rules, and both are now enforced by a test (`test_every_gear_window_overlaps_the_next`):
+
+1. **Consecutive windows must overlap.** No boundary can ever land a shift outside a window.
+2. **The terminal sits well inside the gear the car lives in.** Terminal ~148 m/s inside a 6th
+   that ends at 180, so above 110 m/s there is no shift to make at all.
+
+Numbers: 6th thrust 8 346 N, terminal 148.5 m/s = **535 km/h**, 500 km/h reached **3.0 km** into
+6th, 1 160 kW = **1 555 hp** at 500, 0.60 m/s² of acceleration remaining at 500. 5th makes 13.7 kN
+(0.80 g), so if it spins the tyres the torque comes down, not the gearing.
+
+**The 80 m/s weave is not addressed by this build and is not expected to move.** What this build
+does is remove the artificial ceiling at 100 m/s, so for the first time the car can show what it
+does above 360 km/h - weave included - and the 80 m/s problem can finally be studied on a car whose
+top speed is not the thing in the way.
 
 ## 3. What to record
 

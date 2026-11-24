@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 26
+BUILD = 27
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -974,32 +974,35 @@ STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 #       coincidence every failed stability build had in common.
 # Power at 500 km/h: 8 600 N x 138.9 m/s = 1 195 kW = 1 602 hp - the Chiron SS's 1 578 hp.
 #
-# Step 17 (2026-11-24, MEASURED): 900025 put the 6->7 shift at 100 m/s and the weave moved from
-# 81 to exactly 100. That is the third confirmation of the law, and the first one where we moved
-# the variable:
+# Step 17 (2026-11-24, MEASURED - and the eureka was half wrong).
 #
-#     car                      top-gear entry     weave onset
-#     stock Aston                    80.6 m/s         81
-#     Jesko, verbatim control        62.47 m/s        63
-#     build 900025, 6->7 at 100     100 m/s          100
+# 900025 put the 6->7 shift at 100 m/s. Two things happened, and they are not the same thing:
 #
-# **The car weaves when it shifts into its top gear.** Not at its drag limit (900025's weave was
-# 52 m/s BELOW its terminal), not at a fixed 80, not from steering gain (four levers failed to
-# move it). The obvious mechanism is gear hunting at the boundary: upshift, revs fall under the
-# downshift threshold, downshift, upshift again - each cycle a torque transient, and a torque
-# transient through the rear tyres is a yaw kick the loop then amplifies.
+#   1. The weave still STARTS AT 80 m/s, exactly as every build before it. 900025 has no gear
+#      boundary anywhere near 80 (its 5th ends at 69.4, its 6th at 100), so the "weave = top-gear
+#      entry" law is wrong as a general claim. It fitted the stock car (6th ended 80.6, weave 81)
+#      and the Jesko control (62.47 / 63) because 80.6 is 80 and 62.47 is 63 - two coincidences.
+#   2. The ENGINE STALLS AT 100 m/s, manual as well as under ADE. 100 is exactly 6th's ceiling,
+#      and 900025 set 7th's floor to 100 as well: zero overlap between consecutive windows. The
+#      stock car's 6->7 pair overlaps by 3.6 m/s (77 under 80.6), which is why it shifted cleanly
+#      and why it could reach 86 - and 900025 cannot shift at all, so it slams into its own gear
+#      clamp and the drive cuts. That is a bug I introduced, not a property of the car.
 #
-# So: never let the car reach its top gear. Stretch 6th to 160 m/s and lift 7th's floor above
-# anything the car can reach (160 > its ~148 m/s terminal). The last upshift the car ever makes is
-# into 6th at 95 m/s, and if the law holds the weave goes with the hunt.
-STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 95.0, 160.0, 180.0]
+# So 900026 does two things:
+#   - every gear boundary OVERLAPS again, so a shift can never land outside a window;
+#   - the terminal sits well below 6th's ceiling, so above 110 m/s the car never has to shift at
+#     all: 5th ends at 100, 6th at 170, terminal ~148.
+#   - 7th stays reachable-but-unused (150 -> 215) so that if the game does shift early it lands in
+#     a valid window instead of stalling.
+# The 80 m/s weave is a separate problem and is NOT expected to move. It is the next thing.
+STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 110.0, 180.0, 215.0]
 STOCK_LADDER_PAIRS = (
-    ("maxSpeed", "69.4", "95"),         # gear 5 ceiling 250 -> 342 km/h
-    ("maxSpeed", "80.6", "160"),        # gear 6 ceiling 290 -> 576 km/h
-    ("minSpeed", "77", "160"),          # gear 7 floor: above the terminal, so it is never used
-    ("maxSpeed", "91.7", "180"),        # gear 7 ceiling, inert
+    ("maxSpeed", "69.4", "110"),        # gear 5 ceiling 250 -> 396 km/h (6th floor 66: 44 m/s overlap)
+    ("maxSpeed", "80.6", "180"),        # gear 6 ceiling 290 -> 648 km/h (7th floor 150: 30 m/s overlap)
+    ("minSpeed", "77", "150"),          # gear 7 floor, above the ~148 m/s terminal
+    ("maxSpeed", "91.7", "215"),        # gear 7 ceiling, inert
     ("airResistanceFactor", "1.35", "0.55"),
-    ("engineMaxTorque", "1300", "2750"),
+    ("engineMaxTorque", "1300", "3100"),
 )
 
 

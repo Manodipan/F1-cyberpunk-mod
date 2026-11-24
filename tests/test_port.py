@@ -183,10 +183,24 @@ class StockBaseDrivetrainTests(unittest.TestCase):
         """The redscript computes revs from these numbers; if they drift from the YAML every
         HUD reading above 6th gear is a lie."""
         reds = port_reds(stock("aston_valkyrie_audio.reds"))
-        ladder = [25, 36.1, 47.2, 58.3, 95, 160, 180]
+        ladder = [25, 36.1, 47.2, 58.3, 110, 180, 215]
         for g, speed in enumerate(ladder, 1):
             self.assertIn(f"case {g}:\n      return {port.fmt_num(speed)};", reds, g)
         self.assertIn(f"default:\n      return {port.fmt_num(ladder[-1])};", reds)
+
+    def test_every_gear_window_overlaps_the_next(self):
+        """Build 900025 stalled its engine at 100 m/s because 6th ended at exactly the speed 7th
+        began at: with no overlap the shift cannot happen, the car hits its own gear clamp and the
+        drive cuts. The stock mod's own pairs all overlap; keep it that way."""
+        windows = []
+        for g in range(1, 8):
+            block = re.search(rf"(?ms)^Vehicle\.phoenix_amv_gear_{g}:\n(.*?)(?=^Vehicle\.|\Z)",
+                              self.out).group(1)
+            lo = float(re.search(r"minSpeed:\s*([\d.]+)", block).group(1))
+            hi = float(re.search(r"maxSpeed:\s*([\d.]+)", block).group(1))
+            windows.append((g, lo, hi))
+        for (g, lo, hi), (nxt, nlo, nhi) in zip(windows, windows[1:]):
+            self.assertLess(nlo, hi, f"gear {nxt} starts at {nlo} but gear {g} ends at {hi}")
 
     def test_the_note_does_not_still_say_rear_drive(self):
         self.assertNotIn("Arkadan itis", self.out)
