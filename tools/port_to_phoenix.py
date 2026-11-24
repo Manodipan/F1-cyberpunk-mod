@@ -1272,7 +1272,13 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         if suffix in (".yaml", ".yml"):
             # AWD survives the restoration on purpose: it is a handling change, not a physics
             # table, and the stock file's own rear-drive is the only thing here we override.
-            return apply_drivetrain(apply_stock_overlay(apply_pairs(text, STOCK_LADDER_PAIRS)))
+            text = apply_pairs(text, STOCK_LADDER_PAIRS)
+            # the stock file's own note hard-codes the old top speed; keep the note honest
+            top = fmt_num(STOCK_LADDER_TOPS[-1])
+            text = re.sub(r"(?m)^# 7 ileri sirali \(hizlar m/s\)[^\n]*",
+                          f"# 7 ileri sirali (hizlar m/s); azami hiz = son vitesin maxSpeed'i "
+                          f"({top} m/s = {round(STOCK_LADDER_TOPS[-1] * 3.6)} km/h)", text, count=1)
+            return apply_drivetrain(apply_stock_overlay(text))
         if suffix == ".reds":
             return apply_mph_as_mps(apply_true_speedometer(
                 apply_gearspeed(text, STOCK_LADDER_TOPS)))

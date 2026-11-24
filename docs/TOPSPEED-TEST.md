@@ -462,9 +462,27 @@ Clean bills - checked in the shipped file, not assumed:
 - **build stamp** 900028, drivetrain AWD, drag 0.55, torque 3100, steer 85, inertia 3355/990/3883,
   turn multiplier 0.21 - all as intended
 
-One cosmetic mismatch, not a bug: the redscript's virtual revs use an 8100 rpm reference while the
-YAML's gears reach ~9900, so the HUD/audio revs read about 18 % low. It only affects the sound and
-the shift light, and it is on the list if the engine note starts to matter.
+**Second pass (same day).** Five more checks, one real gap and one stale comment:
+
+- **The deliverable was not pinned to the generator.** Every test read the generator's output; none
+  compared it to the committed file. A stale `make port` or a hand-edit could have shipped without
+  a single failure. Fixed with two tests that regenerate the YAML and all four redscripts and
+  demand byte equality. They pass, so the last several commits were consistent - but that was luck,
+  not coverage.
+- **The virtual gearbox cannot stall anything.** Verified end to end: `PhoenixAMV_GearboxStep` feeds
+  only `PhoenixAMV_EngineUpdate(vrpm, ...)` - the engine *sound*. Every stall so far is tweak data.
+- **The rev model is consistent after the ratio fix.** The redscript computes `v x 9900 / gear
+  maxSpeed` and force-upshifts above 9200; in 6th (max 180) that is 167 m/s, above the 148 m/s
+  terminal, so it cannot upshift spuriously. At 148 m/s it reads 8140 rpm, which is exactly what
+  the YAML window (3630 -> 9900 across 66 -> 180) implies. The 18 % audio mismatch is gone as a
+  side effect of rescaling the rpm floor.
+- **A stale comment in the shipped file** still said "top speed = 91.7 m/s = 330 km/h". It is now
+  generated from the ladder, so it cannot drift again.
+- **No duplicate keys, no tabs, regeneration is byte-identical run to run** (`md5sum` before and
+  after a rebuild), and `--check` passes on the whole tree.
+- Still unexplained, and it matters for the ADE tests: `VehicleUIData` has **no top-speed field**,
+  so ADE's "max vehicle speed" is not read from the UI record. Where that number comes from is an
+  open question, and it is why the "Max Speed Ratio" experiment is still worth running.
 
 ## 3. What to record
 

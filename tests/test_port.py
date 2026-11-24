@@ -151,6 +151,36 @@ class RenameTests(unittest.TestCase):
         self.assertEqual(once, port_yaml(once, physics=False))
 
 
+class ShippedArtifactTests(unittest.TestCase):
+    """The committed deliverable must equal what the generator produces, byte for byte.
+
+    Without this, a hand-edit to the shipped YAML - or a commit that forgets to re-run
+    `make port` - survives every other test in the suite, because they all read the generator's
+    output rather than the file the game actually loads."""
+
+    @staticmethod
+    def _stamped(text, suffix, source):
+        return port.STAMP[suffix].format(origin="stock", source=source) + text
+
+    def test_shipped_yaml_is_generated(self):
+        expected = self._stamped(
+            port_yaml(STOCK_YAML.read_text(encoding="utf-8")), ".yaml",
+            "reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml")
+        actual = (DELIVERABLE / "r6" / "tweaks" / "phoenix" / "phoenix_aston_valkyrie.yaml") \
+            .read_text(encoding="utf-8")
+        self.assertEqual(actual, expected, "shipped YAML is stale - run `make port`")
+
+    def test_shipped_redscripts_are_generated(self):
+        out_dir = DELIVERABLE / "r6" / "scripts" / "phoenix_aston_valkyrie"
+        for src in sorted(STOCK_SCRIPTS.glob("*.reds")):
+            shipped = out_dir / src.name.replace("aston_valkyrie", "phoenix_aston_valkyrie")
+            self.assertTrue(shipped.exists(), f"{shipped.name} is missing from the deliverable")
+            self.assertEqual(shipped.read_text(encoding="utf-8"),
+                             self._stamped(port_reds(src.read_text(encoding="utf-8")), ".reds",
+                                           f"reference/stock/r6/scripts/xaires_aston_valkyrie/{src.name}"),
+                             f"{shipped.name} is stale - run `make port`")
+
+
 class StockBaseDrivetrainTests(unittest.TestCase):
     """Build 900022: the stock mod's physics, with four driven wheels.
 
