@@ -44,7 +44,8 @@ docs/                            install + test matrix, packaging, rename map, f
 
 ## Physics (stock → Phoenix)
 
-**As of build 900020 the shipped car IS the stock Aston mod's physics, unchanged.** Only two
+**As of build 900021 the shipped car is the stock Aston mod's physics**, which measured
+**80 m/s under ADE / 86 by hand** on this pipeline — the reference car's own numbers. Only two
 things differ, and neither is a handling number: the scanner's `horsepower` field carries the build
 stamp, and the speedometer is ours (true km/h for every car). Everything the car does — gearbox
 91.7 m/s top gear, drag 1.35, mass 1750, torque 1300, steering 94, grip, springs, swaybars — is
@@ -57,8 +58,9 @@ the car that was measured at **~80 m/s under ADE and ~85 m/s by hand**, the best
 | Torque · Redline | 1300 · 10 100 | **identical** |
 | Grip F/R | 1.29/1.15 · 1.33/1.20 | **identical** |
 | Downforce (`maxSpeedFactorGround`) | 0.60 | **identical** |
-| Steering (add / threshold / mul) | 94 / 26 / 0.33 | **identical** |
+| Steering (add / threshold / mul) | 94 / 26 / 0.33 | **85** / 26 / 0.33 (step 13, −10 %) |
 | Springs · damping · swaybar | 23/22 · 2000 · 11/16 | **identical** |
+| Yaw inertia | 3050 / 900 / 3530 | **3355 / 990 / 3883** (step 13, +10 %) |
 | Scanner hp | 680 | **900020** — build stamp, not a power claim |
 | Speedometer | the game's 2.07× curve | **true km/h, all vehicles** |
 

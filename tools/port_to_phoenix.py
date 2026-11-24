@@ -746,7 +746,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 20
+BUILD = 21
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -910,6 +910,39 @@ STABILITY_OVERLAY = (
 
 
 STABILITY_TARGETS = {(k, new) for k, _old, new in STABILITY_OVERLAY}
+
+# ---------------------------------------------------------------------------
+# Overlay on the STOCK base (build 900021, step 13)
+# ---------------------------------------------------------------------------
+# The stock Aston mod measured 80 m/s under ADE and 86 by hand on our pipeline - the reference
+# car's own 80 / 85, so the port provably costs nothing. That makes it the base to tune from.
+#
+# Two levers remain here, both carried over from step 9 because they are the only changes that
+# ever produced progress, and both do the same thing: they lower the yaw loop's gain. Everything
+# else in the old overlay is already in its stock position on this car - turningRollFactor 0,
+# driftLimit 1.6, minLat/minLong 0.95, turnUpdateMaxSpeedThreshold 26, no alternative turn
+# update, no slip-curve scaling (the stock car inherits 1; the Jesko's 2 was the anomaly).
+#
+#   wheelTurnMaxAddPerSecond 94 -> 85   a slower steering command is a first-order lag on the
+#       input, and the input is exactly what ADE taps. 10 % slower than stock.
+#   momentOfInertia +10 %   yaw frequency goes as 1/sqrt(I_z): 3530 -> 3883 is 4.7 % lower and
+#       the x/y +10 % follows the same scaling. Pushes the yaw mode below ADE's bandwidth.
+STOCK_OVERLAY = (
+    ("wheelTurnMaxAddPerSecond", "94", "85"),
+    ("momentOfInertia", "{ x: 3050, y: 900, z: 3530 }", "{ x: 3355, y: 990, z: 3883 }"),
+)
+STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
+
+
+def apply_stock_overlay(text: str) -> str:
+    """The step-9 levers, on the stock car's own numbers."""
+    for key, old, new in STOCK_OVERLAY:
+        text = re.sub(
+            rf"(?m)^(?P<i>[ \t]*{key}:[ \t]*){re.escape(old)}(?P<t>[ \t]*\r?)$",
+            lambda m, new=new: m.group("i") + new + m.group("t"),
+            text,
+        )
+    return text
 
 
 def apply_stability(text: str) -> str:
@@ -1142,7 +1175,7 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
     """
     if RESTORE_STOCK_PHYSICS:
         if suffix in (".yaml", ".yml"):
-            return text
+            return apply_stock_overlay(text)
         if suffix == ".reds":
             return apply_mph_as_mps(apply_true_speedometer(text))
         return text

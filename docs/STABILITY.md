@@ -467,15 +467,37 @@ So the tuning was not converging on a better car — it was climbing out of a ho
 shipped car is now **the stock mod's own physics, byte for byte**, with only two differences that
 are not handling numbers: the scanner carries the build stamp, and the speedometer is true km/h.
 
-This is a *baseline*, not a result. It has not been driven yet; the first job is to confirm it
-reproduces 80 / 85. If it does, the pipeline is proven behaviour-preserving and every later build
-is measured against a car known to be good.
+**Measured 2026-11-24: ADE 80, hand 86.** The stock mod's own 80 / 85, reproduced to within the
+driver's spread. The port costs nothing: renames, the build stamp and the true speedometer are
+behaviour-neutral. Every build from here is measured against a car known to be good, and the
+number to beat is **80**.
+
+That also settles the attribution question the whole ladder laboured under: the car was never the
+problem at 80. It was the chassis we had swapped in.
 
 Next on this base, highest value first: **the step-9 gain bundle alone** — inertia
 3450/1020/3995, `wheelTurnMaxAddPerSecond` 94 → 85, slip-angle scales 1. That is the one
 combination that was never isolated, and every individual gain in it (inertia up, steering rate
 down, slip scale down) came from *reducing* loop gain, which is the only category that ever
 produced progress.
+
+## Step 13 — the step-9 levers, on the stock car (build 900021)
+
+Back on the good base, the only changes that ever produced progress are the ones that **lower the
+yaw loop's gain**, and they are worth retesting on a car that is not already broken. Everything
+else in the old overlay is already in its stock position here — `turningRollFactor` 0, `driftLimit`
+1.6, `minLat/minLong` 0.95, `turnUpdateMaxSpeedThreshold` 26, no alternative turn update, no
+slip-curve scaling (the stock car inherits 1; the Jesko's 2 was the anomaly). Two levers remain:
+
+| field | stock | build 900021 | why |
+|---|---|---|---|
+| `wheelTurnMaxAddPerSecond` | 94 | **85** | a slower steering command is a first-order lag on the input, and the input is what ADE taps |
+| `momentOfInertia` | 3050 / 900 / 3530 | **3355 / 990 / 3883** | ω_ψ ∝ 1/√I_z, so 3530 → 3883 drops the yaw mode 4.7 % — further below ADE's bandwidth |
+
+Both are −10 %-class changes on the loop-gain axis. If they move 80, the next build splits them to
+find out which one owns it. If they do not, the untouched lever is `turnUpdateMaxSpeedTurnMul`
+0.33 → 0.21 — steering authority above 26 m/s, i.e. the multiplier on ADE's own error signal,
+36 % less response per correction.
 
 ## What to try next, in order
 
