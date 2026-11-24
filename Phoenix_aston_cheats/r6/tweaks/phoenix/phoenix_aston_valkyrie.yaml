@@ -128,7 +128,7 @@ Vehicle.phoenix_amv_wheel_dimensions:
 
 Vehicle.phoenix_amv_wheel_preset_front:
   $type: gamedataVehicleWheelDrivingPreset_Record
-  extremeCompressionEventScalor: 0.46
+  extremeCompressionEventScalor: 0.74
   frictionMulLateral: 1.3
   frictionMulLongitudinal: 0.95
   logicalSuspensionCompressionLength: 0.5
@@ -136,7 +136,7 @@ Vehicle.phoenix_amv_wheel_preset_front:
   maxBrakingTorque: 1165
   springBoundDampingLowRate: 2900
   springDamping: 3000
-  springDampingHighRateCompression: 0.3
+  springDampingHighRateCompression: 0.36
   springDampingLowRateCompression: 0.2
   springReboundDamping: 3300
   springReboundDampingLowRate: 6500
@@ -155,7 +155,7 @@ Vehicle.phoenix_amv_wheel_preset_front:
 
 Vehicle.phoenix_amv_wheel_preset_back:
   $type: gamedataVehicleWheelDrivingPreset_Record
-  extremeCompressionEventScalor: 0.38
+  extremeCompressionEventScalor: 0.67
   frictionMulLateral: 1.28
   frictionMulLongitudinal: 0.98
   logicalSuspensionCompressionLength: 0.5
@@ -163,7 +163,7 @@ Vehicle.phoenix_amv_wheel_preset_back:
   maxBrakingTorque: 785
   springBoundDampingLowRate: 2900
   springDamping: 3200
-  springDampingHighRateCompression: 0.3
+  springDampingHighRateCompression: 0.36
   springDampingLowRateCompression: 0.2
   springReboundDamping: 3500
   springReboundDampingLowRate: 6500
@@ -309,8 +309,8 @@ Vehicle.phoenix_amv_drive_model:
   slopeTractionReductionBegin: 12
   slopeTractionReductionFactor: 1.5
   slopeTractionReductionMax: 30
-  smoothWheelContactDecreaseTime: 0
-  smoothWheelContactIncreseTime: 0
+  smoothWheelContactDecreaseTime: 0.1
+  smoothWheelContactIncreseTime: 0.1
   turningRollFactor: 0
   turningRollFactorWeakContactMul: 1
   turningRollFactorWeakContactThresholdMax: 0.6

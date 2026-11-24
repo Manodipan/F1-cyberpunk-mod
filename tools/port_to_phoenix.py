@@ -763,6 +763,25 @@ STABILITY_OVERLAY = (
     ("springBoundDampingLowRate", "2500", "2900"),      # rear
     ("springReboundDampingLowRate", "2300", "6500"),    # front, zeta 0.93
     ("springReboundDampingLowRate", "2500", "6500"),    # rear
+    # Step 6 (2026-11-24): the load axis. The test road is 4.6 km of gentle crests, and a crest of
+    # radius R at speed v unloads the car by v^2/R: at 72 m/s any R below 528 m puts it weightless,
+    # at 78 m/s below 620 m. So the car is going light - and landing - repeatedly, and an impulse at
+    # 70+ m/s is a yaw excitation. Nothing can stop the unload, but the landing does not have to
+    # become an oscillation:
+    #   extremeCompressionEventScalor   the fraction of suspension force KEPT in an extreme
+    #       compression event - i.e. what survives a landing. Reference 0.46 front / 0.38 rear,
+    #       stock Aston 0.74 / 0.67: the reference throws away 54-62 % of its spring force exactly
+    #       when it needs it, the stock car only 26-33 %.
+    #   springDampingHighRateCompression 0.3 -> 0.36   the Pagani's, for the high-velocity shaft
+    #       speeds a landing generates (the low-rate rates from step 1 do not apply here).
+    #   smoothWheelContact{Decrease,Increse}Time 0 -> 0.1   reference-only fields, both zero: grip
+    #       is dropped and restored instantaneously over a crest. A tenth of a second of smoothing
+    #       turns a step into a ramp, which is the difference between an impulse and a force.
+    ("extremeCompressionEventScalor", "0.46", "0.74"),   # front, stock Aston's
+    ("extremeCompressionEventScalor", "0.38", "0.67"),   # rear, stock Aston's
+    ("springDampingHighRateCompression", "0.3", "0.36"),  # both presets, Pagani's
+    ("smoothWheelContactDecreaseTime", "0", "0.1"),
+    ("smoothWheelContactIncreseTime", "0", "0.1"),
     ("antiSwaybarDampingScalor", "0.75", "1.15"),   # Pagani's
     ("turningRollFactor", "1", "0"),
     # Step 2 (2026-11-24, from measurement): the reference's alternative turn-update is an

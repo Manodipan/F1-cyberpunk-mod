@@ -174,6 +174,35 @@ The trade is explicitly a *feel* trade: less authority above 26 m/s means the ca
 more lazily at speed. If it turns out dull rather than stable, that is the line to give back first,
 in 0.03 steps (`0.21 -> 0.24 -> 0.27`).
 
+## Step 6 (shipped): the test road is a crest generator
+
+The measurement road is 4.6 km of Badlands highway with gentle crests. A crest of radius R at speed
+v unloads the car by `a = v²/R`, so it goes weightless when `R < v²/g`:
+
+| speed | radius that lifts the car |
+|---|---|
+| 63 m/s (227 km/h) | 405 m |
+| 72 m/s (259 km/h) | 528 m |
+| 78 m/s (281 km/h) | 620 m |
+| 139 m/s (500 km/h) | 1,970 m |
+
+A 4.6 km Badlands highway has crests well under a kilometre, so **above roughly 70 m/s the car is
+repeatedly going light and landing.** That is a speed-dependent trigger (it appears suddenly, as the
+launch did), and a landing is an impulse — at 70 m/s, an impulse is a yaw excitation, which is
+indistinguishable from a "wobble" from the driver's seat.
+
+Nothing can stop the unload. What can be fixed is what happens on the way down:
+
+| field | reference | Phoenix | why |
+|---|---|---|---|
+| `extremeCompressionEventScalor` | 0.46 F / 0.38 R | **0.74 / 0.67** | fraction of suspension force *kept* in an extreme compression event. The reference discards 54-62 % of its spring force exactly when it lands; the stock Aston discards 26-33 %. |
+| `springDampingHighRateCompression` | 0.3 | **0.36** | the Pagani's: landings produce high shaft velocities, where the *low-rate* damping from step 1 does not apply at all |
+| `smoothWheelContact{Decrease,Increse}Time` | 0 / 0 | **0.1 / 0.1** | reference-only fields, both zero: grip is dropped and restored instantly over a crest. 0.1 s turns a step into a ramp — an impulse becomes a force. |
+
+This is also a **testable disambiguation**: if the wobble is terrain-triggered, the same build should
+reach a higher speed on genuinely flat ground. If it does not move on flat ground either, then the
+flat-road limit cycle of step 5 is the whole story and the terrain work is insurance rather than cure.
+
 ## The physical basis, quantified
 
 Take the game's numbers at face value as SI-ish: `springStiffness` 27 as N/mm wheel rate, damping
