@@ -174,7 +174,39 @@ The trade is explicitly a *feel* trade: less authority above 26 m/s means the ca
 more lazily at speed. If it turns out dull rather than stable, that is the line to give back first,
 in 0.03 steps (`0.21 -> 0.24 -> 0.27`).
 
-## Step 6 (shipped): the test road is a crest generator
+## Step 6 (REVERTED — it made things worse)
+
+The crest theory was good physics and a bad hypothesis: the build with steps 6+7 measured **67 m/s**,
+down from 72. That is a regression, and the arithmetic separates the two steps cleanly. Effective
+downforce is `maxSpeedFactorGround x ramp(v)`, and the step-7 pair (0.7 @ 80 -> 1.4 @ 139) reproduces
+the old curve to within 0.005 below 80 m/s:
+
+| m/s | old (0.7 @ 80) | new (1.4 @ 139) |
+|---|---|---|
+| 60 | 0.467 | 0.471 |
+| 72 | 0.607 | 0.612 |
+| 100 | 0.700 | 0.941 |
+
+So step 7 was inert at the speeds being measured, and the whole -5 m/s belongs to step 6. Reverted,
+with step 7 kept (it is what matters above 280 km/h).
+
+Why step 6 backfired, most likely in this order:
+
+1. **`smoothWheelContact{Decrease,Increse}Time` 0 -> 0.1 is 0.1 s of lag in the tyre force.** The
+   entire difficulty here is a lagging controller; adding lag *to the plant* is the one thing
+   guaranteed to make it worse. "Smooth" reads as "stable" and means "slower", and slower is the
+   wrong direction for phase margin.
+2. **`extremeCompressionEventScalor` 0.74 retains more spring force in a landing** - which makes the
+   landing sharper, not softer. The reference's 0.46 is a *softer* car over an impulse, and soft is
+   what absorbs a yaw kick.
+3. `springDampingHighRateCompression` 0.36 is the only one of the three I would still consider
+   trying on its own; high-rate damping should help a landing.
+
+The lesson is worth recording because it is the third time it has bitten: **the stock car's values
+are not transferable blindly** - they are correct for a car with different inertia, in a different
+steering model. "Adopt what the stable car does" only holds where the mechanism is understood.
+
+## Step 6 (original reasoning, kept for the record): the test road is a crest generator
 
 The measurement road is 4.6 km of Badlands highway with gentle crests. A crest of radius R at speed
 v unloads the car by `a = v²/R`, so it goes weightless when `R < v²/g`:

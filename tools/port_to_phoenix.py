@@ -777,11 +777,12 @@ STABILITY_OVERLAY = (
     #   smoothWheelContact{Decrease,Increse}Time 0 -> 0.1   reference-only fields, both zero: grip
     #       is dropped and restored instantaneously over a crest. A tenth of a second of smoothing
     #       turns a step into a ramp, which is the difference between an impulse and a force.
-    ("extremeCompressionEventScalor", "0.46", "0.74"),   # front, stock Aston's
-    ("extremeCompressionEventScalor", "0.38", "0.67"),   # rear, stock Aston's
-    ("springDampingHighRateCompression", "0.3", "0.36"),  # both presets, Pagani's
-    ("smoothWheelContactDecreaseTime", "0", "0.1"),
-    ("smoothWheelContactIncreseTime", "0", "0.1"),
+    # REVERTED 2026-11-24: the three fields above (extremeCompressionEventScalor 0.74/0.67,
+    # springDampingHighRateCompression 0.36, smoothWheelContact* 0.1) took the ADE wobble DOWN from
+    # 72 to 67 m/s. Kept here as a record, with the reasoning in docs/STABILITY.md step 6: retaining
+    # more force in an extreme compression event makes the landing harsher, and 0.1 s of contact
+    # smoothing is 0.1 s of LAG in the tyre force - and lag is exactly what costs a lagging
+    # controller its phase margin.
     # Step 7 (2026-11-24): downforce, which is the ONE grip lever that damps instead of amplifying.
     # Raising a friction coefficient raises the plant's gain and spends phase margin (that is why
     # the grip map was left alone). Downforce is different: it raises NORMAL LOAD, and tyre
