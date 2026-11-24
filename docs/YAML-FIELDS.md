@@ -10,15 +10,15 @@ gearbox and speed units work — see [`VEHICLE-MODEL.md`](VEHICLE-MODEL.md).
 | Scanner hp | 680 | 2000 | `VehicleUIData.horsepower` (`_data` record) | Confirmed |
 | Engine torque | 1300 | 3824 | `vehEngineData.engineMaxTorque` (`$base: VehicleEngineData_4_SuperSport`) | Confirmed |
 | Redline | 10100 | 10100 | `vehEngineData.maxRPM` (unchanged) | Confirmed |
-| Gear 7 ceiling | 91.7 | 138.89 | `Vehicle.xaires_amv_gear_7.maxSpeed` **and** `XairesAMV_GearSpeed` default in `aston_valkyrie_audio.reds` | Confirmed — both places must move together |
-| Drag | 1.35 | 0.90 | `vehDriveModelData.airResistanceFactor` (911 base record was 1.93) | Confirmed |
+| Gearbox ladder | 7 gears, top 91.7 | 7 gears, **even 1.28× steps**, top 138.89 | per-gear `minSpeed`/`maxSpeed`/`torqueMultiplier`/`min|maxEngineRPM` in `Vehicle.xaires_amv_gear_1…7` **and** `XairesAMV_GearSpeed` in `aston_valkyrie_audio.reds` | Confirmed — the window is the ratio, and both places must move together (see `VEHICLE-MODEL.md` §4.3) |
+| Drag | 1.35 | 0.60 | `vehDriveModelData.airResistanceFactor` (911 base record was 1.93) | Confirmed |
 | Front grip | 1.29 / 1.15 | 1.60 / 1.50 | `wheelSetup.frontPreset.frictionMulLateral` / `.frictionMulLongitudinal` | Confirmed |
 | Rear grip | 1.33 / 1.20 | 2.00 / 1.85 | `wheelSetup.backPreset.…` | Confirmed |
 | Rear helper | 0.95 | 1.45 | `driveHelpers` → `RearWheelsFrictionModifier_Exotic.minLatFrictionCoef` **and** `.minLongFrictionCoef` (both 0.95) | Confirmed |
 | Downforce | 0.60 | 1.40 | `driveHelpers` → `DynamicDownforceHelper_Exotic.maxSpeedFactorGround` (`maxSpeedFactorAir: 0` stays) | Confirmed |
 | Sway F/R | 11 / 16 | 15 / 19 | `frontPreset` / `backPreset` `swaybarStiffness` | Confirmed |
 | Braking F/R | 1410 / 1200 | 1850 / 1550 | `frontPreset` / `backPreset` `maxBrakingTorque` | Confirmed |
-| Steering | 94 / 26 / 0.33 | unchanged | `wheelTurnMaxAddPerSecond` / `turnUpdateMaxSpeedThreshold` / `turnUpdateMaxSpeedTurnMul` (source note: "86 derece/s, 24 m/s üstü %29") | Confirmed — the "26" is a speed threshold in m/s, **not** the steering return rate |
+| Steering | 94 / 26 / 0.33 | 94 / **45** / **0.21** | `wheelTurnMaxAddPerSecond` / `turnUpdateMaxSpeedThreshold` / `turnUpdateMaxSpeedTurnMul` (source note: "86 derece/s, 24 m/s üstü %29") | Confirmed — "45" is a speed threshold in m/s, **not** the steering return rate; the pair now matches the 572 km/h reference car |
 | Springs F/R | 23 / 22 | 30 / 28 | `springStiffness` | Confirmed |
 | Damping | 2000 | 3000 | `springDamping` (rebound/bound damping left alone) | Confirmed |
 | Mass | 1750 | 1750 | `total_mass`, `chassis_mass` | Confirmed |
@@ -41,11 +41,13 @@ gearbox and speed units work — see [`VEHICLE-MODEL.md`](VEHICLE-MODEL.md).
 * **Nothing is guessed any more.** `docs/YAML-FIELDS.md` used to carry Medium/Low
   confidence rows; the remaining unknown is gameplay behaviour, not field mapping.
 
-## Gear 1–6 stay as they are (PORT.md §3)
+## The gear ladder is rebuilt, not just gear 7 (2026-11-24)
 
-With gear 6 at `80.6` m/s and gear 7 at `138.89`, the 6→7 step is large on purpose
-(overdrive top gear). If the car bogs at the shift or never reaches the ceiling,
-tune gear 6 `maxSpeed` / gear 7 `minSpeed` — not the physics table.
+Gears 1–6 used to stay as the stock file had them, which put 277 → 500 km/h inside a
+single 1.80× overdrive while 6th still ended at 290 km/h. Now every forward gear comes
+from `PHOENIX_GEARBOX` in `tools/port_to_phoenix.py`: 1.28× steps, 115 / 147 / 188 / 240 /
+306 / 391 / 500 km/h, top window 101 → 138.89 m/s. If the car bogs at a shift, move that
+gear's `minSpeed`, not the physics table.
 
 Also note the virtual audio gearbox (`XairesAMV_GearboxStep`) ups at
 `4800 + 4900·gas^1.6` rpm using `v · 9900 / GearSpeed(gear)`; at 138.89 m/s in 7th

@@ -91,7 +91,9 @@ RENAME = [
 STOCK_TO_F1 = {
     ("horsepower", "680"): "2000",                 # scanner hp        (VehicleUIData)
     ("engineMaxTorque", "1300"): "3824",           # torque
-    ("airResistanceFactor", "1.35"): "0.90",       # drag
+    ("airResistanceFactor", "1.35"): "0.60",       # drag (0.90 could not pass 300)
+    ("turnUpdateMaxSpeedThreshold", "26"): "45",   # steering: authority still alive at 162 km/h
+    ("turnUpdateMaxSpeedTurnMul", "0.33"): "0.21",  # ...then cut to 21% - the 572 km/h car's band
     ("frictionMulLateral", "1.29"): "1.60",        # front grip, lateral
     ("frictionMulLongitudinal", "1.15"): "1.50",   # front grip, longitudinal
     ("frictionMulLateral", "1.33"): "2.00",        # rear grip, lateral
@@ -110,6 +112,100 @@ STOCK_TO_F1 = {
 
 # Applied in both port modes: gear 7 `maxSpeed` + XairesAMV_GearSpeed default.
 GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
+
+# ---------------------------------------------------------------------------
+# 3b. The gear ladder (2026-11-24, after the car stopped at ~300 km/h twice)
+# ---------------------------------------------------------------------------
+# A gear is not a speed cap - it is a *ratio window*. Stock's 7th spans
+# 77 -> 91.7 m/s (1.19x) on the box's weakest multiplier (0.306) and the stock car
+# tops out at exactly 91.7 m/s. The Phoenix's 7th spanned 77 -> 138.89 (1.80x) at
+# 0.306: one overdrive asked to cover 277 -> 500 km/h on a third of the torque,
+# while 6th still ended at 80.6 m/s (290 km/h). In game the car stopped where 6th
+# ended - 6th was the last gear with a ratio it could pull (2026-11-24, twice).
+#
+# So the ladder is rebuilt the way a real 7-speed that has to reach 500 km/h is:
+# equal ~1.28x steps from a sane first gear, top window 101 -> 138.89 (1.37x), and a
+# torque-multiplier curve that tapers instead of falling off a cliff. The virtual
+# gearbox in the redscript (PhoenixAMV_GearSpeed) is regenerated from the same table,
+# so HUD revs and shift points stay honest.
+PHOENIX_GEARBOX = {
+    #  gear: (minSpeed, maxSpeed, torqueMultiplier, minEngineRPM, maxEngineRPM)
+    "1": (0.0,    32.0,  0.780, 1000, 9800),
+    "2": (29.8,   40.9,  0.720, 7150, 9800),
+    "3": (38.0,   52.2,  0.665, 7150, 9850),
+    "4": (48.5,   66.6,  0.610, 7150, 9850),
+    "5": (61.9,   85.0,  0.560, 7200, 9900),
+    "6": (79.1,  108.6,  0.530, 7250, 9950),
+    "7": (101.0, 138.89, 0.500, 7300, 10050),
+}
+GEAR_FIELDS = ("minSpeed", "maxSpeed", "torqueMultiplier", "minEngineRPM", "maxEngineRPM")
+
+GEAR_RECORD_RE = re.compile(r"^Vehicle\.[A-Za-z0-9_]*_gear_(?P<g>[1-7]):[ \t]*$")
+GEAR_FIELD_RE = re.compile(
+    r"^(?P<indent>[ \t]+)(?P<key>" + "|".join(GEAR_FIELDS) + r")"
+    r"(?P<sep>:[ \t]*)(?P<value>[^ \t\r\n#]+)(?P<rest>[^\r\n]*)(?P<eol>\r?\n|$)"
+)
+
+# The stock file's own note about the ceiling is now false, and it is *generated*
+# output, so it gets corrected rather than preserved as provenance.
+STALE_GEAR_NOTE = (
+    "# 7 ileri sirali (hizlar m/s), V12 10000 devir sinirli; azami hiz = son vitesin "
+    "maxSpeed'i (91.7 m/s = 330 km/h)"
+)
+FRESH_GEAR_NOTE = (
+    "# 7 ileri sirali (hizlar m/s), V12 10000 devir sinirli. Vites = oran penceresi, hiz siniri "
+    "degil: araliklar ~1.28x, son vites 101 -> 138.89 m/s (500 km/h)"
+)
+
+
+def fmt_num(value: float) -> str:
+    """138.89 -> '138.89', 32.0 -> '32' (YAML reads both, but keep the file tidy)."""
+    return str(int(value)) if float(value).is_integer() else repr(float(value))
+
+
+def apply_gearbox(text: str) -> str:
+    """Rewrite every forward gear's window/multiplier from PHOENIX_GEARBOX."""
+    out: list[str] = []
+    gear: str | None = None
+    for line in text.splitlines(keepends=True):
+        m = GEAR_RECORD_RE.match(line)
+        if m:
+            gear = m.group("g")
+        elif line[:1] and not line[0].isspace() and not line.lstrip().startswith("#"):
+            gear = None                     # a new record at column 0 closes the block
+        if gear:
+            f = GEAR_FIELD_RE.match(line)
+            if f and f.group("key") in GEAR_FIELDS:
+                value = PHOENIX_GEARBOX[gear][GEAR_FIELDS.index(f.group("key"))]
+                line = (f"{f.group('indent')}{f.group('key')}{f.group('sep')}"
+                        f"{fmt_num(value)}{f.group('rest')}{f.group('eol')}")
+        out.append(line)
+    return "".join(out)
+
+
+# The redscript virtual gearbox must agree with the ladder, or the HUD revs lie.
+GEARSPEED_FN = re.compile(
+    r"(?ms)^public static func (?P<name>\w*GearSpeed)\(g: Int32\) -> Float \{\n"
+    r".*?^\}\n"
+)
+
+
+def apply_virtual_gearbox(text: str) -> str:
+    """Regenerate PhoenixAMV_GearSpeed's switch from PHOENIX_GEARBOX' maxSpeed column."""
+    def repl(m: re.Match) -> str:
+        speeds = [PHOENIX_GEARBOX[str(g)][1] for g in range(1, 8)]
+        cases = "".join(
+            f"    case {g}:\n      return {fmt_num(s)};\n" for g, s in enumerate(speeds, 1)
+        )
+        body = ("  switch g {\n" + cases + "    default:\n"
+                f"      return {fmt_num(speeds[-1])};\n  }}\n")
+        head = ("// sanal vitesin 8100 devirdeki hizi (m/s) = tweak'teki vites maxSpeed degerleri\n"
+                "// (port_to_phoenix.py PHOENIX_GEARBOX: 7 ileri, ~1.28x aralik)\n"
+                f"public static func {m.group('name')}(g: Int32) -> Float {{\n")
+        return head + body + "}\n"
+
+    # NOTE: the port renames after this runs, so match the stock function name too.
+    return GEARSPEED_FN.sub(repl, text, count=1)
 
 # ---------------------------------------------------------------------------
 # 4. Check mode
@@ -256,7 +352,12 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
                     if not any(abs(current - n) < 1e-9 for n in limits):
                         warn.append(f"{key}: {value} is neither stock nor Phoenix v2")
         out.append(written)
-    return "".join(out)
+    text = "".join(out)
+    if suffix in (".yaml", ".yml"):
+        return apply_gearbox(text).replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
+    if suffix == ".reds":
+        return apply_virtual_gearbox(text)
+    return text
 
 
 # ---------------------------------------------------------------------------

@@ -172,20 +172,24 @@ public static func PhoenixAMV_EngineReset() -> Void {
 }
 
 // sanal vitesin 8100 devirdeki hızı (m/s) = tweak'teki vites maxSpeed değerleri (gen_yaml.py GEARS, 7 ileri sıralı)
+// sanal vitesin 8100 devirdeki hizi (m/s) = tweak'teki vites maxSpeed degerleri
+// (port_to_phoenix.py PHOENIX_GEARBOX: 7 ileri, ~1.28x aralik)
 public static func PhoenixAMV_GearSpeed(g: Int32) -> Float {
   switch g {
     case 1:
-      return 25.0;
+      return 32;
     case 2:
-      return 36.1;
+      return 40.9;
     case 3:
-      return 47.2;
+      return 52.2;
     case 4:
-      return 58.3;
+      return 66.6;
     case 5:
-      return 69.4;
+      return 85;
     case 6:
-      return 80.6;
+      return 108.6;
+    case 7:
+      return 138.89;
     default:
       return 138.89;
   }

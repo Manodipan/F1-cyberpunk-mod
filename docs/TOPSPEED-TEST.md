@@ -114,21 +114,78 @@ with no `!remove` and no `!append`, and two tests enforce it
 Nothing to install by hand: `git pull`, copy the deliverable YAML over the game's copy,
 restart.
 
+**Result in game, 2026-11-24: still ~300 km/h, still wobbly.** So the explicit list was
+necessary (a fragile block is gone for good) but it was *not* the wall. §3d is what the
+second failure revealed.
+
 ```powershell
 $d = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty\r6\tweaks\phoenix"
 Copy-Item "$d\phoenix_aston_valkyrie.yaml" "$d\phoenix_aston_valkyrie.yaml.stock" -Force   # once, as insurance
 Copy-Item "$HOME\f1-cyberpunk-mod\Phoenix_aston_cheats\r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml" $d -Force
 ```
 
-What the result tells us:
 
-| Outcome | Meaning | Next |
+## 3d. The wall was the gear *ratio* — the overdrive (2026-11-24, second failure)
+
+Conclusion 1 in §3c was half right in a way that mattered. `maxSpeed` per gear is not a
+cap, but it is not decorative either: **a gear's window sets its ratio**, and the Phoenix
+was given one heroic overdrive:
+
+| | window | ratio span | torque multiplier |
+|---|---|---|---|
+| stock 7th | 77 → 91.7 m/s | **1.19×** | 0.306 |
+| Phoenix 7th (failed) | 77 → 138.89 m/s | **1.80×** | 0.306 |
+| Phoenix 6th | 66 → 80.6 m/s | 1.22× | 0.348 |
+
+One gear was asked to cover **277 → 500 km/h** while carrying the weakest multiplier in
+the box — and 6th still ended at 290 km/h. So the car ran out of pull exactly where its
+last *usable* gear ended: ~300 km/h, twice reported. The stock car never showed this
+because its 7th only spans 15 m/s, which is why "stock tops out at exactly 91.7" looked
+like a cap and was really a short, pullable top gear.
+
+The fix is a real 7-speed ladder — equal steps, short top window, tapering multiplier
+(`PHOENIX_GEARBOX` in `tools/port_to_phoenix.py`, mirrored into the redscript virtual
+gearbox so the HUD revs stay honest):
+
+| gear | window (m/s) | tops | torque multiplier |
+|---|---|---|---|
+| 1 | 0 → 32 | 115 km/h | 0.78 |
+| 2 | 29.8 → 40.9 | 147 | 0.72 |
+| 3 | 38 → 52.2 | 188 | 0.665 |
+| 4 | 48.5 → 66.6 | 240 | 0.61 |
+| 5 | 61.9 → 85 | 306 | 0.56 |
+| 6 | 79.1 → 108.6 | 391 | 0.53 |
+| 7 | 101 → **138.89** | **500** | 0.50 |
+
+Steps are 1.276–1.279× — the spread a seven-speed actually needs to reach 500 from a
+sane first gear. No single gear has to double its speed any more.
+
+Two more changes ride along, because they answer the other complaint and a different
+question respectively:
+
+| Change | From | To | Why |
+|---|---|---|---|
+| `turnUpdateMaxSpeedThreshold` / `…TurnMul` | 26 m/s / 0.33 | **45 m/s / 0.21** | the 572 km/h car's band: keep authority to 162 km/h, then cut to 21 %. Ours still handed over a third of full lock at 400+ |
+| `airResistanceFactor` | 0.90 | **0.60** | second lever on the same wall; 0.66 is what the 572 km/h car uses |
+
+Install after `git pull` (YAML **and** scripts — the redscript gear table changed too):
+
+```powershell
+$root = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty"
+Copy-Item "$HOME\f1-cyberpunk-mod\Phoenix_aston_cheats\r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml" `
+          "$root\r6\tweaks\phoenix\" -Force
+Copy-Item "$HOME\f1-cyberpunk-mod\Phoenix_aston_cheats\r6\scripts\phoenix_aston_valkyrie\*" `
+          "$root\r6\scripts\phoenix_aston_valkyrie\" -Force
+```
+
+Restart the game (TweakXL reads YAML at boot; CET reload alone does not take).
+
+| Outcome | What it means | Next |
 |---|---|---|
-| tops out **past 330** | the inherited gear set was the wall — the diagnosis was right | tune drag so it lands on exactly 500 |
-| still **exactly 330** | the gear table was never the limit; it is the drag wall | `tools\stability-tweak.ps1 -Drag 0.55`, then trim |
-
-And if it is still 330, `tools\gearbox-check.ps1` also settles whether the installed file
-is what we think it is (`occurrences of 138.89`, `gears block`) before any more tuning.
+| **~500 or beyond** | the ladder was the wall | if it overshoots, raise `airResistanceFactor` in steps (0.60 → 0.70 → 0.80) until it sits at 500 |
+| stalls **~390** (= new 6th) | the *next* ratio is still too tall for the available force | drop 7th's `minSpeed` (101 → 95) and raise its multiplier (0.50 → 0.56) |
+| stalls **~300 again** | ratio theory is dead: it is the engine-level speed limiter or the engine record itself | see `docs/VEHICLE-MODEL.md` §5c — that needs the RED4ext unlimiter, not YAML |
+| still wobbly at 400+ | steering bands are not the only cause; next suspects are rear/front lateral friction (2.00 vs 1.60 — every known-good car runs them near equal) | report the speed it starts at |
 
 ## 4. If it wobbles while autodriving
 
@@ -136,15 +193,11 @@ That is the useful result of removing human input: **any** yaw oscillation is no
 attributable to the physics, not to your thumbs. The cause is almost certainly steering
 authority that was tuned for 330 km/h:
 
-```yaml
-wheelTurnMaxAddPerSecond: 94      # how fast the wheels can turn
-turnUpdateMaxSpeedThreshold: 26   # above 26 m/s (94 km/h) ...
-turnUpdateMaxSpeedTurnMul: 0.33   # ... authority is cut to 33 %
-```
-
 At 500 km/h the same wheel angle generates roughly **2.3×** the lateral acceleration it
-does at 330, so 33 % is still a lot. One command applies a high-speed profile to the
-game's copy of the YAML (backup kept, repo untouched, reversible):
+does at 330, so a third of full authority is a lot. **The high-speed band is now in the
+deliverable** (§3d: threshold 45 m/s, multiplier 0.21), so the script below is no longer
+the first move — it is the fallback if the shipped band is still not enough. It works on
+the game's copy of the YAML (backup kept, repo untouched, reversible):
 
 ```powershell
 cd $HOME\f1-cyberpunk-mod

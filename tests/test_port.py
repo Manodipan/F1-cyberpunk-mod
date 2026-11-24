@@ -153,7 +153,9 @@ class PhysicsTests(unittest.TestCase):
             "horsepower: 2000",
             "engineMaxTorque: 3824",
             "maxSpeed: 138.89",
-            "airResistanceFactor: 0.90",
+            "airResistanceFactor: 0.60",
+            "turnUpdateMaxSpeedThreshold: 45",
+            "turnUpdateMaxSpeedTurnMul: 0.21",
             "frictionMulLateral: 1.60",
             "frictionMulLongitudinal: 1.50",
             "frictionMulLateral: 2.00",
@@ -176,17 +178,13 @@ class PhysicsTests(unittest.TestCase):
             "maxSpeedFactorAir: 0",
             "handbrakeBrakingTorque: 2600",
             "wheelTurnMaxAddPerSecond: 94",
-            "turnUpdateMaxSpeedThreshold: 26",
-            "turnUpdateMaxSpeedTurnMul: 0.33",
             "maxRPM: 10100",
             "total_mass: 1750",
             "chassis_mass: 1750",
             "turningRollFactor: 0",
             "swaybarLengthScalar: 2",
-            "torqueMultiplier: 0.782",
-            "minSpeed: 22",
-            "maxSpeed: 80.6",          # gear 6 stays (PORT.md §3)
-            "maxSpeed: 25",            # gear 1 stays
+            "torqueMultiplier: 0.765",  # reverse stays stock
+            "maxSpeed: 15",             # ...and so does its window
         ):
             self.assertIn(keep, self.out, keep)
 
@@ -199,6 +197,54 @@ class PhysicsTests(unittest.TestCase):
         text = 'a: 91.7          # stock 91.7 was the old ceiling\n'
         self.assertEqual(port_yaml(text), 'a: 138.89          # stock 91.7 was the old ceiling\n')
 
+
+class GearLadderTests(unittest.TestCase):
+    """A gear is a ratio window, not a speed cap (docs/VEHICLE-MODEL.md §4).
+
+    The 2026-11-24 build put 277 -> 500 km/h inside one 1.80x overdrive whose
+    torque multiplier was the weakest in the box; the car stopped where 6th ended.
+    """
+
+    def setUp(self):
+        self.out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
+        self.gears = port.PHOENIX_GEARBOX
+
+    def test_windows_climb_monotonically(self):
+        tops = [self.gears[str(g)][1] for g in range(1, 8)]
+        self.assertEqual(tops, sorted(tops))
+        self.assertEqual(tops[-1], 138.89)                  # 500 km/h
+        for lo, hi in zip(tops, tops[1:]):
+            for g in range(1, 8):
+                if self.gears[str(g)][1] == hi:
+                    self.assertLess(self.gears[str(g)][0], hi, "window with no width")
+
+    def test_ratio_steps_are_even(self):
+        tops = [self.gears[str(g)][1] for g in range(1, 8)]
+        steps = [b / a for a, b in zip(tops, tops[1:])]
+        for step in steps:
+            self.assertGreaterEqual(step, 1.20, steps)
+            self.assertLessEqual(step, 1.32, steps)
+
+    def test_top_gear_is_not_an_overdrive_cliff(self):
+        lo, hi = self.gears["7"][0], self.gears["7"][1]
+        self.assertLessEqual(hi / lo, 1.45, "top gear window too tall to pull")
+        self.assertGreaterEqual(self.gears["7"][2], 0.45, "top gear torque left on the floor")
+
+    def test_engine_rpm_windows_sit_inside_maxrpm(self):
+        for g in range(1, 8):
+            lo, hi = self.gears[str(g)][3], self.gears[str(g)][4]
+            self.assertLess(lo, hi, g)
+            self.assertLessEqual(hi, 10100, g)              # engine maxRPM
+
+    def test_virtual_gearbox_matches_the_ladder(self):
+        audio = port_reds(stock("aston_valkyrie_audio.reds"))
+        for g in range(1, 8):
+            top = port.fmt_num(self.gears[str(g)][1])
+            self.assertIn(f"case {g}:\n      return {top};", audio)
+
+    def test_stale_ceiling_note_is_gone(self):
+        self.assertNotIn("(91.7 m/s = 330 km/h)", self.out)
+        self.assertIn("138.89 m/s (500 km/h)", self.out)
 
 class DeliverableTests(unittest.TestCase):
     """The committed tree must be exactly what the tool produces — no hand edits."""

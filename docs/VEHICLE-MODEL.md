@@ -110,14 +110,16 @@ Our values versus the 572 km/h reference car:
 | | Phoenix | Jesko reference |
 |---|---|---|
 | `wheelTurnMaxAddPerSecond` | 94 | 137 |
-| `turnUpdateMaxSpeedThreshold` (m/s) | 26 | **45** |
-| `turnUpdateMaxSpeedTurnMul` | 0.33 | **0.21** |
+| `turnUpdateMaxSpeedThreshold` (m/s) | 45 (was 26) | **45** |
+| `turnUpdateMaxSpeedTurnMul` | 0.21 (was 0.33) | **0.21** |
 | `turningRollFactor` | 0 | 1 |
 | `driftLimit` | 1.6 | 2.3 |
 
 The reference lets the car steer almost fully up to 162 km/h and then cuts hard to 21 %.
-Ours cuts earlier (94 km/h) but less (33 %) — so at 400+ we are still handing the tyres a
-third of full authority.
+Ours used to cut earlier (94 km/h) but only to 33 % — a third of full authority still
+being handed to the tyres at 400+, which is what the wobble looked like. As of
+2026-11-24 the shipped band matches the reference's thresholds; only the raw steering
+rate is lower (94 vs 137), which is the more conservative side of that comparison.
 
 ## 4. The engine and the gearbox
 
@@ -142,15 +144,25 @@ third of full authority.
 | `minEngineRPM` / `maxEngineRPM` | RPM window used in that gear |
 | `torqueMultiplier` | how hard the engine pulls **through** that window |
 
-Two things the community keeps relearning:
+Three things the community keeps relearning, and the third one is what cost us two
+evenings:
 
-1. **`maxSpeed` is a shift point, not a speed cap.** A car whose last gear says 78.5 m/s
-   can still do 572 km/h (`reference/vehicles/jesko_attack`). The gear defines where the
-   transmission thinks the gear ends; the actual top speed is an equilibrium between engine
-   force and drag.
+1. **`maxSpeed` is not a hard speed cap.** A car whose last gear says 78.5 m/s can still
+   reach 572 km/h (the Jesko reference). Top speed is an equilibrium between engine force
+   and drag; nothing clamps you at the number in the file.
+
 2. **The gear list is what the gearbox is.** If you build the list wrong — inherited gears
-   still in front of yours because an `!remove` missed — the car drives the gearbox it
-   inherited, and every other number in your file is wasted.
+   still in front of yours because an `!remove` missed — the car drives a gearbox you did
+   not write, and every other number in the file is wasted.
+
+3. **…but a gear's window *is* its ratio, so a tall gear is a weak gear.** `minSpeed →
+   maxSpeed` is the speed band that gear is built to cover, so asking one gear to cover
+   more speed means less force at the wheel. Our 7th spanned **77 → 138.89 m/s (1.80×)** —
+   277 to 500 km/h in a single shift — with the *lowest* torque multiplier in the box
+   (0.306), while 6th still ended at 290 km/h. The car stopped at 300-330 km/h, exactly
+   where its last pullable gear ended, twice. The stock car looked "capped at 91.7 m/s"
+   only because its 7th spans 15 m/s and can pull it. Lesson: **spread the ladder, don't
+   stretch the top gear** — even steps of ~1.28× across seven gears, top window ~1.4×.
 
 ## 5. Speed: units, the HUD, and the limiter
 
@@ -178,16 +190,18 @@ including the case where the limiter in (c) is the thing holding it.
 
 | Observation | What it rules in / out |
 |---|---|
-| Stock Valkyrie: gear 7 `maxSpeed 91.7`, car reads ~330 | the numbers line up at ×3.6, i.e. m/s → km/h |
-| Phoenix with gear 7 `138.89`: still ~330 | our gear values were not in play, *or* a non-gear limit |
+| Stock Valkyrie: gear 7 `maxSpeed 91.7`, car reads ~330 | m/s → km/h at ×3.6, over a **short** top gear it can pull |
+| Phoenix with gear 7 `138.89`: still ~330, then ~300 | our gear values *were* in play — as a ratio we could not pull |
 | Same plateau with 2.9× the torque of stock | not a power limit |
-| Reference car reaching 572 with a 78.5 m/s top gear | `maxSpeed` is not a cap, so "330 = the gear ceiling" was the wrong conclusion |
-| The reference builds its gearbox as one explicit list; ours inherited SuperSport gears and did `8 × !remove` + `8 × !append` | the fragile half of our file |
+| Reference car reaching 572 on a 78.5 m/s top gear | `maxSpeed` is not a cap; its top gear is short, so it out-pulls its own window |
+| Our 6th ended at 80.6 m/s (290 km/h), our 7th spanned 1.80× | the plateau sat on **6th's ceiling** — the ladder, not the list |
+| The reference uses one explicit gear list; ours inherited SuperSport gears via `8 × !remove` + `8 × !append` | the fragile half of our file (fixed — but it was not the wall) |
 
-Fixes applied, in order: the explicit gear list (shipped — `tools/port_to_phoenix.py`
-`explicit_gears()` builds the array, `tests/test_port.py` keeps it that way), then the drag
-(`tools/stability-tweak.ps1 -Drag`), and the limiter question if it still will not move.
-`docs/TOPSPEED-TEST.md` keeps the test protocol.
+Fixes applied, in order: the explicit gear list (a real fix to a fragile block; the car
+still stopped at ~300), then the ladder — equal 1.28× steps, a 1.375× top window, 0.50 top
+multiplier (`PHOENIX_GEARBOX` in `tools/port_to_phoenix.py`, mirrored into the redscript
+virtual gearbox) — plus the steering band of §3 and a lower drag.
+`docs/TOPSPEED-TEST.md` §3d keeps the protocol and the outcome table.
 
 ## 7. Tuning playbook
 

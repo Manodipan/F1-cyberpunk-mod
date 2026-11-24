@@ -47,17 +47,17 @@ docs/                            install + test matrix, packaging, rename map, f
 | | Stock | Phoenix |
 |---|---|---|
 | Scanner hp / torque | 680 / 1300 | **2000 / 3824** |
-| Gear 7 ceiling | 91.7 (≈330 km/h) | **138.89 (≈500 km/h)** |
-| Drag | 1.35 | **0.90** |
+| Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **7 gears, even 1.28× steps, top window 101→138.89 m/s (500 km/h)** |
+| Drag | 1.35 | **0.60** |
 | Front grip | 1.29 / 1.15 | **1.60 / 1.50** |
 | Rear grip | 1.33 / 1.20 | **2.00 / 1.85** |
 | Rear friction helper | 0.95 / 0.95 | **1.45 / 1.45** |
 | Downforce (`maxSpeedFactorGround`) | 0.60 | **1.40** |
 | Sway F/R · braking F/R | 11/16 · 1410/1200 | **15/19 · 1850/1550** |
 | Springs / damping | 23/22, 2000 | **30/28, 3000** |
-| Steering (add / threshold / mul) | 94 / 26 / 0.33 | 94 / 26 / 0.33 (v1's 115/35/0.55 wobbled) |
+| Steering (add / threshold / mul) | 94 / 26 / 0.33 | **94 / 45 / 0.21** (the 572 km/h car's band) |
 
-Unchanged: RWD, gears R and 1–6, mass 1750 + chassis 1750, maxRPM 10100, inertia,
+Unchanged: RWD, reverse gear, mass 1750 + chassis 1750, maxRPM 10100, inertia,
 centre of mass, `turningRollFactor 0`, tyre dimensions, wheel setup geometry.
 
 ## How it stays clean
