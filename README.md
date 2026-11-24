@@ -44,8 +44,9 @@ docs/                            install + test matrix, packaging, rename map, f
 
 ## Physics (stock → Phoenix)
 
-**As of build 900024 the shipped car is the stock Aston mod's physics, with one exception:
-all four wheels drive.** The base measured **80 m/s under ADE / 86 by hand** on this pipeline —
+**As of build 900025 the shipped car is the stock Aston mod's physics plus the 500 km/h build:**
+all four wheels drive, drag and torque are sized from measurement, and the top gear is stretched to
+155 m/s. The base measured **80 m/s under ADE / 86 by hand** on this pipeline —
 the reference car's own numbers. AWD is a handling override we keep on purpose; see below. Only two
 things differ, and neither is a handling number: the scanner's `horsepower` field carries the build
 stamp, and the speedometer is ours (true km/h for every car). Everything the car does — gearbox
@@ -54,9 +55,9 @@ the car that was measured at **~80 m/s under ADE and ~85 m/s by hand**, the best
 
 | | Stock (the mod) | Phoenix (shipped, 900020) |
 |---|---|---|
-| Gearbox | 7 gears, top window 77→91.7 m/s (330 km/h declared) | **identical** |
-| Mass · Drag | 1750 · 1.35 | **identical** |
-| Torque · Redline | 1300 · 10 100 | **identical** |
+| Gearbox | 7 gears, top window 77→91.7 m/s (330 km/h) | **6th to 100, 7th 100→155** (step 16, 558 km/h declared) |
+| Mass · Drag | 1750 · 1.35 | 1750 · **0.55** (step 16) |
+| Torque · Redline | 1300 · 10 100 | **2750** · 10 100 (step 16) |
 | Drivetrain | RWD (front `isDrive: false`) | **AWD** — all four wheels drive, handbrake still rear only |
 | Grip F/R | 1.29/1.15 · 1.33/1.20 | **identical** |
 | Yaw inertia | 3050 / 900 / 3530 | **3355 / 990 / 3883** (step 15, +10 %) |

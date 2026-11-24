@@ -285,6 +285,68 @@ accident. Cheap to check: the first build that moves the plateau above 86 should
 onset by the same ratio. If the onset stays at 81 while the plateau climbs, the two are independent
 and the wobble stays a steering problem.
 
+## 2g. 900024 measured: the gain axis does not move the onset — so what does?
+
+| reading | 900022 (AWD) | 900024 (AWD + all three gain levers) |
+|---|---|---|
+| sawtooth top | 81 best, 77-75 some terrain | **no change** |
+| trough | 61 | **61-67** (same, collisions excluded) |
+| cycle | 18-22 s | ~25 s, erratic 12-30, many collisions |
+| recovery | recovers, occasionally spins | **recovers, but slower** |
+| manual plateau | 86 | **higher** (number to confirm) |
+
+Four levers have now been tried against the onset and none of them moved it: AWD, damping
+(step 1), and the three-part gain axis including a **-36 % cut in steering authority above 26 m/s**
+(900024). Meanwhile the same build *raised* the manual top speed. That combination is a real
+finding: **the weave is not driven by steering loop gain.** Reducing the controller's authority by
+more than a third changed the onset by zero, while changing something unrelated (drag-limited top
+speed) changed the manual number.
+
+The two explanations still standing both come from coincidences in the data:
+
+**A. The 6 -> 7 transition.** The weave starts where the car shifts into top gear:
+
+| car | gear 6 ceiling | weave onset |
+|---|---|---|
+| stock Aston | 80.6 m/s | 81 (best) |
+| Jesko, verbatim control | 62.47 m/s | 63 |
+
+Two for two, to within 1 m/s, on the two cars that ever ran their own gearbox unchanged. The aero
+builds never tested it - their terminals (72, 65, 55-58) fell *below* the 80.6 boundary, so they
+never reached the transition at all.
+
+**B. Onset tracks terminal speed.** Three aero builds, three times the plateau and the onset fell
+together (72/72, 65/65, 55-58), and the stock car sits at 81/86 = 0.94.
+
+Both predict the same fix, and it is the build the project exists for.
+
+## 2h. Step 16 — the 500 km/h build, which is also the stability experiment (build 900025)
+
+| field | stock | 900025 |
+|---|---|---|
+| `airResistanceFactor` | 1.35 | **0.55** |
+| `engineMaxTorque` | 1300 | **2750** (x2.08) |
+| gear 6 ceiling | 80.6 | **100** |
+| gear 7 window | 77 -> 91.7 | **100 -> 155** (558 km/h declared) |
+
+Thrust in the new top gear is `6 870 N x 2.08 x (91.7/155) = 8 600 N`, against `k = 0.929 x
+0.55/1.35 = 0.378 N/(m/s)^2` of drag: **terminal 150.7 m/s = 542 km/h**, and 500 km/h (138.9)
+arrives after ~3.0 km of 7th gear on top of ~2 km getting to 100 m/s - comfortably inside the
+11.3 km straight. Power required at 500: **1 195 kW = 1 602 hp**, the Chiron SS's 1 578 hp, from a
+sawtooth on a desert highway.
+
+**Why it is also the stability test.** The stock car's top-gear transition sits at 80.6 m/s against
+a plateau of 86 - the car lives on top of the transition for its entire top-speed range, which is
+the one thing every failed stability build had in common and never changed. In 900025 the
+transition moves to **100 m/s (360 km/h)** and the plateau to **542 km/h**: the car spends its
+whole accelerating life in a gear it can pull. If the onset follows the transition, the weave moves
+to ~100 m/s. If it follows the terminal, it moves to ~0.94 x 150 = **141 m/s** - i.e. clear of the
+entire 500 km/h run.
+
+Both predictions say the same thing: **watch whether the weave appears below 100 m/s, at ~100, or
+above 300 km/h.** Any of those three answers identifies the mechanism, and the third one is the
+deliverable.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |

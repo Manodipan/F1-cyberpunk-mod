@@ -32,19 +32,19 @@ class TestProfile(unittest.TestCase):
     def test_finds_the_car(self):
         self.assertIsNotNone(self.row)
 
-    def test_top_gear_is_the_stock_mods_ceiling(self):
-        """The shipped car is the stock mod's own physics again: top gear 91.7 m/s = 330 km/h,
-        the car that measured 80 m/s under ADE and 85 by hand (the reference did 63 / 77)."""
-        self.assertAlmostEqual(self.row["top"], 91.7, places=2)
-        self.assertEqual(round(self.row["top"] * 3.6), 330)
+    def test_top_gear_clears_the_plateau(self):
+        """Step 16: 155 m/s = 558 km/h declared, so a 542 km/h terminal sits INSIDE the top gear
+        instead of on top of the 6->7 transition the way the stock car's 86 m/s/80.6 did."""
+        self.assertAlmostEqual(self.row["top"], 155.0, places=2)
+        self.assertEqual(round(self.row["top"] * 3.6), 558)
 
     def test_gear_count(self):
         self.assertEqual(self.row["gears"], 8, "7 forward + reverse")
 
     def test_the_deciding_fields(self):
         # stock mod's own numbers: the best car measured so far
-        self.assertEqual(self.row["airResistanceFactor"], "1.35")
-        self.assertEqual(self.row["engineMaxTorque"], "1300")
+        self.assertEqual(self.row["airResistanceFactor"], "0.55")   # step 16: the 500 km/h drag
+        self.assertEqual(self.row["engineMaxTorque"], "2750")       # step 16: x2.08
         self.assertEqual(self.row["total_mass"], "1750")
         self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "85")   # step 15: 10 % below stock
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")   # step 15: the reference's, damps
@@ -78,7 +78,7 @@ class TestIndex(unittest.TestCase):
             cv.write_index(cv.collect(ROOT / "Phoenix_aston_cheats" / "r6" / "tweaks", True, tmp), tmp)
             again = cv.index_from_corpus(tmp)
             self.assertEqual(len(again), 1)
-            self.assertAlmostEqual(again[0]["top"], 91.7, places=2)   # stock mod's gearbox
+            self.assertAlmostEqual(again[0]["top"], 155.0, places=2)   # step 16 ladder
 
 
 class TestCommittedCorpus(unittest.TestCase):

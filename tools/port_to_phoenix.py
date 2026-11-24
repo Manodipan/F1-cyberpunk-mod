@@ -695,27 +695,34 @@ def apply_gearbox(text: str) -> str:
 
 # The redscript virtual gearbox must agree with the ladder, or the HUD revs lie.
 GEARSPEED_FN = re.compile(
-    r"(?ms)^public static func (?P<name>\w*GearSpeed)\(g: Int32\) -> Float \{\n"
+    r"(?ms)(?:^//[^\n]*\n)*?"                     # the stale comment block above it, if any
+    r"^public static func (?P<name>\w*GearSpeed)\(g: Int32\) -> Float \{\n"
     r".*?^\}\n"
 )
 
 
+def _gearspeed_switch(name: str, speeds: list[float]) -> str:
+    """The whole `public static func *GearSpeed` body for a list of top-gear speeds."""
+    cases = "".join(
+        f"    case {g}:\n      return {fmt_num(s)};\n" for g, s in enumerate(speeds, 1)
+    )
+    body = ("  switch g {\n" + cases + "    default:\n"
+            f"      return {fmt_num(speeds[-1])};\n  }}\n")
+    head = ("// sanal vitesin 8100 devirdeki hizi (m/s) = tweak'teki vites maxSpeed degerleri\n"
+            "// (port_to_phoenix.py: uretilir - tweak ile ayni olmali, yoksa HUD devri yalan soyler)\n"
+            f"public static func {name}(g: Int32) -> Float {{\n")
+    return head + body + "}\n"
+
+
+def apply_gearspeed(text: str, speeds: list[float]) -> str:
+    """Point the redscript virtual gearbox at the ladder the YAML actually ships."""
+    return GEARSPEED_FN.sub(lambda m: _gearspeed_switch(m.group("name"), speeds), text, count=1)
+
+
 def apply_virtual_gearbox(text: str) -> str:
     """Regenerate PhoenixAMV_GearSpeed's switch from PHOENIX_GEARBOX' maxSpeed column."""
-    def repl(m: re.Match) -> str:
-        speeds = [PHOENIX_GEARBOX[str(g)][1] for g in range(1, 8)]
-        cases = "".join(
-            f"    case {g}:\n      return {fmt_num(s)};\n" for g, s in enumerate(speeds, 1)
-        )
-        body = ("  switch g {\n" + cases + "    default:\n"
-                f"      return {fmt_num(speeds[-1])};\n  }}\n")
-        head = ("// sanal vitesin 8100 devirdeki hizi (m/s) = tweak'teki vites maxSpeed degerleri\n"
-                "// (port_to_phoenix.py PHOENIX_GEARBOX: 7 ileri, ~1.28x aralik)\n"
-                f"public static func {m.group('name')}(g: Int32) -> Float {{\n")
-        return head + body + "}\n"
-
     # NOTE: the port renames after this runs, so match the stock function name too.
-    return GEARSPEED_FN.sub(repl, text, count=1)
+    return apply_gearspeed(text, [PHOENIX_GEARBOX[str(g)][1] for g in range(1, 8)])
 
 # Steering return rate: not present in the stock file, so nothing could rewrite it and we
 # inherited whatever the 911 base carries. Every car we have data for states it explicitly
@@ -751,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 24
+BUILD = 25
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -950,6 +957,41 @@ STOCK_OVERLAY = (
     ("turnUpdateMaxSpeedTurnMul", "0.33", "0.21"),
 )
 STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
+
+# Step 16 (2026-11-24, from measurement): the 500 km/h build on the stock base.
+# The stock car measured a flat-out plateau of 86 m/s (310 km/h) - drag-limited, NOT gear-capped
+# at 91.7 - which makes the 500 km/h problem a drag-and-thrust problem with a gearbox attached.
+# Two readings (the ADE sawtooth's 61 -> 81 m/s climb, and the 86 m/s plateau) fit the force curve:
+#     k = 0.929 N/(m/s)^2, thrust at terminal = 6 870 N
+# and that in turn sizes this build:
+#   airResistanceFactor 1.35 -> 0.55    force x 0.407, so terminal thrust can reach ~150 m/s
+#   engineMaxTorque   1300 -> 2750      x2.08: covers the drag cut (x2.6 of force at 500) AND the
+#                                       gearing stretch (thrust is divided by the taller ratio)
+#   gear 6  80.6 -> 100, gear 7 min 77 -> 100, max 91.7 -> 155
+#       the top gear must be able to PULL past the plateau. Terminal ~150.7 m/s = 542 km/h, so the
+#       6->7 transition sits at 100 (360 km/h), a long way below the plateau - the stock car's
+#       transition sat at 80.6 against a plateau of 86, i.e. right on top of it, which is the one
+#       coincidence every failed stability build had in common.
+# Power at 500 km/h: 8 600 N x 138.9 m/s = 1 195 kW = 1 602 hp - the Chiron SS's 1 578 hp.
+STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 69.4, 100.0, 155.0]
+STOCK_LADDER_PAIRS = (
+    ("maxSpeed", "80.6", "100"),        # gear 6 ceiling 290 -> 360 km/h
+    ("minSpeed", "77", "100"),          # gear 7 floor
+    ("maxSpeed", "91.7", "155"),        # gear 7 ceiling 330 -> 558 km/h
+    ("airResistanceFactor", "1.35", "0.55"),
+    ("engineMaxTorque", "1300", "2750"),
+)
+
+
+def apply_pairs(text: str, pairs) -> str:
+    """Rewrite `key: old` -> `key: new` for each pair, one line at a time."""
+    for key, old, new in pairs:
+        text = re.sub(
+            rf"(?m)^(?P<i>[ \t]*{key}:[ \t]*){re.escape(old)}(?P<t>[ \t]*\r?)$",
+            lambda m, new=new: m.group("i") + new + m.group("t"),
+            text,
+        )
+    return text
 
 
 def apply_stock_overlay(text: str) -> str:
@@ -1195,9 +1237,10 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         if suffix in (".yaml", ".yml"):
             # AWD survives the restoration on purpose: it is a handling change, not a physics
             # table, and the stock file's own rear-drive is the only thing here we override.
-            return apply_drivetrain(apply_stock_overlay(text))
+            return apply_drivetrain(apply_stock_overlay(apply_pairs(text, STOCK_LADDER_PAIRS)))
         if suffix == ".reds":
-            return apply_mph_as_mps(apply_true_speedometer(text))
+            return apply_mph_as_mps(apply_true_speedometer(
+                apply_gearspeed(text, STOCK_LADDER_TOPS)))
         return text
     out = []
     for line in text.splitlines(keepends=True):

@@ -179,6 +179,15 @@ class StockBaseDrivetrainTests(unittest.TestCase):
         self.assertIn("isHandBrake: false", front)
         self.assertIn("isHandBrake: true", back)
 
+    def test_the_virtual_gearbox_follows_the_shipped_ladder(self):
+        """The redscript computes revs from these numbers; if they drift from the YAML every
+        HUD reading above 6th gear is a lie."""
+        reds = port_reds(stock("aston_valkyrie_audio.reds"))
+        ladder = [25, 36.1, 47.2, 58.3, 69.4, 100, 155]
+        for g, speed in enumerate(ladder, 1):
+            self.assertIn(f"case {g}:\n      return {port.fmt_num(speed)};", reds, g)
+        self.assertIn(f"default:\n      return {port.fmt_num(ladder[-1])};", reds)
+
     def test_the_note_does_not_still_say_rear_drive(self):
         self.assertNotIn("Arkadan itis", self.out)
 
