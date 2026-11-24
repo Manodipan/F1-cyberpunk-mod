@@ -163,10 +163,18 @@ sane first gear. No single gear has to double its speed any more.
 Two more changes ride along, because they answer the other complaint and a different
 question respectively:
 
+Three more changes ride along in the same build:
+
 | Change | From | To | Why |
 |---|---|---|---|
 | `turnUpdateMaxSpeedThreshold` / `…TurnMul` | 26 m/s / 0.33 | **45 m/s / 0.21** | the 572 km/h car's band: keep authority to 162 km/h, then cut to 21 %. Ours still handed over a third of full lock at 400+ |
 | `airResistanceFactor` | 0.90 | **0.60** | second lever on the same wall; 0.66 is what the 572 km/h car uses |
+| engine record: `flyWheelMomentOfInertia` 0.12, `finalGearTorqueDecimationScalor` 1.0, `gearChangeTime` 0.1, `gearChangeCooldown` 0.15, `fastR1GearChange` true, `wheelsResistanceRatio` 15 | inherited from the SuperSport base | **written out explicitly** | the 572 km/h car inherits *nothing* in its engine record. Ours inherited the entire half that governs how hard the last gear pulls — and a top-gear torque decimation we never chose |
+
+That last row is the one nobody had looked at: our engine is `$base:
+Vehicle.VehicleEngineData_4_SuperSport` plus four overrides, so the flywheel, the shift
+timing and `finalGearTorqueDecimationScalor` all came from a car that is not supposed to
+do 500 km/h. Nothing invisible is left there now.
 
 Install after `git pull` (YAML **and** scripts — the redscript gear table changed too):
 
@@ -184,7 +192,7 @@ Restart the game (TweakXL reads YAML at boot; CET reload alone does not take).
 |---|---|---|
 | **~500 or beyond** | the ladder was the wall | if it overshoots, raise `airResistanceFactor` in steps (0.60 → 0.70 → 0.80) until it sits at 500 |
 | stalls **~390** (= new 6th) | the *next* ratio is still too tall for the available force | drop 7th's `minSpeed` (101 → 95) and raise its multiplier (0.50 → 0.56) |
-| stalls **~300 again** | ratio theory is dead: it is the engine-level speed limiter or the engine record itself | see `docs/VEHICLE-MODEL.md` §5c — that needs the RED4ext unlimiter, not YAML |
+| stalls **~300 again** | ratio and engine-record theories are both dead | it is the engine-level speed limiter (`docs/VEHICLE-MODEL.md` §5c) — that needs the RED4ext unlimiter, not YAML. Report it; we decide whether the Phoenix ships with that dependency |
 | still wobbly at 400+ | steering bands are not the only cause; next suspects are rear/front lateral friction (2.00 vs 1.60 — every known-good car runs them near equal) | report the speed it starts at |
 
 ## 4. If it wobbles while autodriving

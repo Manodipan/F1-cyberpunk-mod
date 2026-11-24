@@ -163,6 +163,50 @@ def fmt_num(value: float) -> str:
     return str(int(value)) if float(value).is_integer() else repr(float(value))
 
 
+# ---------------------------------------------------------------------------
+# 3c. The engine record: stop inheriting the half that governs top gear
+# ---------------------------------------------------------------------------
+# Our engine is `$base: Vehicle.VehicleEngineData_4_SuperSport` + four overrides. The
+# fields that shape how hard the car pulls in its *last* gear - flywheel inertia, the
+# final-gear torque decimation, shift timing - are still whatever a 911-class base record
+# says. The car that actually does 572 km/h (reference/jesko_attack.yaml) inherits none of
+# them: it writes its engine out in full. These are that car's values, applied explicitly,
+# so nothing invisible is left between us and the ladder (2026-11-24).
+ENGINE_EXPLICIT = {
+    "flyWheelMomentOfInertia": "0.12",            # lower = easier to gain/lose speed
+    "finalGearTorqueDecimationScalor": "1.0",     # do not tax the top gear's torque
+    "gearChangeTime": "0.1",                      # sequential box: 100 ms shifts
+    "gearChangeCooldown": "0.15",
+    "fastR1GearChange": "true",
+    "wheelsResistanceRatio": "15",                # vanilla sample value; docs do not say more
+}
+ENGINE_BLOCK_RE = re.compile(r"(?m)^(?P<indent>[ \t]+)vehEngineData:[ \t]*\r?\n")
+ENGINE_HEAD_RE = re.compile(r"(?m)^(?P<indent>[ \t]+)engineMaxTorque:[^\r\n]*\r?\n")
+
+
+def ensure_engine_fields(text: str) -> str:
+    """Add the ENGINE_EXPLICIT fields to the engine record when they are not set yet."""
+    m = ENGINE_BLOCK_RE.search(text)
+    if not m:
+        return text
+    body_start = m.end()
+    head = ENGINE_HEAD_RE.search(text, body_start)
+    if not head:
+        return text
+    # The keys are unique to the engine record, so a whole-file scan is the safe test
+    # (and makes this function idempotent: a second pass inserts nothing).
+    missing = [(k, v) for k, v in ENGINE_EXPLICIT.items()
+               if not re.search(rf"(?m)^\s*{k}:", text)]
+    if not missing:
+        return text
+    indent = head.group("indent")
+    note = (f"{indent}# 2026-11-24: motor kaydinin gizli yarisi (son vites torku, debriyaj ataleti,\n"
+            f"{indent}# sanziman suresi) SuperSport'tan miras kaliyordu; 572 km/h'lik referans arabanin\n"
+            f"{indent}# degerleri acikca yazildi.\n")
+    add = note + "".join(f"{indent}{k}: {v}\n" for k, v in missing)
+    return text[:head.end()] + add + text[head.end():]
+
+
 def apply_gearbox(text: str) -> str:
     """Rewrite every forward gear's window/multiplier from PHOENIX_GEARBOX."""
     out: list[str] = []
@@ -354,7 +398,8 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         out.append(written)
     text = "".join(out)
     if suffix in (".yaml", ".yml"):
-        return apply_gearbox(text).replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
+        text = apply_gearbox(text).replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
+        return ensure_engine_fields(text)
     if suffix == ".reds":
         return apply_virtual_gearbox(text)
     return text

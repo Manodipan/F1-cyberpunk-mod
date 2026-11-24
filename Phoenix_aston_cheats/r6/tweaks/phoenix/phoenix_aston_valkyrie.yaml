@@ -219,6 +219,15 @@ Vehicle.phoenix_aston_valkyrie:
     $base: Vehicle.VehicleEngineData_4_SuperSport
     # 2026-11-13 tester: hizlanma zayif -> tork 960 (SuperSport) -> 1300
     engineMaxTorque: 3824
+    # 2026-11-24: motor kaydinin gizli yarisi (son vites torku, debriyaj ataleti,
+    # sanziman suresi) SuperSport'tan miras kaliyordu; 572 km/h'lik referans arabanin
+    # degerleri acikca yazildi.
+    flyWheelMomentOfInertia: 0.12
+    finalGearTorqueDecimationScalor: 1.0
+    gearChangeTime: 0.1
+    gearChangeCooldown: 0.15
+    fastR1GearChange: true
+    wheelsResistanceRatio: 15
     maxRPM: 10100
     minRPM: 1000
     gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]

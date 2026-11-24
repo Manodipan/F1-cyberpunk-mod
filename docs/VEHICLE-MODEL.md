@@ -134,7 +134,8 @@ rate is lower (94 vs 137), which is the more conservative side of that compariso
 | `gearChangeTime`, `gearChangeCooldown` | shift duration and lockout |
 | `flyWheelMomentOfInertia` | how lazily revs build/fall |
 | `finalGearTorqueDecimationScalor` | how much torque the *last* gear gives up |
-| `wheelsResistanceRatio`, `resistanceTorque` | drivetrain losses |
+| `wheelsResistanceRatio` | drivetrain resistance; docs give the sample value (15) and nothing else |
+| `resistanceTorque` | the torque penalty **on throttle lift-off** (engine braking) — *not* a top-speed limiter |
 
 `gamedataVehicleGearRecord` (per gear):
 
@@ -153,7 +154,11 @@ evenings:
 
 2. **The gear list is what the gearbox is.** If you build the list wrong — inherited gears
    still in front of yours because an `!remove` missed — the car drives a gearbox you did
-   not write, and every other number in the file is wasted.
+   not write, and every other number in the file is wasted. The same trap applies one level
+   up: *every field you do not write is inherited*, and a `$base`d engine record hides
+   `finalGearTorqueDecimationScalor`, `flyWheelMomentOfInertia` and the shift timings. The
+   572 km/h reference car inherits none of them — it writes its engine out in full. As of
+   2026-11-24 ours does too.
 
 3. **…but a gear's window *is* its ratio, so a tall gear is a weak gear.** `minSpeed →
    maxSpeed` is the speed band that gear is built to cover, so asking one gear to cover

@@ -188,6 +188,24 @@ class PhysicsTests(unittest.TestCase):
         ):
             self.assertIn(keep, self.out, keep)
 
+    def test_engine_stops_inheriting_the_top_gear_half(self):
+        """The 572 km/h car writes these out; ours inherited them from a 911-class base."""
+        for expected in (
+            "flyWheelMomentOfInertia: 0.12",
+            "finalGearTorqueDecimationScalor: 1.0",
+            "gearChangeTime: 0.1",
+            "gearChangeCooldown: 0.15",
+            "fastR1GearChange: true",
+            "wheelsResistanceRatio: 15",
+        ):
+            self.assertIn(expected, self.out, expected)
+
+    def test_engine_fields_are_not_duplicated(self):
+        once = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
+        again = port.ensure_engine_fields(once)
+        self.assertEqual(once, again)
+        self.assertEqual(once.count("flyWheelMomentOfInertia"), 1)
+
     def test_gear7_in_both_places(self):
         self.assertEqual(self.out.count("maxSpeed: 138.89"), 1)
         self.assertIn("return 138.89;", port_reds(stock("aston_valkyrie_audio.reds")))
