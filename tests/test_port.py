@@ -468,3 +468,47 @@ class VerbatimControlTests(unittest.TestCase):
                      "$base: Vehicle.VehicleEngineData_4_SuperSport",
                      "$base: Vehicle.VehicleDriveModelData_911Turbo_inline"):
             self.assertNotIn(ours, physics)
+
+
+class TrueSpeedometerTests(unittest.TestCase):
+    """The HUD inflates speed; every vehicle should report what it is actually doing."""
+
+    def setUp(self):
+        self.src = stock("aston_valkyrie.reds")
+        self.out = port_reds(self.src)
+
+    def test_hud_speed_goes_around_the_display_curve_for_every_vehicle(self):
+        self.assertIn("if PhoenixAMV_TrueSpeedo(this.m_activeVehicle) {", self.out)
+        self.assertNotIn("IsTarget(this.m_activeVehicle) {", self.out)
+        self.assertIn("return IsDefined(vehicle);", self.out)
+
+    def test_real_speed_is_still_m_s_times_3_6_and_respects_km_or_mph(self):
+        self.assertIn("AbsF(speedValue) * 3.6", self.out)
+        self.assertIn("this.m_kmOn ? kmh : kmh / 1.609344", self.out)
+
+    def test_the_phoenix_dash_audio_and_leds_stay_gated_on_our_car(self):
+        # Only the HUD number went global. Everything that is ours stays ours.
+        self.assertIn('t"Vehicle.phoenix_aston_valkyrie"', self.out)
+        for suffix in ("_ekran", "_audio"):
+            body = port_reds(stock(f"aston_valkyrie{suffix}.reds"))
+            self.assertIn("IsTarget(", body, suffix)
+        # the rev LEDs gate on their own widget instead of the vehicle record
+        led = port_reds(stock("aston_valkyrie_led.reds"))
+        self.assertIn('n"amvLed"', led)
+        self.assertNotIn("TrueSpeedo", led)
+
+    def test_flag_off_restores_per_car_behaviour(self):
+        saved = port.TRUE_SPEEDO_ALL_VEHICLES
+        port.TRUE_SPEEDO_ALL_VEHICLES = False
+        try:
+            out = port.port_text(self.src, ".reds", True, [])
+        finally:
+            port.TRUE_SPEEDO_ALL_VEHICLES = saved
+        self.assertIn("IsTarget(this.m_activeVehicle) {", out)
+        self.assertNotIn("TrueSpeedo(this.m_activeVehicle)", out)
+
+    def test_shipped_file_carries_it(self):
+        shipped = (DELIVERABLE / "r6" / "scripts" / "phoenix_aston_valkyrie"
+                   / "phoenix_aston_valkyrie.reds").read_text(encoding="utf-8")
+        self.assertIn("if PhoenixAMV_TrueSpeedo(this.m_activeVehicle) {", shipped)
+        self.assertIn("AbsF(speedValue) * 3.6", shipped)

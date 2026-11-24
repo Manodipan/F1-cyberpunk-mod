@@ -36,7 +36,7 @@ tools/gearbox-check.ps1          why does it stop at 330 km/h? installed YAML + 
 tools/fastcar-dump.ps1           ranks every installed car by top gear, dumps the tuning fields
 tools/collect_vehicles.py        corpus + index of every installed vehicle tweak
 tools/localization/en-us.json    CR2W onscreens source -> "Phoenix AMV LMH"
-tests/                           41 tests (port + packaging + archive inspection)
+tests/                           117 tests (port + packaging + archive inspection)
 docs/                            install + test matrix, packaging, rename map, field map,
                                  vehicle model reference, localisation, archive
                                  provenance, status
@@ -62,6 +62,28 @@ docs/                            install + test matrix, packaging, rename map, f
 
 Unchanged: reverse gear, mass 1750 + chassis 1750, inertia,
 centre of mass, `turningRollFactor 0`, tyre dimensions, wheel setup geometry.
+
+## Speedometer: true speed, every car
+
+The game's HUD never shows a car's speed. It runs it through a `speed_to_multiplier` display
+curve that inflates as speed rises. Measured on 2026-11-24 with timed 1 km runs, rolling start,
+same stretch:
+
+| car | 1 km | real speed | HUD read | inflate |
+|---|---|---|---|---|
+| Jesko | 13 s | 277 km/h | **572** | 2.07× |
+| Phoenix (control build) | 13 s | 277 km/h | **278** | 1.00× |
+
+The reference car never did 500. It does 277 and writes 572 on the dashboard, which is why
+copying its data exactly landed us on the same real speed. An unrelated Zonda mod sits at
+1.97× on a declared 180 km/h gearbox: it is one HUD function, not any car's data, and it touches
+nothing physical.
+
+`TRUE_SPEEDO_ALL_VEHICLES` in `tools/port_to_phoenix.py` (default on) extends the Phoenix's
+bypass to **every vehicle**: `hudCarController.OnSpeedValueChanged` writes `SpeedValue × 3.6`
+(÷ 1.609344 in mph mode) for whatever you are driving, so the number is the speed the car is
+actually doing. Set it to `False` for Phoenix-only. The custom dash, rev LEDs and audio stay
+gated on our car either way.
 
 ## How it stays clean
 

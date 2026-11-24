@@ -736,6 +736,66 @@ def ensure_steering_return(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# True speedometer
+# ---------------------------------------------------------------------------
+# The game's HUD never shows speed. It shows speed run through the `speed_to_multiplier`
+# display curve, which inflates the reading as speed rises. Measured 2026-11-24 by timing
+# 1 km over a known stretch, rolling start:
+#
+#     Jesko    13 s/km = 277 km/h real -> HUD read 572   (2.07x)
+#     Phoenix  13 s/km = 277 km/h real -> HUD read 278   (1.00x)
+#
+# and an unrelated Zonda mod lands at 355 km/h on a declared 180 km/h gearbox (1.97x). Two
+# independent mods, same kind of factor: it is the HUD function, not any car's data, and it
+# touches nothing physical - it is text formatting.
+#
+# The stock mod already bypasses it, but only for its own car ("diger araclara dokunmaz").
+# With TRUE_SPEEDO_ALL_VEHICLES the bypass becomes every vehicle, so any car in the game
+# reports the speed it is actually doing. Only the HUD number changes: the custom Phoenix
+# dash, rev LEDs and audio stay gated on PhoenixAMV_IsTarget.
+TRUE_SPEEDO_ALL_VEHICLES = True
+
+HUD_SPEED_ONLY_NOTE = (
+    "// Sadece bu araçta Vehicle.SpeedValue (m/s) x 3.6 yazılır, "
+    "oyunun km/mph ayarına (m_kmOn) uyar. Diğer araçlara dokunmaz."
+)
+HUD_SPEED_ALL_NOTE = (
+    "// Her araçta Vehicle.SpeedValue (m/s) x 3.6 yazılır, oyunun km/mph ayarına (m_kmOn) uyar:\n"
+    "// oyunun speed_to_multiplier eğrisi (277 km/h gerçek hızı 572 gösteriyordu) devre dışı."
+)
+# The rename step runs after this one, so the source still carries the stock prefix.
+HUD_GUARD_OURS = (
+    "  if XairesAMV_IsTarget(this.m_activeVehicle) {",
+    "  if PhoenixAMV_IsTarget(this.m_activeVehicle) {",
+)
+HUD_GUARD_ALL = "  if PhoenixAMV_TrueSpeedo(this.m_activeVehicle) {"
+
+TRUE_SPEEDO_FN = """
+// Gerçek hız göstergesi: HUD hızı speed_to_multiplier eğrisinden geçirdiği için yüksek hızda
+// şişiyor (277 km/h gerçek hız 572 okunuyordu). Bu kapı bütün araçlara açık; Phoenix'in kendi
+// ekranı, led ve sesi IsTarget'ta kalmaya devam ediyor, değişen tek şey HUD'daki sayı.
+public static func PhoenixAMV_TrueSpeedo(vehicle: wref<VehicleObject>) -> Bool {
+  return IsDefined(vehicle);
+}
+"""
+
+
+def apply_true_speedometer(text: str) -> str:
+    """Route every vehicle's HUD speed around the game's inflating display curve."""
+    if not TRUE_SPEEDO_ALL_VEHICLES or "hudCarController" not in text:
+        return text                       # not the speedometer file
+    guard = next((g for g in HUD_GUARD_OURS if g in text), None)
+    if guard is None:
+        return text                       # already converted, or not the shape we expect
+    eol = "\r\n" if "\r\n" in text else "\n"
+    text = text.replace(guard, HUD_GUARD_ALL, 1)
+    text = text.replace(HUD_SPEED_ONLY_NOTE, HUD_SPEED_ALL_NOTE.replace("\n", eol), 1)
+    if not text.endswith(eol):
+        text += eol
+    return text + TRUE_SPEEDO_FN.replace("\n", eol)
+
+
+# ---------------------------------------------------------------------------
 # 4. Check mode
 # ---------------------------------------------------------------------------
 # After masking, any surviving `xaires`/`Xaires`/`_f1` in *code* is a bug. Comments
@@ -886,7 +946,7 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         text = text.replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
         return ensure_steering_return(ensure_engine_fields(text))
     if suffix == ".reds":
-        return apply_virtual_gearbox(text)
+        return apply_true_speedometer(apply_virtual_gearbox(text))
     return text
 
 

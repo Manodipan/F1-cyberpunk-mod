@@ -291,6 +291,17 @@ Consequences:
   earlier real-physics anchor (2,000 hp + CdA 0.95 -> 493 km/h) says the game's force model can
   represent it, but the 350 km/h "brake" event of v9 has to be cracked first.
 
+### Delivered: a TRUE speedometer, for every vehicle
+
+`phoenix_aston_valkyrie.reds` already bypassed the display curve, but only for our car
+("diger araclara dokunmaz"). `TRUE_SPEEDO_ALL_VEHICLES` (default on, `tools/port_to_phoenix.py`)
+widens the guard to `IsDefined(vehicle)`, so **every** car you drive reports `SpeedValue x 3.6`
+(divide by 1.609344 in mph mode) - the speed it is actually doing. Our dash, rev LEDs and audio
+stay gated on `PhoenixAMV_IsTarget`. Flip the flag to `False` to return to Phoenix-only.
+
+Read a stock car's dial now and you see what the curve was hiding: a car that "does 210" is
+usually doing ~170, and everything above that was inflation.
+
 Original hypothesis section follows.
 
 ### If the display is the answer
