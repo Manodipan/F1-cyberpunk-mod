@@ -115,11 +115,16 @@ def profile(path: Path) -> dict | None:
     return row
 
 
-def collect(tweaks: Path, copy: bool, dest: Path) -> list[dict]:
+def collect(tweaks: Path, copy: bool, dest: Path, all_yaml: bool = False) -> list[dict]:
     rows = []
     for path in sorted(tweaks.rglob("*.yaml")):
         row = profile(path)
         if not row:
+            if all_yaml and copy:
+                # keep the file even though we cannot profile it (still useful to read)
+                target = dest / path.relative_to(tweaks)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(path, target)
             continue
         rel = path.relative_to(tweaks)
         row["rel"] = str(rel).replace("\\", "/")
@@ -183,6 +188,8 @@ def main() -> int:
     ap.add_argument("--tweaks", type=Path, default=None, help="tweaks folder (default: <game>/r6/tweaks)")
     ap.add_argument("--dest", type=Path, default=DEST)
     ap.add_argument("--copy", action="store_true", help="also copy the YAMLs into --dest")
+    ap.add_argument("--all-yaml", action="store_true",
+                    help="with --copy, keep every .yaml under tweaks, not only vehicle records")
     ap.add_argument("--index-only", type=Path, default=None, metavar="DIR",
                     help="rebuild INDEX.md from an existing corpus instead of the game folder")
     args = ap.parse_args()
@@ -199,7 +206,7 @@ def main() -> int:
         print("pass --tweaks <dir> or --game <game root>", file=sys.stderr)
         return 2
 
-    rows = collect(tweaks, args.copy, args.dest)
+    rows = collect(tweaks, args.copy, args.dest, args.all_yaml)
     if not rows:
         print(f"no vehicle yaml found under {tweaks}", file=sys.stderr)
         return 1

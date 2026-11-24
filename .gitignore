@@ -16,9 +16,6 @@ __pycache__/
 # Nexus/Vortex upload artefacts
 dist/
 
-# Reference corpus (tools/collect_vehicles.py): the raw YAMLs are other authors' work and
-# are NOT redistributed here - they stay on the machine that ran the collector. The
-# generated facts (INDEX.md) are tracked, and that is what we actually compare against.
-reference/vehicles/**/*.yaml
-# ...except the one car we explicitly asked for (572 km/h reference)
-!reference/vehicles/jesko_attack.yaml
+# Reference corpus (tools/collect_vehicles.py). Tracked deliberately: these are other
+# authors' tweak files, kept for comparison only, never shipped in Phoenix_aston_cheats/.
+# `git add reference/vehicles` is enough now - no -f, no exceptions.

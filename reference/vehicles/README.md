@@ -16,7 +16,7 @@ python tools/collect_vehicles.py --tweaks "G:\...\r6\tweaks\some_mod"
 | File | In git? | Why |
 |---|---|---|
 | `INDEX.md` | **yes** | facts: top gear, drag, torque, mass, steering authority, damping, per car. This is the part we actually compare against. |
-| `*/**.yaml` | **no** (see `.gitignore`) | other authors' work. Nexus permissions for most vehicle mods forbid re-uploading their files, and this repo is public. The collector keeps them on the machine that ran it. |
+| `*/**.yaml` | **yes** | other authors' tweak files, kept **for comparison only**. Never copied into `Phoenix_aston_cheats/`, never in the Nexus zip — `make verify-package` fails if that ever happens. Be aware this is a public repo: most Nexus vehicle mods ask that their files not be re-uploaded, and this is a copy, not an upload of the mod. |
 | `README.md` | yes | this file |
 
 If you want a specific car's full record in git (to read, not to ship), copy **only that
