@@ -145,6 +145,11 @@ STOCK_TO_F1 = {
 DRIVETRAIN = "awd"
 
 FRONT_ROLE_RE = re.compile(r"(?m)^Vehicle\.[A-Za-z0-9_]*_wheel_front:[ \t]*$")
+# The stock file's own note says rear-drive; with the flag flipped it would be a lie in the
+# shipped file, so the note travels with the change.
+RWD_NOTE_RE = re.compile(r"(?m)^#[ \t]*Arkadan itis[^\n]*")
+AWD_NOTE = ("# Dort ceker (2026-11-24: AWD icin izin verildi - handling, hiz degil); "
+            "el freni arkada. Gercek AMR-LMH arkadan itis.")
 ISDRIVE_FALSE_RE = re.compile(r"(?P<key>isDrive:[ \t]*)false")
 
 
@@ -162,7 +167,7 @@ def apply_drivetrain(text: str) -> str:
         if in_front:
             line = ISDRIVE_FALSE_RE.sub(r"\g<key>true", line, count=1)
         out.append(line)
-    return "".join(out)
+    return RWD_NOTE_RE.sub(AWD_NOTE, "".join(out), count=1)
 
 
 # Applied in both port modes: gear 7 `maxSpeed` + XairesAMV_GearSpeed default.
@@ -746,7 +751,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 21
+BUILD = 22
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -927,10 +932,12 @@ STABILITY_TARGETS = {(k, new) for k, _old, new in STABILITY_OVERLAY}
 #       input, and the input is exactly what ADE taps. 10 % slower than stock.
 #   momentOfInertia +10 %   yaw frequency goes as 1/sqrt(I_z): 3530 -> 3883 is 4.7 % lower and
 #       the x/y +10 % follows the same scaling. Pushes the yaw mode below ADE's bandwidth.
-STOCK_OVERLAY = (
-    ("wheelTurnMaxAddPerSecond", "94", "85"),
-    ("momentOfInertia", "{ x: 3050, y: 900, z: 3530 }", "{ x: 3355, y: 990, z: 3883 }"),
-)
+# QUEUED (build 900021 shipped them, never driven, pulled again for 900022 so that AWD is the
+# only difference from the measured 80 / 86 car). Both lower the yaw loop gain and both are
+# one line to put back:
+#   ("wheelTurnMaxAddPerSecond", "94", "85"),
+#   ("momentOfInertia", "{ x: 3050, y: 900, z: 3530 }", "{ x: 3355, y: 990, z: 3883 }"),
+STOCK_OVERLAY = ()
 STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 
 
@@ -1175,7 +1182,9 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
     """
     if RESTORE_STOCK_PHYSICS:
         if suffix in (".yaml", ".yml"):
-            return apply_stock_overlay(text)
+            # AWD survives the restoration on purpose: it is a handling change, not a physics
+            # table, and the stock file's own rear-drive is the only thing here we override.
+            return apply_drivetrain(apply_stock_overlay(text))
         if suffix == ".reds":
             return apply_mph_as_mps(apply_true_speedometer(text))
         return text

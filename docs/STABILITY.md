@@ -481,7 +481,7 @@ combination that was never isolated, and every individual gain in it (inertia up
 down, slip scale down) came from *reducing* loop gain, which is the only category that ever
 produced progress.
 
-## Step 13 — the step-9 levers, on the stock car (build 900021)
+## Step 13 — the step-9 levers, on the stock car (build 900021, superseded before it was driven)
 
 Back on the good base, the only changes that ever produced progress are the ones that **lower the
 yaw loop's gain**, and they are worth retesting on a car that is not already broken. Everything
@@ -494,10 +494,36 @@ slip-curve scaling (the stock car inherits 1; the Jesko's 2 was the anomaly). Tw
 | `wheelTurnMaxAddPerSecond` | 94 | **85** | a slower steering command is a first-order lag on the input, and the input is what ADE taps |
 | `momentOfInertia` | 3050 / 900 / 3530 | **3355 / 990 / 3883** | ω_ψ ∝ 1/√I_z, so 3530 → 3883 drops the yaw mode 4.7 % — further below ADE's bandwidth |
 
-Both are −10 %-class changes on the loop-gain axis. If they move 80, the next build splits them to
-find out which one owns it. If they do not, the untouched lever is `turnUpdateMaxSpeedTurnMul`
-0.33 → 0.21 — steering authority above 26 m/s, i.e. the multiplier on ADE's own error signal,
-36 % less response per correction.
+Both are −10 %-class changes on the loop-gain axis, and both are now **queued, not shipped**:
+the owner asked for AWD, which is the same class of question but a different kind of change, and
+mixing them would have cost the only clean attribution available. Put them back in
+`STOCK_OVERLAY` when the gain axis is next in play. The untouched lever remains
+`turnUpdateMaxSpeedTurnMul` 0.33 → 0.21 — steering authority above 26 m/s, i.e. the multiplier on
+ADE's own error signal, 36 % less response per correction.
+
+## Step 14 — four driven wheels on the stock base (build 900022)
+
+The stock car measured **80 / 86** rear-drive. AWD is the one thing the restoration does not
+undo, and it is on purpose: the owner asked for it as a **handling** change, not a speed one.
+
+Why it can act on the wobble at all: Auto Drive holds **100 % throttle**, which puts the whole
+engine's torque through two tyres and keeps the rears at the friction limit for the length of the
+run. Four driven wheels halve the longitudinal demand per tyre, so the rear pair has lateral
+capacity left — the yaw excitation a saturated rear tyre generates is the one this removes. It
+also makes the car's balance under power more neutral, and that is the "handling" half.
+
+It cannot raise top speed, and never could: at 86 m/s the tyres are far from their friction
+limit, so how many of them are driven does not enter the force balance. Any top-speed change in
+this build is noise, not mechanism.
+
+Expected trade: with the front tyres now steering *and* driving, they have less lateral capacity
+left at the limit, so tight low-speed corners may push wide. That is the cost side; report it if
+it shows up.
+
+Read the result like this: the 80 m/s number is where ADE's weave begins. If AWD moves it, the
+wobble has a traction component and the RWD-authentic fix is rear grip (or a torque curve that
+does not saturate the rears), not permanent four-wheel drive. If it does not move, the wobble is
+steering/aero — the loop-gain axis — and step 13's two levers come back.
 
 ## What to try next, in order
 

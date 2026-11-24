@@ -46,7 +46,7 @@ class TestProfile(unittest.TestCase):
         self.assertEqual(self.row["airResistanceFactor"], "1.35")
         self.assertEqual(self.row["engineMaxTorque"], "1300")
         self.assertEqual(self.row["total_mass"], "1750")
-        self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "85")   # step 13: 10 % below stock
+        self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "94")   # stock: the step-13 levers are queued
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.33")
 
     def test_vehicle_record_not_its_satellites(self):

@@ -151,6 +151,38 @@ class RenameTests(unittest.TestCase):
         self.assertEqual(once, port_yaml(once, physics=False))
 
 
+class StockBaseDrivetrainTests(unittest.TestCase):
+    """Build 900022: the stock mod's physics, with four driven wheels.
+
+    The stock file is rear-drive. AWD is the one thing we override on purpose - it is a
+    handling change (halve the longitudinal demand per tyre at full throttle, which is the
+    condition Auto Drive tests in), not a physics table."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
+
+    def _role(self, name):
+        return self.out.split(f"Vehicle.phoenix_amv_role_{name}:")[1].split("Vehicle.")[0] \
+            if f"Vehicle.phoenix_amv_role_{name}:" in self.out \
+            else None
+
+    def test_all_four_wheels_drive(self):
+        front = self.out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
+        back = self.out.split("Vehicle.phoenix_amv_wheel_back:")[1].split("Vehicle.")[0]
+        self.assertIn("isDrive: true", front)
+        self.assertIn("isDrive: true", back)
+
+    def test_handbrake_stays_on_the_rear_pair(self):
+        front = self.out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
+        back = self.out.split("Vehicle.phoenix_amv_wheel_back:")[1].split("Vehicle.")[0]
+        self.assertIn("isHandBrake: false", front)
+        self.assertIn("isHandBrake: true", back)
+
+    def test_the_note_does_not_still_say_rear_drive(self):
+        self.assertNotIn("Arkadan itis", self.out)
+
+
 class ControlPathTest(unittest.TestCase):
     """Base for the tests that describe the Jesko control pipeline.
 
