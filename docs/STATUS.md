@@ -1,4 +1,7 @@
 # Status
+**Resuming a session? Read [NEXT-SESSION.md](NEXT-SESSION.md) first** — build to install, the
+pending measurements, and the mistakes not to repeat.
+
 
 **The 100 m/s wall is the game, not the car.** Engine-level vehicle speed limit at exactly 100 m/s
 (360 km/h); the native `vehicle::RigidBody::Recalculate` returns a non-finite result at the limit and
