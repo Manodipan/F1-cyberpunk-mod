@@ -195,10 +195,10 @@ Vehicle.phoenix_amv_helper_rotation:
   driftExceededAngle: 60
   driftFullAngleBegin: 20
   driftFullAngleEnd: 40
-  driftLimit: 2.3
+  driftLimit: 1.6
   driftLimitMaxVel: 18
   driftLimitStartVel: 8
-  handbrakeLimit: 2.49
+  handbrakeLimit: 1.6
   maxAngularSpeedRad: 2.6
   smoothingTime: 0.2
 
@@ -298,7 +298,7 @@ Vehicle.phoenix_amv_drive_model:
   handbrakeBrakingTorque: 1600
   lowVelStoppingDeceleration: 0.8
   maxWheelTurnDeg: 38
-  momentOfInertia: { x: 2600, y: 780, z: 3000 }
+  momentOfInertia: { x: 3137, y: 926, z: 3631 }
   momentOfInertiaScale: { x: 1, y: 1, z: 1 }
   perfectSteeringFactor: 1
   sideWeightTransferFactor: 0.2

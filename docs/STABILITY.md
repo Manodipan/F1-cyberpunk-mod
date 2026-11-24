@@ -98,9 +98,40 @@ The cost, stated honestly: `rearWheelsLatFrictionCoef` 0.9 -> 1 removes some of 
 rotation, so handbrake turns will be less lurid. That is a deliberate trade - rotation bias is
 exactly what makes a 280 km/h car bite.
 
-## Step 4, staged and ready (not shipped — step 3 is untested)
+## Measured so far
 
-Sweeping the fields nobody had looked at yet turns up one that names itself:
+| build | ADE wobble | manual hold |
+|---|---|---|
+| verbatim Jesko (= the reference car) | 63 m/s | 77 m/s |
+| + damping overlay (step 1) | 63 m/s | 77 m/s |
+| + alternative turn-update killed (step 2) | — combined with step 3 — | |
+| **+ grip floors, steering rate 94 (step 3)** | **72 m/s** | **77 m/s** |
+
+Steps 2+3 together moved the ADE limit **63 -> 72 m/s (+14 %)** and left the hand's limit alone at
+77 - which is the 78.5 m/s gear ceiling, so the hand is no longer the limiting instrument. The goal
+is ADE flat out, i.e. the wobble point at or above the top speed; the remaining gap is ~6 m/s.
+
+## Step 4 (shipped)
+
+Everything in this step is on one axis: **how readily the car agrees to rotate.**
+
+| field | reference | Phoenix | why |
+|---|---|---|---|
+| `driftLimit` | 2.3 | **1.6** | the rotation limiter's threshold - the game's own anti-spin net. The reference allows 44 % more angular rate before it engages. |
+| `handbrakeLimit` | 2.49 | **1.6** | same threshold, same reference-only field |
+| `momentOfInertia` | 2600/780/3000 | **3137/926/3631** | yaw frequency goes as 1/sqrt(I). The reference is lighter in all three axes than the stock Aston; a car that answers the wheel faster than the controller can is how a weave starts. Stock's vector scaled to our 1800 kg from its 1750. |
+
+Yaw mode frequency: sqrt(780/926) = 0.918, i.e. the yaw response is **8 % slower** than the
+reference's - deliberately on the same side of the controller's bandwidth as the car that does not
+wobble.
+
+## Step 5, staged (not shipped)
+
+If step 4 is not enough, the next axis is damping again: `antiSwaybarDampingScalor` 1 -> 1.15
+(the Pagani's value), then `springReboundDampingLowRate` 5000 -> 6500 (ζ 0.72 -> 0.93), then
+`slipAngleCurveScale`/`slipRatioCurveScale` 2 -> 1, which are the last Jesko-only fields left.
+
+### The fields that named themselves
 
 | field | Jesko | stock Aston | Pagani |
 |---|---|---|---|

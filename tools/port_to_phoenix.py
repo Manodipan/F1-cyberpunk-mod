@@ -788,6 +788,21 @@ STABILITY_OVERLAY = (
     ("minLatFrictionCoef", "0.62", "0.95"),           # stock Aston's
     ("minLongFrictionCoef", "0.8", "0.95"),           # stock Aston's
     ("rearWheelsLatFrictionCoef", "0.9", "1"),        # no rear-grip reduction
+    # Step 4 (2026-11-24, after measurement): 63 -> 72 m/s under ADE with steps 2+3, manual hold
+    # unchanged at 77 (which is the gear ceiling, so the hand is not the limit any more). The rest
+    # of the gap is yaw oscillation, so this step slows the car's willingness to rotate - all
+    # three fields are on that one axis:
+    #   driftLimit   the rotation limiter helper's threshold. Reference 2.3 vs stock Aston 1.6:
+    #                the reference lets the car reach 44 % more angular rate before the game's own
+    #                anti-spin net engages, i.e. it spins before the net catches it.
+    #   handbrakeLimit           2.49 -> 1.6, same threshold, same reference-only field.
+    #   momentOfInertia          the reference is lighter in all three axes (2600/780/3000) than
+    #                the stock Aston (3050/900/3530). Yaw mode frequency goes as 1/sqrt(I): a
+    #                lighter car answers the wheel faster, and "faster than the controller" is how
+    #                a weave starts. Stock's vector, scaled to our 1800 kg from its 1750 (x1.0286).
+    ("driftLimit", "2.3", "1.6"),
+    ("handbrakeLimit", "2.49", "1.6"),
+    ("momentOfInertia", "{ x: 2600, y: 780, z: 3000 }", "{ x: 3137, y: 926, z: 3631 }"),
 )
 
 
