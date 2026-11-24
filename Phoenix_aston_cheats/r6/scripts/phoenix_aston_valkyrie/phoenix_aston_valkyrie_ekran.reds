@@ -60,7 +60,7 @@ public final func OnSpeedValueChanged(speed: Float) -> Void {
   if PhoenixAMV_IsTarget(this.m_vehicle) {
     let parent = this.GetRootWidget().GetParentWidget() as inkCompoundWidget;
     if IsDefined(parent) && IsDefined(parent.GetWidgetByPathName(n"amvGear")) {
-      PhoenixAMV_DashSpeed(parent, RoundMath(AbsF(speed) * 3.6));
+      PhoenixAMV_DashSpeed(parent, RoundMath(AbsF(PhoenixAMV_FwdSpeed(this.m_vehicle)) * 3.6));
       PhoenixAMV_DashGear(parent, this.m_vehicle);
     }
   }
@@ -80,6 +80,14 @@ public final func OnRpmValueChanged(newRPM: Float) -> Void {
   let rev = parent.GetWidgetByPathName(n"amvRev") as inkCompoundWidget;
   if !IsDefined(rev) {
     return;                                       // bizim ekranımız değil
+  }
+  // gercek hiz: fizik hizi (HUD'un hiz degeri degil)
+  let pv = GetPlayer(GetGameInstance());
+  if IsDefined(pv) {
+    let mv = GetMountedVehicle(pv);
+    if IsDefined(mv) && PhoenixAMV_IsTarget(mv) {
+      PhoenixAMV_DashSpeed(parent, RoundMath(AbsF(PhoenixAMV_FwdSpeed(mv)) * 3.6));
+    }
   }
   let rpm: Float = newRPM;
   let state = PhoenixAMVEngineState.Get();

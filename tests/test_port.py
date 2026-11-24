@@ -673,3 +673,41 @@ class TrueSpeedometerTests(unittest.TestCase):
         self.assertIn("if PhoenixAMV_TrueSpeedo(this.m_activeVehicle) {", shipped)
         self.assertIn("this.m_kmOn ? mps * 3.6 : mps", shipped)
         self.assertNotIn("1.609344", shipped)
+
+
+class PhysicsSpeedReadoutTests(unittest.TestCase):
+    """The dash must show the car's own velocity, not the number the HUD display path hands it.
+
+    Every speed reading the driver has given came from one value: the argument of
+    `OnSpeedValueChanged`. If something upstream caps that value, every reading is the cap and no
+    gearing or torque change can move it. The dash therefore reads `GetLinearVelocity` - the
+    physics - while the HUD keeps the game's number. Two numbers, same instant.
+    """
+
+    def setUp(self):
+        self.src = stock("aston_valkyrie_ekran.reds")
+        self.out = port_reds(self.src)
+
+    def test_dash_reads_the_velocity_vector(self):
+        self.assertIn("PhoenixAMV_DashSpeed(parent, RoundMath(AbsF(PhoenixAMV_FwdSpeed(", self.out)
+        self.assertIn("this.m_vehicle)) * 3.6));", self.out)
+        # the old, display-path reading must be gone from the speed callback
+        self.assertNotIn("PhoenixAMV_DashSpeed(parent, RoundMath(AbsF(speed) * 3.6));", self.out)
+
+    def test_the_dash_also_refreshes_from_the_tachometer(self):
+        # the speed callback only fires when the speed VALUE changes, so a capped value would
+        # freeze the dash; the rev model ticks on the physics and keeps it live
+        self.assertIn("let mv = GetMountedVehicle(pv);", self.out)
+        self.assertIn("AbsF(PhoenixAMV_FwdSpeed(mv)) * 3.6", self.out)
+
+    def test_the_hud_keeps_the_game_value_as_the_control(self):
+        hud = port_reds(stock("aston_valkyrie.reds"))
+        self.assertIn("let mps: Float = AbsF(speedValue);", hud)
+
+    def test_idempotent(self):
+        again = port.port_text(self.out, ".reds", True, [])
+        self.assertEqual(again.count("PhoenixAMV_FwdSpeed"), self.out.count("PhoenixAMV_FwdSpeed"))
+
+    def test_other_scripts_are_untouched(self):
+        for suffix in ("_audio", "_led"):
+            self.assertNotIn("gercek hiz", port_reds(stock(f"aston_valkyrie{suffix}.reds")))

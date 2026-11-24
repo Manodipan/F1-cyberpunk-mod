@@ -519,6 +519,53 @@ The cost of torque 4 900 Nm (3.8x stock) is at the bottom of the range: the low 
 traction-limited almost everywhere. That is acceptable for a top-speed build and pathological for
 anything else - the ladder is the next thing to rebalance once the plateau is where it should be.
 
+## 2m. The 100 m/s wall: is it the car, or the readout? (build 900030)
+
+Owner's objection, 2026-11-24: *"the game artificially limits the speed? 100 is too specific and
+too round a number to be math."*
+
+That is the strongest objection raised so far, and it is not answered by any model fit. Everything
+on screen in every test so far — the HUD number, the dash, the revs — derives from one value: the
+`speed` argument the game passes to `OnSpeedValueChanged`. A cap **anywhere** upstream of that
+value produces the same reading as a cap in the physics, and no amount of torque or gearing can
+move either. Model C's agreement with ~100 is not proof: 105.7 predicted against a number eyeballed
+as "~100" is a match inside the noise of the measurement.
+
+### What is already ruled out
+
+Nothing this mod ships can clamp the car. The speedometer only formats the number it is given; the
+dash, LEDs and audio only read; the virtual gearbox feeds `PhoenixAMV_EngineUpdate` and nothing
+else. So a cap would be game-side, and no tweak field touched so far is a candidate.
+
+### The instrument (900030)
+
+The dash now reads **`PhoenixAMV_FwdSpeed` = `GetLinearVelocity()` dotted with the car's forward
+vector** — the physics itself, no display path — in km/h. The HUD keeps the game's own value in m/s.
+Same instant, two independent numbers. The dash is also refreshed from the tachometer, because the
+speed callback stops firing when the value stops changing: at a cap it would otherwise freeze on
+the capped number and lie.
+
+### Calibration first (2 seconds, before the run)
+
+Roll at ~14 m/s / 50 km/h. Fine, 30-60 km/h:
+
+- **dash ≈ 3.6 × HUD** → units confirmed, the instrument is trustworthy.
+- **dash ~100× too big** → `GetLinearVelocity` is not in m/s; say so and I rescale before anything
+  else is believed.
+
+### Then the run, and the three outcomes
+
+At 100 m/s this build still has **0.27 g in hand** (8 439 N against 3 785 N of drag), so it cannot
+be exhausted there. Whatever happens at 100 is therefore not drag.
+
+| HUD (m/s) | dash (km/h) | verdict |
+|---|---|---|
+| ~100 | **~540** (150 m/s) | the car was already fast; the display path is capped. Physics work is finished. |
+| ~100 | ~360 (100 m/s) | the **physics** is capped at 100 — gearing is a dead end and the cap has to be found |
+| ~540 | ~540 | no cap; model C is right and 500 is reached |
+
+Note the dash is 3 digits, so it saturates at 999 km/h (277 m/s) — far above anything here.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |

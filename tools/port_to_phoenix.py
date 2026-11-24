@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 29
+BUILD = 30
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -1131,6 +1131,48 @@ def apply_mph_as_mps(text: str) -> str:
     return text.replace(HUD_SPEED_BODY, HUD_SPEED_BODY_MPS, 1)
 
 
+DASH_HUD_SPEED = 'XairesAMV_DashSpeed(parent, RoundMath(AbsF(speed) * 3.6));'
+
+
+def apply_raw_dash_speed(text: str) -> str:
+    """Make the Aston's own dash read the PHYSICS velocity, not the HUD's speed value.
+
+    Everything on screen until now came from one number: the value the game hands to
+    `OnSpeedValueChanged`.  If that number is capped - by the game, by the display curve, or by
+    anything else upstream - then every reading the driver has given has been that cap, and no
+    amount of torque or gearing could ever move it.  `PhoenixAMV_FwdSpeed` is the car's own
+    linear velocity dotted with its forward vector: the physics itself, no display path.
+
+    So the dash shows the physics in km/h and the HUD keeps showing the game's number in m/s.
+    Two numbers, same instant, one of them unarguable.
+    """
+    if "speedometerLogicController" not in text or DASH_HUD_SPEED not in text:
+        return text                       # not the dash file, or already converted
+    text = text.replace(
+        DASH_HUD_SPEED,
+        'PhoenixAMV_DashSpeed(parent, RoundMath(AbsF(PhoenixAMV_FwdSpeed(this.m_vehicle)) * 3.6));',
+        1)
+    # ...and refresh it from the tachometer too.  The speed callback only fires when the speed
+    # VALUE changes; if the game is pinned at a cap, that callback stops firing and the dash
+    # would freeze at the cap - which is exactly the reading we must not trust.  The tachometer
+    # keeps ticking because the rev model is driven by the physics, so the dash keeps updating.
+    eol = "\r\n" if "\r\n" in text else "\n"
+    tick = """
+  // gercek hiz: fizik hizi (HUD'un hiz degeri degil)
+  let pv = GetPlayer(GetGameInstance());
+  if IsDefined(pv) {
+    let mv = GetMountedVehicle(pv);
+    if IsDefined(mv) && PhoenixAMV_IsTarget(mv) {
+      PhoenixAMV_DashSpeed(parent, RoundMath(AbsF(PhoenixAMV_FwdSpeed(mv)) * 3.6));
+    }
+  }
+""".replace("\n", eol)
+    marker = "  let rpm: Float = newRPM;"
+    if marker in text and "fizik hizi" not in text:
+        text = text.replace(marker, tick.lstrip("\n") + marker, 1)
+    return text
+
+
 def apply_true_speedometer(text: str) -> str:
     """Route every vehicle's HUD speed around the game's inflating display curve."""
     if not TRUE_SPEEDO_ALL_VEHICLES or "hudCarController" not in text:
@@ -1291,8 +1333,8 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
                           f"({top} m/s = {round(STOCK_LADDER_TOPS[-1] * 3.6)} km/h)", text, count=1)
             return apply_drivetrain(apply_stock_overlay(text))
         if suffix == ".reds":
-            return apply_mph_as_mps(apply_true_speedometer(
-                apply_gearspeed(text, STOCK_LADDER_TOPS)))
+            return apply_raw_dash_speed(apply_mph_as_mps(apply_true_speedometer(
+                apply_gearspeed(text, STOCK_LADDER_TOPS))))
         return text
     out = []
     for line in text.splitlines(keepends=True):
@@ -1319,8 +1361,9 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         return ensure_steering_return(ensure_engine_fields(text))
     if suffix == ".reds":
         if RESTORE_STOCK_PHYSICS:
-            return apply_mph_as_mps(apply_true_speedometer(text))
-        return apply_mph_as_mps(apply_true_speedometer(apply_virtual_gearbox(text)))
+            return apply_raw_dash_speed(apply_mph_as_mps(apply_true_speedometer(text)))
+        return apply_raw_dash_speed(
+            apply_mph_as_mps(apply_true_speedometer(apply_virtual_gearbox(text))))
     return text
 
 
