@@ -143,8 +143,24 @@ try {
     if ($engineLine) { Write-Ok "physics attached by named record (engine)" } else { Write-Warn2 "engine block is still inline" }
     if ($gearLine)   { Write-Ok "gearbox is one explicit list" } else { Write-Warn2 "gearbox shape unexpected" }
 
+    # ------------------------------------------------------------ build stamp
+    # The scanner reads VehicleUIData.horsepower, which carries 900000 + BUILD. After a restart the
+    # scanner must show this number; if it does not, the game is reading something else.
+    $stamp = (Select-String -Path $yaml -Pattern 'horsepower:\s*(\d+)' | Select-Object -First 1)
+    Write-Step "build stamp"
+    if ($stamp) {
+        $code = $stamp.Matches[0].Groups[1].Value
+        Write-Host "  scanner will read: " -NoNewline
+        Write-Host $code -ForegroundColor Cyan -NoNewline
+        Write-Host ("  (build {0})" -f ([int]$code - 900000))
+        Write-Warn2 "if the scanner shows a different number after restarting, the game is reading another file"
+    } else {
+        Write-Warn2 "no build stamp found in the YAML"
+    }
+
     Write-Host ""
     Write-Host "Done. Start the game (TweakXL reads YAML at boot - a restart is required)." -ForegroundColor Green
+    Write-Host "CET 'reload all mods' does NOT re-read tweak YAML - verified 2026-11-24." -ForegroundColor Yellow
 } finally {
     Pop-Location
 }
