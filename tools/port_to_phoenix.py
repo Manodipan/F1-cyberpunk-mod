@@ -378,6 +378,8 @@ JESKO_RECORD_MAP = [
     ("Vehicle.jesko_attack_burnout", "Vehicle.phoenix_amv_burnout"),
     ("Vehicle.jesko_attack_drive_model", "Vehicle.phoenix_amv_drive_model"),
     ("Vehicle.jesko_attack_engine", "Vehicle.phoenix_amv_engine"),
+    ("Vehicle.jesko_attack_model", "Vehicle.phoenix_aston_valkyrie_model"),
+    ("Vehicle.jesko_attack_power_level", "Vehicle.phoenix_aston_valkyrie_power_level"),
 ]
 
 
@@ -410,6 +412,80 @@ def jesko_control_block() -> str:
         out.append(block.strip("\n") + "\n\n")
     return "".join(out)
 
+
+# Fields of the reference's vehicle record that are ours and must not be copied: identity,
+# mesh, camera rigs and anything that names a record belonging to the other mod.
+JESKO_VEHICLE_KEEP_OURS = {
+    "appearanceName", "entityTemplatePath", "displayName", "icon", "manufacturer",
+    "$type", "player_audio_resource", "traffic_audio_resource", "vehicleUIData", "vehDataPackage",
+    "destruction", "model", "statModifiers", "tppCameraPresets", "queryOnlyExceptions",
+    "vehDriver_FPPCameraParams", "vehDriverCombat_FPPCameraParams", "destroyedAppearance",
+    "persistentName", "weaponSafeModeBounds", "audioResourceName",
+}
+
+OUR_VEHICLE_BLOCK = """  appearanceName: aston_valkyrie
+  entityTemplatePath: xaires\\aston_valkyrie\\aston_valkyrie.ent
+  destruction:
+    $base: Vehicle.v_sport2_porsche_911turbo_inline8
+  displayName: phoenix_aston_valkyrie_name
+  manufacturer: Vehicle.phoenix_aston_valkyrie_manufacturer
+  model: Vehicle.phoenix_aston_valkyrie_model
+  player_audio_resource: phoenix_amv_engine
+  statModifiers: [ Vehicle.phoenix_aston_valkyrie_power_level ]
+  vehDataPackage:
+    $base: Vehicle.VehicleDataPackageSport2
+    useAuxiliary: true
+    hasSpoiler: false
+    driverCombat: DriverCombatTypes.Doors
+    vehSeatSet: Vehicle.Vehicle2SeatSetDefault
+    additionalAnimFeatures:
+      - porscheCorrectivePose
+  vehicleUIData: Vehicle.phoenix_aston_valkyrie_data
+"""
+
+
+def jesko_vehicle_record() -> str:
+    """The reference's vehicle record, minus its identity, as an explicit $type record.
+
+    This is the last `$base` in the file: ours inherited `Vehicle.v_sport2_porsche_911turbo`,
+    and a vehicle record carries curvesPath, driving params, impact and crowd settings that no
+    drive-model field can override. The Jesko writes all 110 of them out, so ours does too.
+    """
+    block = jesko_records()["Vehicle.v_sport1_koenigsegg_jesko_attack_player"]
+    lines = []
+    for line in block.splitlines(keepends=True)[1:]:   # drop the header line
+        if line.strip() and not line[0].isspace():     # the record ends at the next top-level key
+            break
+        lines.append(line)
+    for a, b in JESKO_RECORD_MAP:
+        lines = [l.replace(a, b) for l in lines]
+    kept = []
+    for line in lines:
+        key = line[2:].split(":", 1)[0] if line.startswith("  ") and ":" in line else None
+        if key in JESKO_VEHICLE_KEEP_OURS:
+            continue
+        kept.append(line)
+    while kept and not kept[-1].strip():
+        kept.pop()
+    return ("Vehicle.phoenix_aston_valkyrie:\n"
+            "  $type: gamedataVehicle_Record\n"
+            + "".join(kept)
+            + "\n" + OUR_VEHICLE_BLOCK)
+
+
+def apply_explicit_vehicle_record(text: str) -> str:
+    begin = "Vehicle.phoenix_aston_valkyrie:\n"
+    if begin not in text:
+        return text
+    start = text.index(begin)
+    rest = text[start + len(begin):]
+    for marker in ("\nUIIcon.phoenix_aston_valkyrie_icon:", "\n# Arac cagirma"):
+        if marker in rest:
+            end = rest.index(marker)
+            break
+    else:
+        return text
+    return text[:start] + jesko_vehicle_record() + rest[end:]
 
 def apply_jesko_control(text: str) -> str:
     """Replace our wheel roles, gears, wheels, drive model and engine with the Jesko's."""
@@ -942,7 +1018,7 @@ def port_text(text: str, suffix: str, physics: bool,
     if physics and suffix in (".yaml", ".yml"):
         # CONTROL BUILD: the whole physics section is replaced with the Jesko's own records,
         # so the chassis tune must not run - it would edit records that no longer exist.
-        text = apply_jesko_control(hoist_subrecords(text))
+        text = apply_explicit_vehicle_record(apply_jesko_control(hoist_subrecords(text)))
     return text
 
 

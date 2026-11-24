@@ -247,7 +247,15 @@ What is now the reference car's, not ours:
 | Helpers | its seven helper records and its burnout record, values included |
 | Wheels | its dimensions (tireRadius 0.3798 / 0.3988) and its two driving presets |
 
-Ours: mesh, entity, textures, paint, name, icons, audio resource, scanner card, dealer entry.
+**The vehicle record too (added the same day).** Ours still carried
+`$base: Vehicle.v_sport2_porsche_911turbo`, which is not a physics record but does carry
+`curvesPath` (`default_car.vehcurveset`), `driving` / `drivingParamsGeneric` / `drivingParamsPanic`
+/ `drivingParamsRace`, `crowdMemberSettings`, camera manager params, impact and crowd settings —
+none of which any drive-model field can override. It is now `$type: gamedataVehicle_Record` with
+the reference's 91 fields written out and no `$base` at all.
+
+Ours: mesh, entity, textures, paint, name, icons, audio resource, scanner card, dealer entry,
+driver animation rig (`porscheCorrectivePose`), and the camera/FPP rigs.
 
 **This is a measurement, not a tune. Two outcomes, both informative:**
 

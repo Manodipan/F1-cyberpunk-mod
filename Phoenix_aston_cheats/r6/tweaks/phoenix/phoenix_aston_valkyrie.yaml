@@ -351,11 +351,109 @@ Vehicle.phoenix_amv_engine:
   reverseDirDelay: 0.3
   wheelsResistanceRatio: 15
 
+Vehicle.phoenix_aston_valkyrie_model:
+  $type: gamedataVehicleModel_Record
+  enumName: Jesko Attack
+  enumComment: ""
+
+Vehicle.phoenix_aston_valkyrie_power_level:
+  $type: gamedataConstantStatModifier_Record
+  modifierType: Additive
+  statType: BaseStats.PowerLevel
+  value: 11
+
 Vehicle.phoenix_aston_valkyrie:
-  $base: Vehicle.v_sport2_porsche_911turbo
-  player_audio_resource: phoenix_amv_engine
-  # Sirali cagirma bug'i dersi: 911'in ic kayitlari araca ozel kopya. Lastik yaricapi modelden (LMH 18 inc: on 30/68-18, arka 34/71-18).
+  $type: gamedataVehicle_Record
+  affiliation: Factions.Unaffiliated
+  archetypeName: vehicle
+  attachmentSlots: []
+  blockadeLeftPassengerOffset: 0
+  blockadeRightPassengerOffset: 0
+  cameraManagerParams: Camera.VehicleCameraManager_Default
+  canBeActiveVehicle: true
+  canDeleteUniqueTemplates: true
+  canOnlySpawnOnValidRoad: false
+  colorProfilesRestricted: false
+  crackLockDifficulty: "HARD"
+  crowdMemberSettings: Crowds.Sport_DrivingPackage
+  curvesPath: base\gameplay\vehicles\curves\default_car.vehcurveset
+  customizeCarRims: false
+  customizeLights: false
+  debugStatusString: ""
+  driving: Driving.Default_4w
+  drivingParamsGeneric: Driving.Default_4w
+  drivingParamsPanic: Driving.Panic_Sport
+  drivingParamsRace: Driving.Race_Driving
+  effectors: []
+  enableDestruction: true
+  excludedComponentsCustomization: []
+  excludedComponentsGeneric: []
+  fxCollision: Vehicle.FxCollision_Default
+  fxWheelsDecals: Vehicle.FxWheels_Sport_L
+  fxWheelsDecalsFrontOverride: Vehicle.FxWheels_Sport_M
+  fxWheelsParticles: Vehicle.FxWheelsParticles_Default
+  hasSideWindows: true
+  hasUniqueCustomization: false
+  hasVisualCustomization: false
+  hijackDifficulty: "HARD"
+  hitCooldown: 0.75
+  isArmoredVehicle: false
+  isHackable: Vehicle.Dynamic
+  leftBackCamber: 0
+  leftFrontCamber: 0
+  rightBackCamber: 0
+  rightFrontCamber: 0
+  maxVehiclePassengersCount: 2
+  minVehiclePassengersCount: 1
+  multiplayerTemplatePaths: []
+  objectActions: [ VehicleActions.VehicleHijackFrontLeft, VehicleActions.VehicleHijackFrontRight, VehicleActions.VehicleMountFrontLeft, VehicleActions.VehicleMountFrontRight, VehicleActions.VehicleMountBackLeft, VehicleActions.VehicleMountBackRight, VehicleActions.VehicleCrackLockFrontLeft, VehicleActions.VehicleCrackLockFrontRight ]
+  preventionPassengers: []
+  priority: SpawnableObjectPriority.Regular
+  randomPassengers: []
+  savable: true
+  statModifierGroups: [ VehicleStatPreset.BaseCar, VehicleStatPreset.Durable ]
+  statPools: [ BaseStatPools.VehicleHealth ]
+  tags: [ Sport, CombatDisabled ]
+  tppCameraParams: Camera.VehicleTPP_DefaultParams
+  trafficSuspension: Vehicle.TrafficSuspension_Sport
+  twintoneModelName: None
+  type: Vehicle.Car
+  unmountOffsetPosition: { x: 1.65, y: 5, z: 2.5 }
+  usesSecondaryHoodEmitter: false
+  vehAirControl: Vehicle.VehicleAirControlCar
+  vehAirControlAI: Vehicle.VehicleAirControlCarAI
+  vehDefaultState: Vehicle.Veh4WDefaultState
+  vehDriveModelData: Vehicle.phoenix_amv_drive_model
+  vehDriver_ProceduralFPPCameraParams: Camera.VehicleProceduralFPPCamera_DefaultParams
+  vehDriverCombat_ProceduralFPPCameraParams: Camera.VehicleProceduralFPPCamera_DefaultCombatParams
+  vehEngineData: Vehicle.phoenix_amv_engine
+  vehImpactTraffic: Driving.VehicleImpactTraffic_DefaultParams
+  vehPassCombatL_FPPCameraParams: Vehicle.VehiclePassengerLCombatFPPCameraParamsDefault
+  vehPassCombatL_ProceduralFPPCameraParams: Camera.VehicleProceduralFPPCamera_DefaultCombatParams
+  vehPassCombatR_FPPCameraParams: Vehicle.VehiclePassengerRCombatFPPCameraParamsDefault
+  vehPassCombatR_ProceduralFPPCameraParams: Camera.VehicleProceduralFPPCamera_DefaultCombatParams
+  vehPassL_FPPCameraParams: Vehicle.VehiclePassengerLFPPCameraParamsDefault
+  vehPassL_ProceduralFPPCameraParams: Camera.VehicleProceduralFPPCamera_DefaultParams
+  vehPassR_FPPCameraParams: Vehicle.VehiclePassengerRFPPCameraParamsDefault
+  vehPassR_ProceduralFPPCameraParams: Camera.VehicleProceduralFPPCamera_DefaultParams
   vehWheelDimensionsSetup: Vehicle.phoenix_amv_wheel_dimensions
+  visualCustomizationTeaser: false
+  visualCustomizationUpdateRequired: false
+  visualDestruction: Vehicle.VehicleVisualDestructionParamsDefault
+  visualTags: [ Premium ]
+  weakspots: []
+  weapons: []
+  widgetStyleSheetPath: base\gameplay\gui\widgets\vehicle_control\vehicles.inkstyle
+
+  appearanceName: aston_valkyrie
+  entityTemplatePath: xaires\aston_valkyrie\aston_valkyrie.ent
+  destruction:
+    $base: Vehicle.v_sport2_porsche_911turbo_inline8
+  displayName: phoenix_aston_valkyrie_name
+  manufacturer: Vehicle.phoenix_aston_valkyrie_manufacturer
+  model: Vehicle.phoenix_aston_valkyrie_model
+  player_audio_resource: phoenix_amv_engine
+  statModifiers: [ Vehicle.phoenix_aston_valkyrie_power_level ]
   vehDataPackage:
     $base: Vehicle.VehicleDataPackageSport2
     useAuxiliary: true
@@ -364,17 +462,8 @@ Vehicle.phoenix_aston_valkyrie:
     vehSeatSet: Vehicle.Vehicle2SeatSetDefault
     additionalAnimFeatures:
       - porscheCorrectivePose
-  appearanceName: aston_valkyrie
-  entityTemplatePath: xaires\aston_valkyrie\aston_valkyrie.ent
-  destruction:
-    $base: Vehicle.v_sport2_porsche_911turbo_inline8
-  displayName: phoenix_aston_valkyrie_name
-  manufacturer: Vehicle.phoenix_aston_valkyrie_manufacturer
   vehicleUIData: Vehicle.phoenix_aston_valkyrie_data
-  icon: UIIcon.phoenix_aston_valkyrie_icon
-  vehDriveModelData: Vehicle.phoenix_amv_drive_model
-  vehEngineData: Vehicle.phoenix_amv_engine
-# Arac cagirma menusu gorseli (ui\amv_icon.inkatlas)
+
 UIIcon.phoenix_aston_valkyrie_icon:
   $type: UIIcon_Record
   atlasResourcePath: xaires\aston_valkyrie\ui\amv_icon.inkatlas

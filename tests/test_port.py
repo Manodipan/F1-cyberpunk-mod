@@ -445,6 +445,21 @@ class VerbatimControlTests(unittest.TestCase):
                 block = block.replace(a, b)
             self.assertIn(block.strip("\n"), self.out, f"{dst} differs from {src}")
 
+    def test_vehicle_record_has_no_base_of_its_own(self):
+        """The last inherited link: the vehicle record carried `$base:
+        Vehicle.v_sport2_porsche_911turbo`, and a vehicle record holds curvesPath, driving
+        params, impact and crowd settings that no drive-model field can override."""
+        record = self.out[self.out.index("Vehicle.phoenix_aston_valkyrie:\n"):
+                          self.out.index("UIIcon.phoenix_aston_valkyrie_icon:")]
+        self.assertIn("$type: gamedataVehicle_Record", record)
+        # the record itself inherits nothing; two nested sub-records (the driver data package
+        # and the destruction params) still use their bases, which is why this checks indent 2
+        top_level = [l for l in record.splitlines() if l.startswith("  ") and not l.startswith("    ")]
+        self.assertEqual([l for l in top_level if "$base" in l], [])
+        self.assertIn("curvesPath: base\\gameplay\\vehicles\\curves\\default_car.vehcurveset", record)
+        self.assertIn("drivingParamsRace: Driving.Race_Driving", record)
+        self.assertGreater(record.count("\n  "), 70, "the reference writes out 110 fields")
+
     def test_nothing_physics_is_left_of_ours(self):
         """Every value-bearing record in the physics span comes from the reference."""
         physics = self.out[self.out.index("Vehicle.phoenix_amv_role_lf:"):
