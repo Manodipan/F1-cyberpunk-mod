@@ -49,7 +49,7 @@ Stock for comparison: `Vehicle.xaires_aston_valkyrie_purchasable`.
 
 | # | Test | How | Pass | Note |
 |---|---|---|---|---|
-| 1 | Top speed | long straight, full throttle in 7th | ~500 km/h before the drag wall | 138.89 m/s ceiling |
+| 1 | Top speed | long straight, full throttle in 7th — or hands-off via **Auto Drive Enhanced** ([`TOPSPEED-TEST.md`](TOPSPEED-TEST.md)) | ~500 km/h before the drag wall | 138.89 m/s ceiling |
 | 2 | 100→200 km/h | rolling pull | clearly quicker than stock, no spin | |
 | 3 | Launch | standstill, full throttle | forward bite, no instant spin-out | rear helper 1.45 |
 | 4 | Hairpin flat-out | tight corner 60–90 km/h | front bites, rear planted, **no wobble** (that was v1) | front 1.60/1.50, rear 2.00/1.85, sway 15/19 |
