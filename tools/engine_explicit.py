@@ -6,7 +6,7 @@ Why: our `vehEngineData` inherits `Vehicle.VehicleEngineData_4_SuperSport` and t
 `8 × !remove` of that record's inline gears followed by `8 × !append` of ours. If any of
 those removes misses (record renamed in a game patch, inline id spelled differently), the
 inherited list survives in front of ours — and the car behaves like the car it inherited
-from. The Jesko Attack reference (`reference/vehicles/jesko_attack.yaml`) does not do this
+from. The Jesko Attack reference (`reference/vehicles/jesko_attack/jesko_attack.yaml`) does not do this
 at all: its engine data carries one explicit `gears: [ ... ]` list.
 
 This emits that form for us, changing nothing else:

@@ -72,7 +72,8 @@ ceiling and the append is being ignored; still 330 means it is drag, and
 
 ## 3c. The 572 km/h reference (Koenigsegg Jesko Attack) — what it proved
 
-`reference/vehicles/jesko_attack.yaml` is that car's actual tweak file. Its numbers:
+`reference/vehicles/jesko_attack/jesko_attack.yaml` is that car's actual tweak file (kept
+from the corpus the collector built on 2026-11-24). Its numbers:
 
 | | Jesko Attack (572 km/h) | Phoenix (stops at 330) |
 |---|---|---|

@@ -27,6 +27,15 @@ a library.
 (`docs/TOPSPEED-TEST.md` §3c explains what it proved). Note that its last gear says
 283 km/h while the car does 572: a gear table's `maxSpeed` is a shift point, not a cap.
 
+## Keeping the index honest
+
+`INDEX.md` is generated from whatever is in this folder. If it disagrees with the files
+next to it (a car added by hand, or a collector run that only saw part of the game):
+
+```powershell
+python tools/collect_vehicles.py --index-only reference/vehicles
+```
+
 ## Reading `INDEX.md`
 
 * `km/h` / `m/s` — the **last gear's `maxSpeed`**, which is the game's ceiling for that car
