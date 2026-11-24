@@ -246,7 +246,7 @@ Vehicle.phoenix_amv_helper_downforce:
   type: Vehicle.DynamicDownforceHelper_HelperType
   minSpeed: 20
   maxSpeed: 139
-  maxSpeedFactorGround: 1.4
+  maxSpeedFactorGround: 3.0
   maxSpeedFactorAir: 0
 
 Vehicle.phoenix_amv_helper_air_gravity:

@@ -796,7 +796,11 @@ STABILITY_OVERLAY = (
     #       as v^2 - i.e. the car got relatively lighter the faster it went. Extending the ramp to
     #       the new top-speed target makes downforce track v^2 up to 500 km/h, which is what the
     #       real thing does.
-    ("maxSpeedFactorGround", "0.7", "1.4"),
+    # Step 8 (2026-11-24, measured): downforce has NO effect on top speed in this engine - the user
+    # measured 77 m/s before and after step 7, so there is no induced drag. That removes the entire
+    # usual trade on this axis: every other way of buying stability costs top end, and this one does
+    # not. Final values are set in STABILITY_MAXSPEED_FACTOR_GROUND below.
+    ("maxSpeedFactorGround", "0.7", "3.0"),
     ("maxSpeed", "80", "139"),
     ("antiSwaybarDampingScalor", "0.75", "1.15"),   # Pagani's
     ("turningRollFactor", "1", "0"),

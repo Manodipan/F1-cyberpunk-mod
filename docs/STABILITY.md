@@ -235,6 +235,36 @@ This is also a **testable disambiguation**: if the wobble is terrain-triggered, 
 reach a higher speed on genuinely flat ground. If it does not move on flat ground either, then the
 flat-road limit cycle of step 5 is the whole story and the terrain work is insurance rather than cure.
 
+## Step 8 (shipped): downforce is free, so spend it
+
+Measured: top speed was **77 m/s before and after step 7**. The engine models no induced drag, so
+downforce costs nothing at all - it is the only stability axis where the currency is not top speed.
+Every other field bought here (steering authority, damping, inertia) was paid for in feel; this one
+is paid for in nothing.
+
+`maxSpeedFactorGround` 1.4 -> **3.0**, ramp still to 139 m/s. That is 2.14x the aerodynamic load at
+every speed above the 20 m/s ramp start:
+
+| m/s | @1.4 | @3.0 |
+|---|---|---|
+| 60 | 0.471 | 1.008 |
+| 72 | 0.612 | 1.311 |
+| 78 | 0.682 | 1.462 |
+| 139 | 1.400 | 3.000 |
+
+For scale, a real LMH car makes 2-3x its own weight in downforce around 250 km/h, which is roughly
+where 1.46 relative puts this car at 280 - so 3.0 is aggressive but not absurd.
+
+**Two effects compete and I do not know which wins**, which is exactly why this is worth measuring:
+
+- More load -> later tyre saturation -> the car has more to give before it starts sliding.
+- More load -> higher cornering stiffness -> higher yaw natural frequency -> the mode moves nearer
+  the controller's bandwidth. This is the correction I owed on step 7, and it is the mechanism by
+  which "more grip" can make a weaver worse.
+
+If the wobble point rises, load dominates and we go higher (4.0, 5.0) until something saturates. If
+it falls, frequency dominates and the answer is damping, not load.
+
 ## Step 7 (shipped): downforce, the grip lever that damps
 
 Raising a friction coefficient raises the plant's **gain**: more response per unit of steering,
