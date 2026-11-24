@@ -28,6 +28,12 @@ class ComparisonTests(unittest.TestCase):
             for gear in row["ladder"]:
                 self.assertNotRegex(gear["name"], r"(_|gear)(r|0)$", name)
 
+    def test_every_reference_car_is_in_the_table(self):
+        names = [name for name, _rel, _note in cv.CARS]
+        self.assertEqual(len(names), 5)
+        for name in names:
+            self.assertIn(name, self.doc)
+
     def test_committed_doc_is_current(self):
         committed = (ROOT / "docs" / "VEHICLE-COMPARISON.md").read_text(encoding="utf-8")
         self.assertEqual(committed, self.doc,

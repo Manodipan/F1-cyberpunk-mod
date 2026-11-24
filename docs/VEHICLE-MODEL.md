@@ -110,10 +110,16 @@ Our values versus the 572 km/h reference car:
 | | Phoenix | Jesko reference |
 |---|---|---|
 | `wheelTurnMaxAddPerSecond` | 94 | 137 |
+| `wheelTurnMaxSubPerSecond` | 150 (written out; was inherited) | 170 |
 | `turnUpdateMaxSpeedThreshold` (m/s) | 45 (was 26) | **45** |
 | `turnUpdateMaxSpeedTurnMul` | 0.21 (was 0.33) | **0.21** |
 | `turningRollFactor` | 0 | 1 |
 | `driftLimit` | 1.6 | 2.3 |
+
+The four reference cars all state `wheelTurnMaxSubPerSecond` explicitly (135, 140, 170);
+ours inherited it, so nothing in the repo could say what the wheels did when you let go of
+the stick. It is now written out at 150 — inside the observed range — because a slow return
+to centre makes every small correction ring instead of settling.
 
 The reference lets the car steer almost fully up to 162 km/h and then cuts hard to 21 %.
 Ours used to cut earlier (94 km/h) but only to 33 % — a third of full authority still
@@ -208,6 +214,15 @@ Three facts fall out of it that no single car shows:
   by 47 % and still ships, so treat it as a smell, not a law.
 * **A car with 520 hp of torque (Zonda) still reaches its own speed**, and a 1000-torque
   Jesko does 572 — which is the strongest evidence that our wall was never torque.
+* **Grip is symmetric between the axles** in all five: rear is +3 %, +6 %, +5.6 % or *below*
+  the front laterally. The build that wobbled ran the rear **+25 %** over the front. That is
+  now 1.60 / 1.70.
+* **Every reference ladder *narrows* toward the top** (stock 1.44→1.14, Jesko 1.38→1.13,
+  Quadra 1.44→1.18) because a narrow top gear is a short one. Ours is constant 1.28 and its
+  last window (1.38×) is the widest of the five — the honest cost of putting 500 km/h into
+  seven gears from a first gear that is still only 115 km/h. Closing it further means a
+  taller first gear (worse launch) or an eighth ratio (not the spec). Worth revisiting only
+  if the ladder still will not pull.
 
 ## 6. What actually happened to our car (2026-11-24)
 

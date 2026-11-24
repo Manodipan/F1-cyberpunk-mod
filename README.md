@@ -50,12 +50,12 @@ docs/                            install + test matrix, packaging, rename map, f
 | Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **7 gears, even 1.28× steps, top window 101→138.89 m/s (500 km/h)** |
 | Drag | 1.35 | **0.60** |
 | Front grip | 1.29 / 1.15 | **1.60 / 1.50** |
-| Rear grip | 1.33 / 1.20 | **2.00 / 1.85** |
+| Rear grip | 1.33 / 1.20 | **1.70 / 1.68** (axles within 6 %, as every reference car) |
 | Rear friction helper | 0.95 / 0.95 | **1.45 / 1.45** |
 | Downforce (`maxSpeedFactorGround`) | 0.60 | **1.40** |
 | Sway F/R · braking F/R | 11/16 · 1410/1200 | **15/19 · 1850/1550** |
 | Springs / damping | 23/22, 2000 | **30/28, 3000** |
-| Steering (add / threshold / mul) | 94 / 26 / 0.33 | **94 / 45 / 0.21** (the 572 km/h car's band) |
+| Steering (add / return / threshold / mul) | 94 / inherited / 26 / 0.33 | **94 / 150 / 45 / 0.21** (the 572 km/h car's band, explicit return rate) |
 
 Unchanged: RWD, reverse gear, mass 1750 + chassis 1750, maxRPM 10100, inertia,
 centre of mass, `turningRollFactor 0`, tyre dimensions, wheel setup geometry.

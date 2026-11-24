@@ -7,6 +7,7 @@ Run:  python3 -m unittest discover -s tests -v
 
 import json
 import subprocess
+import re
 import sys
 import tempfile
 import unittest
@@ -158,8 +159,8 @@ class PhysicsTests(unittest.TestCase):
             "turnUpdateMaxSpeedTurnMul: 0.21",
             "frictionMulLateral: 1.60",
             "frictionMulLongitudinal: 1.50",
-            "frictionMulLateral: 2.00",
-            "frictionMulLongitudinal: 1.85",
+            "frictionMulLateral: 1.70",
+            "frictionMulLongitudinal: 1.68",
             "maxBrakingTorque: 1850",
             "maxBrakingTorque: 1550",
             "springStiffness: 30",
@@ -178,6 +179,7 @@ class PhysicsTests(unittest.TestCase):
             "maxSpeedFactorAir: 0",
             "handbrakeBrakingTorque: 2600",
             "wheelTurnMaxAddPerSecond: 94",
+            "wheelTurnMaxSubPerSecond: 150",
             "maxRPM: 10100",
             "total_mass: 1750",
             "chassis_mass: 1750",
@@ -187,6 +189,14 @@ class PhysicsTests(unittest.TestCase):
             "maxSpeed: 15",             # ...and so does its window
         ):
             self.assertIn(keep, self.out, keep)
+
+    def test_grip_is_near_symmetric_front_to_back(self):
+        """Every car we have data for runs the axles within 6% laterally; the old 2.00/1.60
+        was 25% apart and was the last unexplained source of yaw nervousness."""
+        front = float(re.search(r"frictionMulLateral: ([0-9.]+)", self.out).group(1))
+        rear = float(re.findall(r"frictionMulLateral: ([0-9.]+)", self.out)[1])
+        self.assertLessEqual(abs(rear / front - 1), 0.10, "lateral grip split too wide")
+        self.assertGreaterEqual(rear, front, "a RWD car should not have less rear grip")
 
     def test_engine_stops_inheriting_the_top_gear_half(self):
         """The 572 km/h car writes these out; ours inherited them from a 911-class base."""

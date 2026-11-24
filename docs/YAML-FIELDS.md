@@ -13,12 +13,12 @@ gearbox and speed units work — see [`VEHICLE-MODEL.md`](VEHICLE-MODEL.md).
 | Gearbox ladder | 7 gears, top 91.7 | 7 gears, **even 1.28× steps**, top 138.89 | per-gear `minSpeed`/`maxSpeed`/`torqueMultiplier`/`min|maxEngineRPM` in `Vehicle.xaires_amv_gear_1…7` **and** `XairesAMV_GearSpeed` in `aston_valkyrie_audio.reds` | Confirmed — the window is the ratio, and both places must move together (see `VEHICLE-MODEL.md` §4.3) |
 | Drag | 1.35 | 0.60 | `vehDriveModelData.airResistanceFactor` (911 base record was 1.93) | Confirmed |
 | Front grip | 1.29 / 1.15 | 1.60 / 1.50 | `wheelSetup.frontPreset.frictionMulLateral` / `.frictionMulLongitudinal` | Confirmed |
-| Rear grip | 1.33 / 1.20 | 2.00 / 1.85 | `wheelSetup.backPreset.…` | Confirmed |
+| Rear grip | 1.33 / 1.20 | 1.70 / 1.68 | `wheelSetup.backPreset.…` | Confirmed |
 | Rear helper | 0.95 | 1.45 | `driveHelpers` → `RearWheelsFrictionModifier_Exotic.minLatFrictionCoef` **and** `.minLongFrictionCoef` (both 0.95) | Confirmed |
 | Downforce | 0.60 | 1.40 | `driveHelpers` → `DynamicDownforceHelper_Exotic.maxSpeedFactorGround` (`maxSpeedFactorAir: 0` stays) | Confirmed |
 | Sway F/R | 11 / 16 | 15 / 19 | `frontPreset` / `backPreset` `swaybarStiffness` | Confirmed |
 | Braking F/R | 1410 / 1200 | 1850 / 1550 | `frontPreset` / `backPreset` `maxBrakingTorque` | Confirmed |
-| Steering | 94 / 26 / 0.33 | 94 / **45** / **0.21** | `wheelTurnMaxAddPerSecond` / `turnUpdateMaxSpeedThreshold` / `turnUpdateMaxSpeedTurnMul` (source note: "86 derece/s, 24 m/s üstü %29") | Confirmed — "45" is a speed threshold in m/s, **not** the steering return rate; the pair now matches the 572 km/h reference car |
+| Steering | 94 / 26 / 0.33 | 94 / **150** / **45** / **0.21** | `wheelTurnMaxAddPerSecond` / `wheelTurnMaxSubPerSecond` (added) / `turnUpdateMaxSpeedThreshold` / `turnUpdateMaxSpeedTurnMul` (source note: "86 derece/s, 24 m/s üstü %29") | Confirmed — "45" is a speed threshold in m/s, **not** the steering return rate; the pair now matches the 572 km/h reference car |
 | Springs F/R | 23 / 22 | 30 / 28 | `springStiffness` | Confirmed |
 | Damping | 2000 | 3000 | `springDamping` (rebound/bound damping left alone) | Confirmed |
 | Mass | 1750 | 1750 | `total_mass`, `chassis_mass` | Confirmed |

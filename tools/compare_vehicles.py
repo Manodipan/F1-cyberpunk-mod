@@ -37,6 +37,8 @@ CARS = [
      "the 572 km/h worked example"),
     ("Pagani Zonda Revo", "reference/vehicles/zonda_revo.yaml",
      "a low-torque mod that still runs its own top speed"),
+    ("Quadra Turbo-R V-Tech", "reference/Quadra_TurboR_VTech_AFTERBURN_Vanilla_Override.yaml",
+     "a **vanilla** car with a hand retune: the closest thing to the game's own defaults"),
 ]
 
 # label, field, axis ("front/back" when the field appears once per axle)

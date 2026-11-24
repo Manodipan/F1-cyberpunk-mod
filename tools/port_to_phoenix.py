@@ -96,8 +96,8 @@ STOCK_TO_F1 = {
     ("turnUpdateMaxSpeedTurnMul", "0.33"): "0.21",  # ...then cut to 21% - the 572 km/h car's band
     ("frictionMulLateral", "1.29"): "1.60",        # front grip, lateral
     ("frictionMulLongitudinal", "1.15"): "1.50",   # front grip, longitudinal
-    ("frictionMulLateral", "1.33"): "2.00",        # rear grip, lateral
-    ("frictionMulLongitudinal", "1.20"): "1.85",   # rear grip, longitudinal
+    ("frictionMulLateral", "1.33"): "1.70",        # rear grip, lateral (25% over the
+    ("frictionMulLongitudinal", "1.20"): "1.68",   # rear grip, longitudinal
     ("maxBrakingTorque", "1410"): "1850",          # front brakes
     ("maxBrakingTorque", "1200"): "1550",          # rear brakes
     ("springStiffness", "23"): "30",               # front spring
@@ -251,6 +251,29 @@ def apply_virtual_gearbox(text: str) -> str:
     # NOTE: the port renames after this runs, so match the stock function name too.
     return GEARSPEED_FN.sub(repl, text, count=1)
 
+# Steering return rate: not present in the stock file, so nothing could rewrite it and we
+# inherited whatever the 911 base carries. Every car we have data for states it explicitly
+# (170 / 140 / 135), and it is the rate at which the wheels come back to centre - the thing
+# that decides whether a correction rings or settles (2026-11-24).
+STEERING_RETURN = {"wheelTurnMaxSubPerSecond": "150"}
+STEERING_ANCHOR_RE = re.compile(
+    r"(?m)^(?P<indent>[ \t]+)wheelTurnMaxAddPerSecond:[^\r\n]*\r?\n")
+
+
+def ensure_steering_return(text: str) -> str:
+    """Write the return-to-centre rate explicitly, right after the add rate."""
+    missing = [(k, v) for k, v in STEERING_RETURN.items()
+               if not re.search(rf"(?m)^\s*{k}:", text)]
+    if not missing:
+        return text
+    m = STEERING_ANCHOR_RE.search(text)
+    if not m:
+        return text
+    indent = m.group("indent")
+    add = "".join(f"{indent}{k}: {v}\n" for k, v in missing)
+    return text[:m.end()] + add + text[m.end():]
+
+
 # ---------------------------------------------------------------------------
 # 4. Check mode
 # ---------------------------------------------------------------------------
@@ -399,7 +422,7 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
     text = "".join(out)
     if suffix in (".yaml", ".yml"):
         text = apply_gearbox(text).replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
-        return ensure_engine_fields(text)
+        return ensure_steering_return(ensure_engine_fields(text))
     if suffix == ".reds":
         return apply_virtual_gearbox(text)
     return text
