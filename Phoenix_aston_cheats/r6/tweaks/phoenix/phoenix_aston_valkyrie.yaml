@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900027
+  horsepower: 900028
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 
@@ -70,26 +70,26 @@ Vehicle.phoenix_amv_gear_4:
 
 Vehicle.phoenix_amv_gear_5:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline14
-  torqueMultiplier: 0.399
+  torqueMultiplier: 0.254
   minSpeed: 55
   maxSpeed: 110
-  minEngineRPM: 7400
+  minEngineRPM: 4950
   maxEngineRPM: 9900
 
 Vehicle.phoenix_amv_gear_6:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline14
-  torqueMultiplier: 0.348
+  torqueMultiplier: 0.155
   minSpeed: 66
   maxSpeed: 180
-  minEngineRPM: 7600
+  minEngineRPM: 3630
   maxEngineRPM: 9900
 
 Vehicle.phoenix_amv_gear_7:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline14
-  torqueMultiplier: 0.306
+  torqueMultiplier: 0.130
   minSpeed: 150
   maxSpeed: 215
-  minEngineRPM: 7800
+  minEngineRPM: 6940
   maxEngineRPM: 9950
 
 Vehicle.phoenix_aston_valkyrie:

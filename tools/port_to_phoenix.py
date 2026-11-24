@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 27
+BUILD = 28
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -1003,6 +1003,18 @@ STOCK_LADDER_PAIRS = (
     ("maxSpeed", "91.7", "215"),        # gear 7 ceiling, inert
     ("airResistanceFactor", "1.35", "0.55"),
     ("engineMaxTorque", "1300", "3100"),
+    # AUDIT FIX (2026-11-24): a gear record is a *pair* - torqueMultiplier is the ratio and
+    # maxSpeed is the speed that ratio reaches at redline - and the stock car keeps
+    # torqueMultiplier x maxSpeed = 27.9 (+-1 %) across gears 4-7. Stretching maxSpeed without
+    # touching the multiplier left the record claiming a 91.7-class ratio on a 180 m/s gear, i.e.
+    # 2.2x the thrust of the gear it was meant to be. Both fields now move together, and the
+    # rpm floor moves with them (minEngineRPM ~ maxEngineRPM x minSpeed/maxSpeed, as stock).
+    ("torqueMultiplier", "0.399", "0.254"),   # gear 5
+    ("torqueMultiplier", "0.348", "0.155"),   # gear 6
+    ("torqueMultiplier", "0.306", "0.130"),   # gear 7
+    ("minEngineRPM", "7400", "4950"),         # gear 5
+    ("minEngineRPM", "7600", "3630"),         # gear 6: 9900 x 66/180
+    ("minEngineRPM", "7800", "6940"),         # gear 7: 9950 x 150/215
 )
 
 

@@ -202,6 +202,27 @@ class StockBaseDrivetrainTests(unittest.TestCase):
         for (g, lo, hi), (nxt, nlo, nhi) in zip(windows, windows[1:]):
             self.assertLess(nlo, hi, f"gear {nxt} starts at {nlo} but gear {g} ends at {hi}")
 
+    def test_stretched_gears_keep_their_ratio_and_rpm_floor(self):
+        """A gear record is a pair: torqueMultiplier is the ratio, maxSpeed the speed it reaches at
+        redline, and stock keeps their product at ~27.9 across gears 4-7. Stretching one without
+        the other claims a 91.7-class ratio on a 180 m/s gear - 2.2x the designed thrust."""
+        def gear(g):
+            return re.search(rf"(?ms)^Vehicle\.phoenix_amv_gear_{g}:\n(.*?)(?=^Vehicle\.|\Z)",
+                             self.out).group(1)
+        products = {}
+        for g in (4, 5, 6, 7):
+            b = gear(g)
+            mult = float(re.search(r"torqueMultiplier:\s*([\d.]+)", b).group(1))
+            hi = float(re.search(r"maxSpeed:\s*([\d.]+)", b).group(1))
+            lo = float(re.search(r"minSpeed:\s*([\d.]+)", b).group(1))
+            mx = float(re.search(r"maxEngineRPM:\s*([\d.]+)", b).group(1))
+            mn = float(re.search(r"minEngineRPM:\s*([\d.]+)", b).group(1))
+            products[g] = mult * hi
+            self.assertLess(abs(mn - mx * lo / hi), 0.12 * mx * lo / hi,
+                            f"gear {g}: rpm floor {mn} does not match {mx} x {lo}/{hi}")
+        spread = max(products.values()) / min(products.values()) - 1
+        self.assertLess(spread, 0.10, f"ratio x speed spread across gears 4-7: {products}")
+
     def test_the_note_does_not_still_say_rear_drive(self):
         self.assertNotIn("Arkadan itis", self.out)
 

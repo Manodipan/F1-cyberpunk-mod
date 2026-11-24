@@ -40,11 +40,20 @@ class ComparisonTests(unittest.TestCase):
                          "docs/VEHICLE-COMPARISON.md is stale - run `make compare`")
 
     def test_phoenix_top_window_is_within_reference_range(self):
-        """1.80x is what failed; 1.47 is what the shift-overlap rule requires (see test_port)."""
+        """1.80x is what failed; 1.43 is what the shift-overlap rule requires (see test_port).
+
+        AUDIT FIX (2026-11-24): this used to demand `torqueMultiplier >= 0.22` on the grounds that
+        "the Jesko ships 0.227". That was a category error - a multiplier is only meaningful as a
+        *ratio against that gear's own maxSpeed*, and the constant is per car (Aston ~27.9,
+        Jesko ~18). A 215 m/s top gear on an Aston therefore wants ~0.13, and demanding 0.22 would
+        have shipped 1.7x the designed thrust. The invariant that matters is the product, and
+        `test_port.StockBaseDrivetrainTests` pins it against gears 4-7."""
         phoenix = dict((n, r) for n, r, _ in self.cars)["Phoenix AMV LMH"]
         top = phoenix["ladder"][-1]
         self.assertLessEqual(top["maxSpeed"] / top["minSpeed"], 1.60)
-        self.assertGreaterEqual(top["torqueMultiplier"], 0.22)   # the Jesko ships 0.227
+        product = top["torqueMultiplier"] * top["maxSpeed"]
+        self.assertGreater(product, 20.0)     # the Aston's own family is 26.8-28.0
+        self.assertLess(product, 32.0)
 
 
 if __name__ == "__main__":

@@ -426,6 +426,46 @@ does is remove the artificial ceiling at 100 m/s, so for the first time the car 
 does above 360 km/h - weave included - and the 80 m/s problem can finally be studied on a car whose
 top speed is not the thing in the way.
 
+## 2k. Audit of the 900027 build, and the bug it found (build 900028)
+
+Re-reading the generated YAML rather than the code found one real defect and three clean bills:
+
+**The defect: gear records were internally inconsistent.** A `VehicleGear_Record` is a *pair* -
+`torqueMultiplier` is the gear's ratio, `maxSpeed` is the speed that ratio reaches at redline - and
+the stock car keeps their product at **27.9 +- 1 %** across gears 4-7 (0.459x58.3, 0.399x69.4,
+0.348x80.6, 0.306x91.7). Stretching `maxSpeed` to 110 / 180 / 215 while leaving the multipliers
+alone told the engine it had a 91.7-class ratio on a 180 m/s gear, i.e. **2.2x the thrust the
+design was sized for**. If the game reads force from the ratio - which is what the constant product
+implies - 900027 was never the car I computed.
+
+Fixed by moving both fields together, and the rpm floor with them
+(`minEngineRPM = maxEngineRPM x minSpeed/maxSpeed`, as stock):
+
+| gear | window | ratio | ratio x speed | rpm floor (implied) |
+|---|---|---|---|---|
+| 4 | 44 -> 58.3 | 0.459 | 26.8 | 7434 (7200) |
+| 5 | 55 -> 110 | **0.254** | 27.9 | 4950 (4950) |
+| 6 | 66 -> 180 | **0.155** | 27.9 | 3630 (3630) |
+| 7 | 150 -> 215 | **0.130** | 27.9 | 6942 (6940) |
+
+Both readings of the field now agree: whether the engine's thrust follows `1/maxSpeed` or the
+multiplier itself, 900028 makes **8 300 N in 6th** - the number the design was built on. (A third
+reading, force following *both*, would show ~390 km/h instead of 535, and we would know.)
+
+Clean bills - checked in the shipped file, not assumed:
+
+- **gear windows all overlap** (44 and 30 m/s at 5->6 and 6->7), pinned by a test
+- **no unintended rewrites**: `maxSpeed` / `minSpeed` appear only in the 7 gear records; the
+  downforce helper's `maxSpeedFactorGround` is untouched
+- **the true speedometer and mph-as-m/s patches are in the main redscript**, intact, and the
+  virtual gearbox switch matches the shipped ladder (174 / 215 default)
+- **build stamp** 900028, drivetrain AWD, drag 0.55, torque 3100, steer 85, inertia 3355/990/3883,
+  turn multiplier 0.21 - all as intended
+
+One cosmetic mismatch, not a bug: the redscript's virtual revs use an 8100 rpm reference while the
+YAML's gears reach ~9900, so the HUD/audio revs read about 18 % low. It only affects the sound and
+the shift light, and it is on the list if the engine note starts to matter.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |

@@ -45,9 +45,9 @@ Reverse is listed separately: it is the first entry of the gear array but it is 
 | gear 2 | 22 → 36.1 m/s (130 km/h), window 1.64× · ×0.646 | 22 → 36.1 m/s (130 km/h), window 1.64× · ×0.646 | 21.6 → 33.08 m/s (119 km/h), window 1.53× · ×0.67 | 12.5 → 23 m/s (83 km/h), window 1.84× · ×0.95 | 13.5 → 24.21 m/s (87 km/h), window 1.79× · ×0.653 |
 | gear 3 | 33 → 47.2 m/s (170 km/h), window 1.43× · ×0.535 | 33 → 47.2 m/s (170 km/h), window 1.43× · ×0.535 | 29.78 → 42.17 m/s (152 km/h), window 1.42× · ×0.494 | 21.5 → 30 m/s (108 km/h), window 1.40× · ×0.82 | 22.5 → 32.24 m/s (116 km/h), window 1.43× · ×0.455 |
 | gear 4 | 44 → 58.3 m/s (210 km/h), window 1.32× · ×0.459 | 44 → 58.3 m/s (210 km/h), window 1.32× · ×0.459 | 37.95 → 51.25 m/s (184 km/h), window 1.35× · ×0.387 | 28.5 → 37 m/s (133 km/h), window 1.30× · ×0.65 | 31.5 → 37.38 m/s (135 km/h), window 1.19× · ×0.35 |
-| gear 5 | 55 → 110 m/s (396 km/h), window 2.00× · ×0.399 | 55 → 69.4 m/s (250 km/h), window 1.26× · ×0.399 | 46.12 → 60.33 m/s (217 km/h), window 1.31× · ×0.316 | 35.5 → 44 m/s (158 km/h), window 1.24× · ×0.47 | 36.5 → 41.96 m/s (151 km/h), window 1.15× · ×0.274 |
-| gear 6 | 66 → 180 m/s (648 km/h), window 2.73× · ×0.348 | 66 → 80.6 m/s (290 km/h), window 1.22× · ×0.348 | 54.3 → 69.42 m/s (250 km/h), window 1.28× · ×0.265 | 42.5 → 50 m/s (180 km/h), window 1.18× · ×0.32 | 41 → 49.78 m/s (179 km/h), window 1.21× · ×0.217 |
-| gear 7 | 150 → 215 m/s (774 km/h), window 1.43× · ×0.306 | 77 → 91.7 m/s (330 km/h), window 1.19× · ×0.306 | 62.47 → 78.5 m/s (283 km/h), window 1.26× · ×0.227 | — | 49.08 → 58.5 m/s (211 km/h), window 1.19× · ×0.178 |
+| gear 5 | 55 → 110 m/s (396 km/h), window 2.00× · ×0.254 | 55 → 69.4 m/s (250 km/h), window 1.26× · ×0.399 | 46.12 → 60.33 m/s (217 km/h), window 1.31× · ×0.316 | 35.5 → 44 m/s (158 km/h), window 1.24× · ×0.47 | 36.5 → 41.96 m/s (151 km/h), window 1.15× · ×0.274 |
+| gear 6 | 66 → 180 m/s (648 km/h), window 2.73× · ×0.155 | 66 → 80.6 m/s (290 km/h), window 1.22× · ×0.348 | 54.3 → 69.42 m/s (250 km/h), window 1.28× · ×0.265 | 42.5 → 50 m/s (180 km/h), window 1.18× · ×0.32 | 41 → 49.78 m/s (179 km/h), window 1.21× · ×0.217 |
+| gear 7 | 150 → 215 m/s (774 km/h), window 1.43× · ×0.13 | 77 → 91.7 m/s (330 km/h), window 1.19× · ×0.306 | 62.47 → 78.5 m/s (283 km/h), window 1.26× · ×0.227 | — | 49.08 → 58.5 m/s (211 km/h), window 1.19× · ×0.178 |
 
 ## Ratio steps between gears
 
@@ -64,7 +64,7 @@ Reverse is listed separately: it is the first entry of the gear array but it is 
 
 | | Phoenix AMV LMH | xaires Valkyrie (stock) | Koenigsegg Jesko Attack | Pagani Zonda Revo | Quadra Turbo-R V-Tech |
 |---|---|---|---|---|---|
-| last gear | 150 → 215 m/s, span 1.43×, ×0.306 | 77 → 91.7 m/s, span 1.19×, ×0.306 | 62.47 → 78.5 m/s, span 1.26×, ×0.227 | 42.5 → 50 m/s, span 1.18×, ×0.32 | 49.08 → 58.5 m/s, span 1.19×, ×0.178 |
+| last gear | 150 → 215 m/s, span 1.43×, ×0.13 | 77 → 91.7 m/s, span 1.19×, ×0.306 | 62.47 → 78.5 m/s, span 1.26×, ×0.227 | 42.5 → 50 m/s, span 1.18×, ×0.32 | 49.08 → 58.5 m/s, span 1.19×, ×0.178 |
 
 ## Speed/rpm consistency per gear — a smell, not a law
 
@@ -72,4 +72,4 @@ Within a gear, speed and rpm should scale together: `maxSpeed / minSpeed` ought 
 
 | | Phoenix AMV LMH | xaires Valkyrie (stock) | Koenigsegg Jesko Attack | Pagani Zonda Revo | Quadra Turbo-R V-Tech |
 |---|---|---|---|---|---|
-| worst deviation | 109.4 % | 7.2 % | 2.5 % | 47.2 % | 16.2 % |
+| worst deviation | 7.2 % | 7.2 % | 2.5 % | 47.2 % | 16.2 % |
