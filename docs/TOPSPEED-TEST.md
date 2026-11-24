@@ -568,6 +568,11 @@ Note the dash is 3 digits, so it saturates at 999 km/h (277 m/s) — far above a
 
 ## 2n. The wall is the car, so take drag out of it (build 900031)
 
+> **Superseded by [SPEED-CAP.md](SPEED-CAP.md): the wall is the game's own rigid-body
+> recalculation returning a non-finite result at exactly 100 m/s.** Drag was never the wall. The
+> probe stays shipped because it is the safer build above 100, but the question it was built to
+> answer is closed.
+
 Owner, correcting my instrument argument: *"i didnt FEEl it stop, it DID stop."* Right — a capped
 needle does not stop a car. The stop is in the physics, so the question is not what the readout
 says but **what is absorbing the thrust at ~100 m/s**. Three candidates, and only one of them is a

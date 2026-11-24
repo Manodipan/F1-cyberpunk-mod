@@ -1,4 +1,12 @@
-# Status — where PORT.md stands
+# Status
+
+**The 100 m/s wall is the game, not the car.** Engine-level vehicle speed limit at exactly 100 m/s
+(360 km/h); the native `vehicle::RigidBody::Recalculate` returns a non-finite result at the limit and
+the frame's velocity is discarded. It is not tunable from TweakXL or redscript. Bypass with a RED4ext
+plugin — `Vehicle Speed Unlimiter` (try it; it resolves by reloc hash, not address) or the current
+`Let There Be Flight`, which ships the same hooks unconditionally. Full evidence in
+[SPEED-CAP.md](SPEED-CAP.md). Everything below 100 m/s — ladder, ratio invariant, rpm floors,
+window overlap, the weave work — is unaffected and still needed. — where PORT.md stands
 
 Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main` @ `3a6d0b1`
 · target game **2.5** (Phantom Liberty)
