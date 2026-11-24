@@ -782,6 +782,21 @@ STABILITY_OVERLAY = (
     ("springDampingHighRateCompression", "0.3", "0.36"),  # both presets, Pagani's
     ("smoothWheelContactDecreaseTime", "0", "0.1"),
     ("smoothWheelContactIncreseTime", "0", "0.1"),
+    # Step 7 (2026-11-24): downforce, which is the ONE grip lever that damps instead of amplifying.
+    # Raising a friction coefficient raises the plant's gain and spends phase margin (that is why
+    # the grip map was left alone). Downforce is different: it raises NORMAL LOAD, and tyre
+    # cornering stiffness rises with load, so it raises the yaw damping term itself. It also keeps
+    # the tyres loaded over crests, where step 6 could only soften the landing.
+    #   maxSpeedFactorGround 0.7 -> 1.4   the value this car carried before the control experiment
+    #       (docs called it "twice every reference car": Jesko 0.7, stock Aston 0.6, Pagani 0.35).
+    #       Deliberately above every reference - this is our number, not a copied one.
+    #   helper maxSpeed 80 -> 139   the helper ramps from 20 to its maxSpeed and then stops. At 80
+    #       it saturated at 281 km/h, so beyond that downforce was CONSTANT while drag kept growing
+    #       as v^2 - i.e. the car got relatively lighter the faster it went. Extending the ramp to
+    #       the new top-speed target makes downforce track v^2 up to 500 km/h, which is what the
+    #       real thing does.
+    ("maxSpeedFactorGround", "0.7", "1.4"),
+    ("maxSpeed", "80", "139"),
     ("antiSwaybarDampingScalor", "0.75", "1.15"),   # Pagani's
     ("turningRollFactor", "1", "0"),
     # Step 2 (2026-11-24, from measurement): the reference's alternative turn-update is an

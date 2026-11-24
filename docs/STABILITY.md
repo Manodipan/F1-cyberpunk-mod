@@ -203,6 +203,27 @@ This is also a **testable disambiguation**: if the wobble is terrain-triggered, 
 reach a higher speed on genuinely flat ground. If it does not move on flat ground either, then the
 flat-road limit cycle of step 5 is the whole story and the terrain work is insurance rather than cure.
 
+## Step 7 (shipped): downforce, the grip lever that damps
+
+Raising a friction coefficient raises the plant's **gain**: more response per unit of steering,
+less phase margin, worse for a lagging controller. That is why the grip map was left alone all
+along. Downforce is not that. It raises **normal load**, and tyre cornering stiffness rises with
+load, so it raises the yaw **damping** term itself (and the yaw frequency, which is the part to
+watch). It also keeps the tyres loaded over crests, where step 6 could only soften the landing.
+
+| field | reference | Phoenix | why |
+|---|---|---|---|
+| `maxSpeedFactorGround` | 0.7 | **1.4** | the value this car carried before the control experiment. Deliberately above every reference car (Jesko 0.7, stock Aston 0.6, Pagani 0.35) - this is our number, not a copied one. |
+| downforce helper `maxSpeed` | 80 | **139** | the helper ramps 20 -> maxSpeed and then stops. At 80 m/s it saturated at 281 km/h, so beyond that **downforce was constant while drag kept growing as v²** — the car got relatively lighter the faster it went. The ramp now tracks v² to 500 km/h, which is what the real thing does. |
+
+That second row is the one that matters for the eventual build: a car at 139 m/s with downforce
+frozen at its 281 km/h value is a car whose grip per unit of aerodynamic load has halved. Whatever
+the wobble turns out to be, that had to be fixed before 500 was reachable.
+
+Cost, stated plainly: induced drag. Downforce is paid for in top speed, and the amount is not
+modelled anywhere we can compute - so if the car stops accelerating earlier than it used to, this
+is the first field to give back (1.4 -> 1.1 -> 0.9).
+
 ## The physical basis, quantified
 
 Take the game's numbers at face value as SI-ish: `springStiffness` 27 as N/mm wheel rate, damping
