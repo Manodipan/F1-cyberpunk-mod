@@ -55,9 +55,9 @@ the car that was measured at **~80 m/s under ADE and ~85 m/s by hand**, the best
 
 | | Stock (the mod) | Phoenix (shipped, 900020) |
 |---|---|---|
-| Gearbox | 7 gears, top window 77→91.7 m/s (330 km/h) | **6th to 160, 7th 160→180 never reached** (step 17) |
+| Gearbox | 7 gears, top window 77→91.7 m/s (330 km/h) | **6th to 110, 7th 100→160** (step 18, 576 km/h declared) |
 | Mass · Drag | 1750 · 1.35 | 1750 · **0.55** (step 16) |
-| Torque · Redline | 1300 · 10 100 | **2750** · 10 100 (step 16) |
+| Torque · Redline | 1300 · 10 100 | **4900** · 10 100 (step 18, sized to the engine's force law) |
 | Drivetrain | RWD (front `isDrive: false`) | **AWD** — all four wheels drive, handbrake still rear only |
 | Grip F/R | 1.29/1.15 · 1.33/1.20 | **identical** |
 | Yaw inertia | 3050 / 900 / 3530 | **3355 / 990 / 3883** (step 15, +10 %) |

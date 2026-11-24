@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900028
+  horsepower: 900029
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 
@@ -27,7 +27,7 @@ Vehicle.phoenix_amv_wheel_back:
   isHandBrake: true
   isMainBrake: true
 
-# 7 ileri sirali (hizlar m/s); azami hiz = son vitesin maxSpeed'i (215 m/s = 774 km/h)
+# 7 ileri sirali (hizlar m/s); azami hiz = son vitesin maxSpeed'i (160 m/s = 576 km/h)
 Vehicle.phoenix_amv_gear_r:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline10
   torqueMultiplier: 0.765
@@ -70,26 +70,26 @@ Vehicle.phoenix_amv_gear_4:
 
 Vehicle.phoenix_amv_gear_5:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline14
-  torqueMultiplier: 0.254
+  torqueMultiplier: 0.399
   minSpeed: 55
-  maxSpeed: 110
-  minEngineRPM: 4950
+  maxSpeed: 69.4
+  minEngineRPM: 7400
   maxEngineRPM: 9900
 
 Vehicle.phoenix_amv_gear_6:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline14
-  torqueMultiplier: 0.155
+  torqueMultiplier: 0.254
   minSpeed: 66
-  maxSpeed: 180
-  minEngineRPM: 3630
+  maxSpeed: 110
+  minEngineRPM: 5940
   maxEngineRPM: 9900
 
 Vehicle.phoenix_amv_gear_7:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline14
-  torqueMultiplier: 0.130
-  minSpeed: 150
-  maxSpeed: 215
-  minEngineRPM: 6940
+  torqueMultiplier: 0.174
+  minSpeed: 100
+  maxSpeed: 160
+  minEngineRPM: 6219
   maxEngineRPM: 9950
 
 Vehicle.phoenix_aston_valkyrie:
@@ -218,7 +218,7 @@ Vehicle.phoenix_aston_valkyrie:
   vehEngineData:
     $base: Vehicle.VehicleEngineData_4_SuperSport
     # 2026-11-13 tester: hizlanma zayif -> tork 960 (SuperSport) -> 1300
-    engineMaxTorque: 3100
+    engineMaxTorque: 4900
     maxRPM: 10100
     minRPM: 1000
     gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]

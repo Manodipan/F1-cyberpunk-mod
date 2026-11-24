@@ -213,7 +213,7 @@ class StockBaseDrivetrainTests(unittest.TestCase):
         """The redscript computes revs from these numbers; if they drift from the YAML every
         HUD reading above 6th gear is a lie."""
         reds = port_reds(stock("aston_valkyrie_audio.reds"))
-        ladder = [25, 36.1, 47.2, 58.3, 110, 180, 215]
+        ladder = [25, 36.1, 47.2, 58.3, 69.4, 110, 160]
         for g, speed in enumerate(ladder, 1):
             self.assertIn(f"case {g}:\n      return {port.fmt_num(speed)};", reds, g)
         self.assertIn(f"default:\n      return {port.fmt_num(ladder[-1])};", reds)

@@ -35,8 +35,8 @@ class TestProfile(unittest.TestCase):
     def test_top_gear_clears_the_plateau(self):
         """Step 16: 155 m/s = 558 km/h declared, so a 542 km/h terminal sits INSIDE the top gear
         instead of on top of the 6->7 transition the way the stock car's 86 m/s/80.6 did."""
-        self.assertAlmostEqual(self.row["top"], 215.0, places=2)
-        self.assertEqual(round(self.row["top"] * 3.6), 774)
+        self.assertAlmostEqual(self.row["top"], 160.0, places=2)
+        self.assertEqual(round(self.row["top"] * 3.6), 576)
 
     def test_gear_count(self):
         self.assertEqual(self.row["gears"], 8, "7 forward + reverse")
@@ -44,7 +44,7 @@ class TestProfile(unittest.TestCase):
     def test_the_deciding_fields(self):
         # stock mod's own numbers: the best car measured so far
         self.assertEqual(self.row["airResistanceFactor"], "0.55")   # step 16: the 500 km/h drag
-        self.assertEqual(self.row["engineMaxTorque"], "3100")       # step 17: x2.38
+        self.assertEqual(self.row["engineMaxTorque"], "4900")       # step 18: sized to model C
         self.assertEqual(self.row["total_mass"], "1750")
         self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "85")   # step 15: 10 % below stock
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")   # step 15: the reference's, damps
@@ -78,7 +78,7 @@ class TestIndex(unittest.TestCase):
             cv.write_index(cv.collect(ROOT / "Phoenix_aston_cheats" / "r6" / "tweaks", True, tmp), tmp)
             again = cv.index_from_corpus(tmp)
             self.assertEqual(len(again), 1)
-            self.assertAlmostEqual(again[0]["top"], 215.0, places=2)   # step 17 ladder
+            self.assertAlmostEqual(again[0]["top"], 160.0, places=2)   # step 18 ladder
 
 
 class TestCommittedCorpus(unittest.TestCase):

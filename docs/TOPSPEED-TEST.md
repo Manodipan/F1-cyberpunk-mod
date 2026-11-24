@@ -484,6 +484,41 @@ Clean bills - checked in the shipped file, not assumed:
   so ADE's "max vehicle speed" is not read from the UI record. Where that number comes from is an
   open question, and it is why the "Max Speed Ratio" experiment is still worth running.
 
+## 2l. MEASURED: the engine's force law, and step 18 (build 900029)
+
+900028 has overlaps everywhere and internally consistent records, and it was **still capped at
+~100 m/s**. That number settles the field question, because the three readings of the same two
+fields predict different plateaus:
+
+| reading | force scales with | 900028 predicts | observed |
+|---|---|---|---|
+| A | `1/maxSpeed` (multiplier cosmetic) | 148.5 m/s | no |
+| B | `torqueMultiplier` | 148.1 m/s | no |
+| **C** | **`torqueMultiplier / maxSpeed`** | **105.7 m/s** | **~100** |
+
+So the engine divides by the gear's speed **as well**: **stretching a gear costs thrust with the
+square of the stretch.** 900028 made 4 227 N where the design assumed 8 346 - the audit's "2.2x
+too much thrust" had the right magnitude and the wrong sign, because the rescale it added cost 2x
+more than the model it was correcting.
+
+### Step 18 - sized to model C (build 900029)
+
+| field | 900028 | 900029 |
+|---|---|---|
+| gear 6 | 66 -> 180, mult 0.155 | **66 -> 110, mult 0.254** |
+| gear 7 | 150 -> 215, mult 0.130 | **100 -> 160, mult 0.174** |
+| ratio invariant | 27.9 | **27.9** (kept, so the records stay honest) |
+| `engineMaxTorque` | 3100 | **4900** |
+| drag | 0.55 | 0.55 |
+
+Under model C, 7th makes **8 439 N**, terminal **149.3 m/s = 538 km/h**, 500 km/h after **2.8 km**
+of 7th, 1 172 kW (1 572 hp) at 500 - the Chiron's number again. If model B turns out to be true after
+all, the same build clamps at 7th's 160 m/s ceiling = **576 km/h**, so it clears 500 either way.
+
+The cost of torque 4 900 Nm (3.8x stock) is at the bottom of the range: the low gears are now
+traction-limited almost everywhere. That is acceptable for a top-speed build and pathological for
+anything else - the ladder is the next thing to rebalance once the plateau is where it should be.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |

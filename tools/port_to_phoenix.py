@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 28
+BUILD = 29
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -995,26 +995,37 @@ STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 #   - 7th stays reachable-but-unused (150 -> 215) so that if the game does shift early it lands in
 #     a valid window instead of stalling.
 # The 80 m/s weave is a separate problem and is NOT expected to move. It is the next thing.
-STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 110.0, 180.0, 215.0]
+#
+# Step 18 (2026-11-24, MEASURED - the field relationship, settled):
+# 900028 has overlaps everywhere and consistent records, and it is STILL capped - at ~100 m/s.
+# That number identifies the engine's force law. Three readings of the same two fields, calibrated
+# on the stock car (7th: mult 0.306, max 91.7, 1300 Nm, 6 870 N at its 86 m/s terminal):
+#
+#     A  force ~ 1/maxSpeed (multiplier cosmetic)   900028 -> 148.5 m/s
+#     B  force ~ multiplier                         900028 -> 148.1 m/s
+#     C  force ~ multiplier / maxSpeed              900028 -> 105.7 m/s   <-- matches ~100
+#
+# So the engine divides by the gear's speed as well: stretching a gear costs thrust with the
+# SQUARE of the stretch, and 900028 was making 4 227 N where the design assumed 8 346. The audit's
+# "2.2x too much thrust" was wrong in sign - without the rescale it had 2.2x, but the rescale cost
+# 2x more than the design model did.
+#
+# Step 18 therefore sizes to model C explicitly, keeping the car's own ratio invariant
+# (torqueMultiplier = 27.9 / maxSpeed) so the records stay honest:
+#   gear 6  66 -> 110, mult 0.254       gear 7  100 -> 160, mult 0.174
+#   engineMaxTorque 1300 -> 4900, drag 0.55
+# 7th thrust = 8 439 N, terminal 149.3 m/s = 538 km/h, 500 reached 2.8 km into 7th.
+STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 69.4, 110.0, 160.0]
 STOCK_LADDER_PAIRS = (
-    ("maxSpeed", "69.4", "110"),        # gear 5 ceiling 250 -> 396 km/h (6th floor 66: 44 m/s overlap)
-    ("maxSpeed", "80.6", "180"),        # gear 6 ceiling 290 -> 648 km/h (7th floor 150: 30 m/s overlap)
-    ("minSpeed", "77", "150"),          # gear 7 floor, above the ~148 m/s terminal
-    ("maxSpeed", "91.7", "215"),        # gear 7 ceiling, inert
+    ("maxSpeed", "80.6", "110"),        # gear 6 ceiling 290 -> 396 km/h (7th floor 100: 10 m/s overlap)
+    ("minSpeed", "77", "100"),          # gear 7 floor
+    ("maxSpeed", "91.7", "160"),        # gear 7 ceiling 330 -> 576 km/h
+    ("torqueMultiplier", "0.348", "0.254"),   # gear 6: 27.9 / 110, the car's own invariant
+    ("torqueMultiplier", "0.306", "0.174"),   # gear 7: 27.9 / 160
+    ("minEngineRPM", "7600", "5940"),         # gear 6: 9900 x 66/110
+    ("minEngineRPM", "7800", "6219"),         # gear 7: 9950 x 100/160
     ("airResistanceFactor", "1.35", "0.55"),
-    ("engineMaxTorque", "1300", "3100"),
-    # AUDIT FIX (2026-11-24): a gear record is a *pair* - torqueMultiplier is the ratio and
-    # maxSpeed is the speed that ratio reaches at redline - and the stock car keeps
-    # torqueMultiplier x maxSpeed = 27.9 (+-1 %) across gears 4-7. Stretching maxSpeed without
-    # touching the multiplier left the record claiming a 91.7-class ratio on a 180 m/s gear, i.e.
-    # 2.2x the thrust of the gear it was meant to be. Both fields now move together, and the
-    # rpm floor moves with them (minEngineRPM ~ maxEngineRPM x minSpeed/maxSpeed, as stock).
-    ("torqueMultiplier", "0.399", "0.254"),   # gear 5
-    ("torqueMultiplier", "0.348", "0.155"),   # gear 6
-    ("torqueMultiplier", "0.306", "0.130"),   # gear 7
-    ("minEngineRPM", "7400", "4950"),         # gear 5
-    ("minEngineRPM", "7600", "3630"),         # gear 6: 9900 x 66/180
-    ("minEngineRPM", "7800", "6940"),         # gear 7: 9950 x 150/215
+    ("engineMaxTorque", "1300", "4900"),
 )
 
 
