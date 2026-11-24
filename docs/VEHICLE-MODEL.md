@@ -269,6 +269,12 @@ Change one per restart, or you learn nothing.
 (where it starts being cut), `wheelTurnMaxAddPerSecond` (how fast it gets there), and the
 `turnUpdateInput*` pair (how a small correction is interpreted).
 
+**Drivetrain** is one flag per axle role: `VehicleWheelRole.isDrive`. Our two front wheels
+share one role record, so RWD→AWD is `isDrive: true` on that record alone
+(`DRIVETRAIN` in `tools/port_to_phoenix.py`). It does not change top speed; it changes how
+much longitudinal work each tyre does — which is the difference between a car that weaves
+under full throttle and one that does not.
+
 **Do not touch** mass, inertia or `center_of_mass_offset` while chasing speed — they change
 how the car *feels* under braking and in air, and the effect is not local.
 

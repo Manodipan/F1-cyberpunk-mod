@@ -62,3 +62,40 @@ class UpdateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DrivetrainTests(unittest.TestCase):
+    """AWD is a prepared switch, not a shipped change - see docs/TOPSPEED-TEST.md 3f."""
+
+    def setUp(self):
+        import sys
+        from pathlib import Path as _P
+        root = _P(__file__).resolve().parents[1]
+        sys.path.insert(0, str(root / "tools"))
+        import port_to_phoenix as port
+        self.port = port
+        self.stock = (root / "reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml").read_text(encoding="utf-8")
+
+    def test_shipped_build_is_rear_drive(self):
+        out = self.port.port_text(self.stock, ".yaml", True)
+        front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
+        back = out.split("Vehicle.phoenix_amv_wheel_back:")[1].split("Vehicle.")[0]
+        self.assertIn("isDrive: false", front)
+        self.assertIn("isDrive: true", back)
+
+    def test_awd_flag_drives_all_four(self):
+        from unittest import mock
+        with mock.patch.object(self.port, "DRIVETRAIN", "awd"):
+            out = self.port.port_text(self.stock, ".yaml", True)
+        front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
+        back = out.split("Vehicle.phoenix_amv_wheel_back:")[1].split("Vehicle.")[0]
+        self.assertIn("isDrive: true", front)
+        self.assertIn("isDrive: true", back)
+        self.assertNotIn("isDrive: false", front + back)
+
+    def test_awd_does_not_touch_the_handbrake(self):
+        from unittest import mock
+        with mock.patch.object(self.port, "DRIVETRAIN", "awd"):
+            out = self.port.port_text(self.stock, ".yaml", True)
+        front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
+        self.assertIn("isHandBrake: false", front)

@@ -110,6 +110,45 @@ STOCK_TO_F1 = {
     ("maxSpeedFactorGround", "0.6"): "1.40",       # DynamicDownforceHelper_Exotic
 }
 
+# ---------------------------------------------------------------------------
+# 3a. Drivetrain - "rwd" (shipped) or "awd" (one flag)
+# ---------------------------------------------------------------------------
+# The real AMR-LMH is rear-drive, so rwd is what we ship. Flipping this to "awd" makes the
+# front role record drive as well: our fronts share one VehicleWheelRole record, so it is a
+# single `isDrive` flag, not a rebuild.
+#
+# What it does and does not do: it does **not** raise top speed - drag, gearing and any
+# native cap still govern that. What it changes is what the rear tyres are doing at full
+# throttle, and that is precisely the condition Auto Drive tests in: 3824 Nm through two
+# tyres at 100 % throttle keeps them at the friction limit for the whole run, which is
+# where yaw instability lives. Four driven wheels halve the longitudinal demand per tyre.
+#
+# So: AWD is the cheapest way to ask "is the wobble power oversteer?". If it fixes it, the
+# answer is yes - and the RWD-authentic version of that fix is rear grip / torque curve, not
+# permanent AWD.
+DRIVETRAIN = "rwd"
+
+FRONT_ROLE_RE = re.compile(r"(?m)^Vehicle\.[A-Za-z0-9_]*_wheel_front:[ \t]*$")
+ISDRIVE_FALSE_RE = re.compile(r"(?P<key>isDrive:[ \t]*)false")
+
+
+def apply_drivetrain(text: str) -> str:
+    """Make the front wheels drive too, when DRIVETRAIN is "awd"."""
+    if DRIVETRAIN != "awd":
+        return text
+    out: list[str] = []
+    in_front = False
+    for line in text.splitlines(keepends=True):
+        if FRONT_ROLE_RE.match(line):
+            in_front = True
+        elif line[:1] and not line[0].isspace():
+            in_front = False
+        if in_front:
+            line = ISDRIVE_FALSE_RE.sub(r"\g<key>true", line, count=1)
+        out.append(line)
+    return "".join(out)
+
+
 # Applied in both port modes: gear 7 `maxSpeed` + XairesAMV_GearSpeed default.
 GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
 
@@ -456,7 +495,7 @@ def apply_physics(text: str, suffix: str, warn: list[str] | None = None) -> str:
         out.append(written)
     text = "".join(out)
     if suffix in (".yaml", ".yml"):
-        text = declare_gear_type(apply_gearbox(text))
+        text = declare_gear_type(apply_drivetrain(apply_gearbox(text)))
         text = text.replace(STALE_GEAR_NOTE, FRESH_GEAR_NOTE, 1)
         return ensure_steering_return(ensure_engine_fields(text))
     if suffix == ".reds":
