@@ -47,49 +47,49 @@ Vehicle.phoenix_amv_gear_1:
 Vehicle.phoenix_amv_gear_2:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.72
-  minSpeed: 29.8
+  minSpeed: 27.8
   maxSpeed: 40.9
-  minEngineRPM: 5680
+  minEngineRPM: 5300
   maxEngineRPM: 7800
 
 Vehicle.phoenix_amv_gear_3:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.665
-  minSpeed: 38
+  minSpeed: 35.5
   maxSpeed: 52.2
-  minEngineRPM: 5680
+  minEngineRPM: 5300
   maxEngineRPM: 7800
 
 Vehicle.phoenix_amv_gear_4:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.61
-  minSpeed: 48.5
+  minSpeed: 45.3
   maxSpeed: 66.6
-  minEngineRPM: 5680
+  minEngineRPM: 5300
   maxEngineRPM: 7800
 
 Vehicle.phoenix_amv_gear_5:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.56
-  minSpeed: 61.9
+  minSpeed: 57.8
   maxSpeed: 85
-  minEngineRPM: 5680
+  minEngineRPM: 5300
   maxEngineRPM: 7800
 
 Vehicle.phoenix_amv_gear_6:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.53
-  minSpeed: 79.1
+  minSpeed: 73.8
   maxSpeed: 108.6
-  minEngineRPM: 5680
+  minEngineRPM: 5300
   maxEngineRPM: 7800
 
 Vehicle.phoenix_amv_gear_7:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.5
-  minSpeed: 101
+  minSpeed: 94.4
   maxSpeed: 138.89
-  minEngineRPM: 5670
+  minEngineRPM: 5300
   maxEngineRPM: 7800
 
 Vehicle.phoenix_amv_wheel_dimensions:

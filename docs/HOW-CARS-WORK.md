@@ -186,6 +186,10 @@ over at 400 km/h. (**documented** fields, **measured** comparison.)
 * **There is no final drive and no wheel-force equation you can audit.** You cannot compute
   top speed from power and drag the way you can in reality, because the game never tells you
   the ratio it derived. It only tells you where the gear's rpm map sits.
+* **A shift into an out-of-range gear behaves like braking.** Nothing in the data says "these
+  two gears overlap"; if the box grabs a gear whose window starts above your speed, the engine
+  math lands under its floor, the engine stops making torque, and drag does the rest. It reads
+  exactly like a brake fault, which cost us a build.
 * **Power is not conserved.** Two cars with the same power can differ by 200 km/h if one has
   a taller top gear or a shorter curve. Our car had 3.8× the torque of the Jesko and went
   60 % as fast. In reality that is impossible; in TweakDB it is just a badly shaped record.
@@ -222,6 +226,9 @@ the curve gives you — no matter what your gearbox, torque figure or drag says.
 1. Clone a car whose **class** matches what you want, and write the physics out explicitly.
 2. Define gears as **one explicit list**; never base them on `inlineN` records.
 3. Build the ladder as **even ratio steps**; every gear's speed window ≈ its rpm band ratio.
+   Then check the **overlap**: the next gear must contain the speed at which this one shifts,
+   i.e. `minEngineRPM ≤ 0.90 × maxEngineRPM / step`. A gear the car enters too slowly is not
+   a slow gear, it is a brake.
 4. Finish the top gear at an rpm the **curve** actually reaches — that number, not `maxRPM`,
    is your redline.
 5. Keep the axles' lateral grip **within a few percent** of each other.

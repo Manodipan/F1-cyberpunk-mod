@@ -46,9 +46,25 @@ gearbox and speed units work — see [`VEHICLE-MODEL.md`](VEHICLE-MODEL.md).
 
 Gears 1–6 used to stay as the stock file had them, which put 277 → 500 km/h inside a
 single 1.80× overdrive while 6th still ended at 290 km/h. Now every forward gear comes
-from `PHOENIX_GEARBOX` in `tools/port_to_phoenix.py`: 1.28× steps, 115 / 147 / 188 / 240 /
-306 / 391 / 500 km/h, top window 101 → 138.89 m/s. If the car bogs at a shift, move that
-gear's `minSpeed`, not the physics table.
+from `PHOENIX_GEARBOX` in `tools/port_to_phoenix.py`: 1.28× steps, 100 / 128 / 168 / 212 /
+274 / 391 / 500 km/h, floors at 5 300 rpm. If the car bogs at a shift, move that gear's
+`minSpeed`, not the physics table.
+
+**The overlap rule (2026-11-24, four builds to find):** the game upshifts at about
+0.90 × `maxEngineRPM`, and the next gear is taller by the step, so it only contains that
+speed if
+
+```
+minEngineRPM  <=  0.90 × maxEngineRPM / step
+```
+
+Equivalently, in speed terms: **a gear's speed window must be at least `step / 0.90`** —
+1.42 for our 1.278 steps. Our windows were 1.37 (5 680 / 7 800 = 0.728 > 0.90 / 1.278 = 0.704),
+so *every* upshift landed below the next gear's window: the box grabbed a gear the car was too
+slow for, the engine fell under its floor, and the car braked. Below 300 km/h momentum carried
+it across; the 6→7 hole (352 km/h shift into a 364 km/h gear) is what stopped it. Floors are
+now 5 300 rpm — window 1.47, and a 1.0–3.4 m/s overlap at every step, asserted by
+`test_every_shift_lands_inside_the_next_gear`.
 
 Also note the virtual audio gearbox (`XairesAMV_GearboxStep`) ups at
 `4800 + 4900·gas^1.6` rpm using `v · 9900 / GearSpeed(gear)`; at 138.89 m/s in 7th

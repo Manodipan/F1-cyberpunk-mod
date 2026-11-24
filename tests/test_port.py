@@ -272,9 +272,26 @@ class GearLadderTests(unittest.TestCase):
             self.assertLessEqual(step, 1.32, steps)
 
     def test_top_gear_is_not_an_overdrive_cliff(self):
+        # The failure mode is a gear the engine cannot pull (the original 1.80x overdrive).
+        # 1.50 is the ceiling because the engine upshifts at 0.90 of a gear's range: to leave
+        # ANY overlap at a 1.278 step the window has to be >= 1.278 / 0.90 = 1.42. Narrower
+        # windows are what put a hole at every shift (see the test below).
         lo, hi = self.gears["7"][0], self.gears["7"][1]
-        self.assertLessEqual(hi / lo, 1.45, "top gear window too tall to pull")
+        self.assertLessEqual(hi / lo, 1.50, "top gear window too tall to pull")
         self.assertGreaterEqual(self.gears["7"][2], 0.45, "top gear torque left on the floor")
+
+    def test_every_shift_lands_inside_the_next_gear(self):
+        """The bug that ate four builds: the game upshifts at ~0.90 of a gear's range, so if
+        the next gear's floor is above that speed the box grabs a gear the car is too slow
+        for, the engine falls under its floor, and the car brakes. 352 km/h, twice."""
+        for g in range(1, 7):
+            this_max = self.gears[str(g)][1]
+            shift = 0.90 * this_max
+            next_floor = self.gears[str(g + 1)][0]
+            self.assertLessEqual(
+                next_floor, shift,
+                f"shift {g}->{g + 1} at {shift:.1f} m/s lands below gear {g + 1}'s "
+                f"{next_floor:.1f} m/s floor - the car will brake there")
 
     def test_engine_rpm_windows_sit_inside_maxrpm(self):
         for g in range(1, 8):

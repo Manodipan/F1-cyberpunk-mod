@@ -189,15 +189,29 @@ GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
 # Both working reference cars write their own `gearCurvesPath` and both top out around
 # 7 600-7 900 rpm. So the box is now geared to finish at 7 800 rpm: 500 km/h at 130 km/h
 # per 1 000 rpm is reachable *inside* the curve instead of past it.
+# Seven-speed sequential, speeds in m/s, 5300-7800 rpm per gear, top gear 138.89 m/s = 500 km/h.
+#
+# THE RULE THAT TOOK FIVE BUILDS TO FIND. The game upshifts at about 0.90 of a gear's
+# maxEngineRPM, which in speed terms is 0.90 x that gear's maxSpeed. The next gear is taller
+# by the step (1.278 here), and it only contains that speed if
+#
+#     minEngineRPM / maxEngineRPM  <=  0.90 / step      i.e.   window >= step / 0.90 = 1.42
+#
+# Ours sat at 5680/7800 = 0.728, which is above 0.70 (= 0.90/1.278), so EVERY shift landed
+# below the next gear's window: the box dropped the clutch into a gear the car was too slow
+# for, the engine fell under its floor, and the car braked. Small holes were survived on
+# momentum - 308 km/h in one build, 352 km/h in the next. The floors are now 5300 rpm, which
+# puts a 1.0-3.4 m/s overlap at every single step, and keeps the window at 1.47 rather than
+# the 1.80 cliff that started all of this.
 PHOENIX_GEARBOX = {
     #  gear: (minSpeed, maxSpeed, torqueMultiplier, minEngineRPM, maxEngineRPM)
-    "1": (0.0,    32.0,  0.780,  900, 7800),
-    "2": (29.8,   40.9,  0.720, 5680, 7800),
-    "3": (38.0,   52.2,  0.665, 5680, 7800),
-    "4": (48.5,   66.6,  0.610, 5680, 7800),
-    "5": (61.9,   85.0,  0.560, 5680, 7800),
-    "6": (79.1,  108.6,  0.530, 5680, 7800),
-    "7": (101.0, 138.89, 0.500, 5670, 7800),
+    "1": (0.0,    32.0,  0.780,  900, 7800),   # launch gear: floor is idle, not a band
+    "2": (27.8,   40.9,  0.720, 5300, 7800),
+    "3": (35.5,   52.2,  0.665, 5300, 7800),
+    "4": (45.3,   66.6,  0.610, 5300, 7800),
+    "5": (57.8,   85.0,  0.560, 5300, 7800),
+    "6": (73.8,  108.6,  0.530, 5300, 7800),
+    "7": (94.4, 138.89,  0.500, 5300, 7800),
 }
 GEAR_FIELDS = ("minSpeed", "maxSpeed", "torqueMultiplier", "minEngineRPM", "maxEngineRPM")
 

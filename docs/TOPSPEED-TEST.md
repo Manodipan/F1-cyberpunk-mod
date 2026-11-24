@@ -226,6 +226,33 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
+## 3j. SOLVED: it was the gearbox braking the car, not the brakes (2026-11-24)
+
+Result of the ADE test: **it brakes at 350 km/h at 100 %, 85 % and 50 % alike.** So ADE is not
+capping anything — the point does not move with the setting, which means it is in the car.
+
+The arithmetic names it exactly. 350 km/h = 97.2 m/s, and our gear 6 spans 79.1 → 108.6 m/s at
+5 680 → 7 800 rpm, so it upshifts at 0.90 × its range, i.e. at **97.7 m/s (352 km/h)**. Gear 7's
+window started at **101.0 m/s (364 km/h)** — twelve km/h too high. The box dropped the clutch
+into a gear the car was too slow for, the speed mapped *below* gear 7's 5 670 rpm floor, the
+engine produced nothing, and drag did the rest. It was never a brake: it was engine braking into
+a void, at every shift, and only the top one was big enough to be fatal.
+
+**The rule, which is now a test:** the engine upshifts at ~0.90 of a gear's range, so
+
+```
+minEngineRPM / maxEngineRPM  <=  0.90 / step     (i.e. window >= step / 0.90 = 1.42 at 1.278)
+```
+
+Ours was 5 680 / 7 800 = **0.728**, above the 0.704 limit — a hole at every one of the six
+shifts. Floors are now **5 300 rpm**: window 1.47, and a 1.0–3.4 m/s overlap at every step.
+
+| Outcome | Meaning |
+|---|---|
+| pulls through 400+ | the ladder was the last wall. Trim drag to land on 500 |
+| brakes again at ~390 | 7th's own shift point; give 7th more range (its step to nowhere) |
+| brakes at a new, higher number | each plateau so far has been a shift boundary — tell me the number and I will read it the same way |
+
 ## 3i. Is it the car, or is it Auto Drive? (and a units landmine)
 
 Asked 2026-11-24: *"is it because of some definition not letting ADE drive faster than 1x max

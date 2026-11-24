@@ -48,7 +48,7 @@ docs/                            install + test matrix, packaging, rename map, f
 |---|---|---|
 | Scanner hp / torque | 680 / 1300 | **2000 / 3824** |
 | Redline | 10100 (a number no curve reaches) | **7900, geared to finish there** |
-| Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **7 gears, even 1.28× steps, top window 101→138.89 m/s (500 km/h)** |
+| Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **7 gears, even 1.28× steps, top window 89→138.89 m/s (500 km/h); 1000 rpm of overlap at every shift** |
 | Drag | 1.35 | **0.60** |
 | Front grip | 1.29 / 1.15 | **1.60 / 1.50** |
 | Rear grip | 1.33 / 1.20 | **1.70 / 1.68** (axles within 6 %, as every reference car) |

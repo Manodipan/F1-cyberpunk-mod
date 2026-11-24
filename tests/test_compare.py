@@ -40,10 +40,10 @@ class ComparisonTests(unittest.TestCase):
                          "docs/VEHICLE-COMPARISON.md is stale - run `make compare`")
 
     def test_phoenix_top_window_is_within_reference_range(self):
-        """1.80x is what failed; every working car's last gear is 1.26x or narrower."""
+        """1.80x is what failed; 1.47 is what the shift-overlap rule requires (see test_port)."""
         phoenix = dict((n, r) for n, r, _ in self.cars)["Phoenix AMV LMH"]
         top = phoenix["ladder"][-1]
-        self.assertLessEqual(top["maxSpeed"] / top["minSpeed"], 1.45)
+        self.assertLessEqual(top["maxSpeed"] / top["minSpeed"], 1.50)
         self.assertGreaterEqual(top["torqueMultiplier"], 0.45)
 
 
