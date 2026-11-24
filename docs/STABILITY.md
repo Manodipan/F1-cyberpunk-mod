@@ -17,6 +17,21 @@ which it corrects again — a sustained weave at the loop frequency, appearing a
 controller cannot fix that by being smarter, only by being slower.** Which is why the fix belongs
 in the car.
 
+## What the "ADE" column is actually measuring (2026-11-24, owner's observation)
+
+Every ADE number in this document is a statement about the car **and a controller with a policy**.
+The owner's read of the difference is that ADE is the better driver for real corners — it lifts
+throttle, which they do not — and they are the better driver for a straight, where they give
+gentle nudges with anticipation while ADE corrects after the fact. A human adds phase lead; ADE is
+a lagging controller. That is the same mechanism this whole investigation keeps finding from the
+other end: a plant with poor phase margin can be driven by lead and not by lag.
+
+So the ADE column is **closed-loop performance**, and the manual column is **capability**. They
+are not two measurements of one thing, and a 6 m/s gap between them does not by itself say the
+car is unstable — some of it may be ADE lifting for curves on a road that has them.
+`docs/TOPSPEED-TEST.md` §2c has the protocol that separates policy from instability: Route B's
+long straights, ADE leg then manual leg, same build.
+
 ## The measured comparison that reframes the whole thing (2026-11-24)
 
 Three cars, same road, same driver, same session. "Wobble" is the speed where ADE starts weaving;

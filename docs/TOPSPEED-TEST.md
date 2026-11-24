@@ -72,6 +72,54 @@ Route B is the better instrument for three reasons:
 To make Route B reusable, note the **fast-travel point at each end** and the three turns the first
 time it is driven properly; the table above is only useful if the same road is measured twice.
 
+## 2c. The two numbers measure different things (2026-11-24, owner's observation)
+
+> "ADE is better at lifting throttle for actual turns, usually, and I'm better at giving the
+> gentle nudges for straight-line speeding."
+
+That is not a detail, it is a correction to how this whole log has been read. Every "ADE 80" in
+this repo has been treated as a statement about the **car**. It is not. It is a statement about
+the **car and a controller**, and the controller has a policy:
+
+| | Auto Drive | the owner |
+|---|---|---|
+| throttle | full, until its own corner anticipation tells it to lift | planted, held through small corrections |
+| steering | discrete corrections, no anticipation — a **lagging** controller | small continuous nudges with **lead** |
+| good at | slowing for corners, never missing a braking point | holding a straight at speed |
+
+Three consequences, in order of how much they matter:
+
+1. **Part of the 80 may be ADE lifting, not the car weaving.** Route A has gentle curves. A
+   controller that lifts for curves it can see is slower on a road that has them, and the deficit
+   would be *policy*, not physics. The old number cannot separate the two.
+2. **Route B separates them for free.** Long straights, three perpendicular turns: inside a leg
+   there is nothing to lift for, so a dip in the speed trace is the controller or the car, never
+   the road.
+3. **The manual number is the capability; the ADE number is closed-loop behaviour.** A human adds
+   phase lead, which is exactly what a plant with poor phase margin needs. So "the human can hold
+   86 and ADE cannot hold 80" is the same statement as "the plant can be driven, but not by a
+   lagging controller" — which is the frame this entire wobble investigation has been circling.
+   The fix for a lagging controller is a plant with more margin, not a better driver.
+
+### Protocol that settles it — one build, two legs, Route B
+
+Same leg, same direction, build unchanged between runs (a restart is only needed between builds):
+
+1. **Leg 1, ADE.** Engage autodrive down the longest straight. Record peak speed, and
+   **whether the speed dips while the road ahead is clear** — that dip is policy.
+2. **Leg 2, manual.** Same leg, throttle planted, gentle nudges. Record peak and hold.
+3. Note whether the car ever actually weaved in leg 1, and where.
+
+How to read it:
+
+- **ADE ≈ manual on Route B (within ~2 m/s)** → the Route A gap was ADE's corner policy, the car
+  is not the problem on straights, and the "wobble" needs re-measuring before another build is
+  spent on it.
+- **ADE well below manual, no corners ahead** → genuine closed-loop instability; the number is
+  about the car again and the gain axis is the lever.
+- **ADE dips even with an empty road** → the controller is reacting to something other than
+  geometry (traffic, a lane edge, a junction it plans for).
+
 ## 3. What to record
 
 | Reading | Pass | Notes |
