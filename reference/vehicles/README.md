@@ -23,6 +23,10 @@ If you want a specific car's full record in git (to read, not to ship), copy **o
 file** and say so in the commit — one file for study is a different thing from republishing
 a library.
 
+**Currently tracked by exception:** `jesko_attack.yaml` — the 572 km/h reference car
+(`docs/TOPSPEED-TEST.md` §3c explains what it proved). Note that its last gear says
+283 km/h while the car does 572: a gear table's `maxSpeed` is a shift point, not a cap.
+
 ## Reading `INDEX.md`
 
 * `km/h` / `m/s` — the **last gear's `maxSpeed`**, which is the game's ceiling for that car

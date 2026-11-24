@@ -72,6 +72,30 @@ def profile(path: Path) -> dict | None:
     speeds = [float(v) for v in RE_MAXSPEED.findall(text)]
     if not speeds:
         return None
+    # prefer the maxSpeed of the gear records the engine actually lists: other records in
+    # the same file (rotation limiters, friction helpers) also carry a maxSpeed field.
+    gear_names = []
+    m = re.search(r"^\s*gears\s*:\s*\[([^\]]+)\]", text, re.MULTILINE)
+    if m:
+        gear_names = [g.strip() for g in m.group(1).split(",") if g.strip()]
+    else:
+        gear_names = [g for g in re.findall(r"^\s*-\s*!append\s+(\S+)", text, re.MULTILINE)]
+    gear_speeds = []
+    if gear_names:
+        blocks = {}
+        for block in re.split(r"(?m)^(?=[A-Za-z][A-Za-z0-9_.]*:\s*$)", text):
+            bm = re.match(r"^([A-Za-z][A-Za-z0-9_.]*)\s*:", block)
+            if bm:
+                blocks[bm.group(1)] = block
+        for name in gear_names:
+            block = blocks.get(name)
+            if not block:
+                continue
+            hm = RE_MAXSPEED.search(block)
+            if hm:
+                gear_speeds.append(float(hm.group(1)))
+    if gear_speeds:
+        speeds = gear_speeds
     # only real vehicle records: the ones whose block carries vehDriveModelData
     recs = []
     for block in re.split(r"(?m)^(?=Vehicle\.[A-Za-z0-9_]+:\s*$)", text):

@@ -16,7 +16,10 @@
 
 param(
     [string]$Game = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty",
-    [switch]$Revert
+    [switch]$Revert,
+    # optional: also force airResistanceFactor (the drag wall). 0 = leave it alone.
+    # 0.90 is ours, the 572 km/h Jesko runs 0.66 - try 0.55 if the car plateaus early.
+    [double]$Drag = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -50,6 +53,15 @@ $edits = @(
     @{ from = 'turnUpdateMaxSpeedTurnMul: 0.33'; to = 'turnUpdateMaxSpeedTurnMul: 0.12'; why = 'above 30 m/s: 12% authority instead of 33%' }
 )
 
+if ($Drag -gt 0) {
+    $m = [regex]::Match($text, "airResistanceFactor:\s*[0-9.]+")
+    if ($m.Success) {
+        $edits += @{ from = $m.Value; to = "airResistanceFactor: $Drag"; why = "drag wall" }
+    } else {
+        Write-Host "  !! no airResistanceFactor line found"
+    }
+}
+
 $changed = 0
 foreach ($e in $edits) {
     if ($text.Contains($e.from)) {
@@ -69,7 +81,7 @@ if ($changed -eq 0) { Write-Host ""; Write-Host "nothing written (already patche
 
 Write-Host ""
 Write-Host "STEERING PATCHED (local only - the repo copy is untouched)"
-Select-String -Path $yaml -Pattern "wheelTurnMaxAddPerSecond|turnUpdateMaxSpeedTurnMul|turnUpdateMaxSpeedThreshold" |
+Select-String -Path $yaml -Pattern "wheelTurnMaxAddPerSecond|turnUpdateMaxSpeedTurnMul|turnUpdateMaxSpeedThreshold|airResistanceFactor" |
     ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
 Write-Host ""
 Write-Host "Restart the game, then re-run the straight-line test."

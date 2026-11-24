@@ -70,40 +70,55 @@ If the file is clean and the logs are silent, the A/B test settles it: set gear 
 ceiling and the append is being ignored; still 330 means it is drag, and
 `airResistanceFactor` comes down from 0.90.
 
-## 3c. Borrowed reference: a 572 km/h car
+## 3c. The 572 km/h reference (Koenigsegg Jesko Attack) — what it proved
 
-There is a mod car known to reach **572 km/h** and stay driveable on straights (though not
-hairpin-at-500 stable — nobody's is). That car is proof the engine will go past the vanilla
-gear ceiling, and its numbers are a far better starting point than our guesses.
+`reference/vehicles/jesko_attack.yaml` is that car's actual tweak file. Its numbers:
 
-Two tools, same idea:
+| | Jesko Attack (572 km/h) | Phoenix (stops at 330) |
+|---|---|---|
+| last gear `maxSpeed` | **78.5 m/s = 283 km/h** | 138.89 m/s = 500 km/h |
+| gears | 8, one explicit `gears: [ … ]` list | 8, via `8 × !remove` + `8 × !append` |
+| `airResistanceFactor` | **0.66** | 0.90 |
+| `engineMaxTorque` | 1000 | 3824 |
+| `total_mass` | 1800 | 1750 |
+| steering | 137 / threshold **45** / mul **0.21** | 94 / 26 / 0.33 |
+| `maxSpeedFactorGround` (downforce) | 0.7 | 1.40 |
+| `turningRollFactor` | 1 | 0 |
+| `driftLimit` / `maxAngularSpeedRad` | 2.3 / 2.6 | 1.6 / 2.6 |
+| `frictionMulLateral` | 1.3 | 1.60 front / 2.00 rear |
+
+Two conclusions, and one of them kills our earlier theory:
+
+1. **A car's top speed is not its gear table.** The Jesko does 572 km/h on a gear set
+   whose last entry says 283 km/h — exactly 2× over. So `maxSpeed` per gear is the
+   *shift point*, not a hard cap, and "330 = the stock 91.7 gear value" was a coincidence
+   of arithmetic, not a proof of where the wall is.
+2. **Our engine block is the suspicious part, not our gear numbers.** It inherits
+   `Vehicle.VehicleEngineData_4_SuperSport` and then removes that record's 8 inline gears
+   and appends ours. If those 8 `!remove` lines miss their targets, the inherited gear set
+   stays **in front of** ours and the transmission drives the car it inherited from. The
+   Jesko avoids this entirely: one explicit list, no inherited gears at all.
+
+That is what `experiments/phoenix_engine_explicit.yaml` is: the deliverable, byte for byte,
+except `gears:` becomes one explicit eight-entry list (`make experiment` regenerates it).
 
 ```powershell
-# one-off look: ranks every installed car by top gear, prints fields for anything > 400 km/h
-powershell -ExecutionPolicy Bypass -File .\tools\fastcar-dump.ps1
-
-# keep the whole set as a corpus + a committed index of the numbers (reference/vehicles/)
-python tools/collect_vehicles.py --copy
+$d = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty\r6\tweaks\phoenix"
+Copy-Item "$d\phoenix_aston_valkyrie.yaml" "$d\phoenix_aston_valkyrie.yaml.stock" -Force
+Copy-Item "$HOME\f1-cyberpunk-mod\experiments\phoenix_engine_explicit.yaml" "$d\phoenix_aston_valkyrie.yaml" -Force
 ```
 
-`reference/vehicles/INDEX.md` becomes a table of every car's ceiling, drag, torque, mass
-and steering authority — the thing to check before inventing a value. Raw YAMLs from
-other authors stay out of git (see `reference/vehicles/README.md`); the index is the part
-that carries the information.
+Restart, run the straight once. Revert by copying `.stock` back.
 
-What we borrow, in order of value:
+Order of experiments, cheapest attribution first:
 
-| Field | Why it matters |
-|---|---|
-| top gear `maxSpeed` + `gears` count | how it gets past 91.7 m/s — more gears, or a longer last gear |
-| `airResistanceFactor` | the actual drag wall at that speed |
-| `wheelTurnMaxAddPerSecond` / `turnUpdateMaxSpeedTurnMul` | its steering authority at 500+ |
-| `frictionMulLateral`, `swaybarStiffness`, `springDamping` | how it stays planted while doing it |
-| downforce helper (`maxSpeedFactorGround`) | 1.40 for us, unknown for it |
+| # | What | If it changes the plateau |
+|---|---|---|
+| 1 | `tools/gearbox-check.ps1` | tells you the installed file's gear 7 and any TweakXL complaint — do this before editing anything |
+| 2 | explicit gears (above) | plateau moves → the inherited gear set was the problem; fold it into the port tool |
+| 3 | `tools/stability-tweak.ps1 -Drag 0.55` | plateau moves with drag → it was the drag wall all along; tune drag to hit exactly 500 |
 
-Realistic target, given that reference: **500 km/h stable on a straight**, hands-off, in
-7th. Hairpin stability at 500 is not a goal — it is a physical impossibility at that
-speed and no mod car has it.
+Do them **one at a time**: each restart is one data point, and two at once tells us nothing.
 
 ## 4. If it wobbles while autodriving
 

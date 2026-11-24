@@ -20,3 +20,5 @@ dist/
 # are NOT redistributed here - they stay on the machine that ran the collector. The
 # generated facts (INDEX.md) are tracked, and that is what we actually compare against.
 reference/vehicles/**/*.yaml
+# ...except the one car we explicitly asked for (572 km/h reference)
+!reference/vehicles/jesko_attack.yaml
