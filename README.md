@@ -34,6 +34,7 @@ tools/dump-car-manager.ps1       one-file evidence dump for the paint/compat wor
 tools/stability-tweak.ps1        optional high-speed steering profile (game copy only)
 tools/gearbox-check.ps1          why does it stop at 330 km/h? installed YAML + TweakXL logs
 tools/fastcar-dump.ps1           ranks every installed car by top gear, dumps the tuning fields
+tools/collect_vehicles.py        corpus + index of every installed vehicle tweak
 tools/localization/en-us.json    CR2W onscreens source -> "Phoenix AMV LMH"
 tests/                           41 tests (port + packaging + archive inspection)
 docs/                            install + test matrix, packaging, rename map, field map,

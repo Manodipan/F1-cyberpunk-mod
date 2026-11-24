@@ -15,3 +15,8 @@ __pycache__/
 
 # Nexus/Vortex upload artefacts
 dist/
+
+# Reference corpus (tools/collect_vehicles.py): the raw YAMLs are other authors' work and
+# are NOT redistributed here - they stay on the machine that ran the collector. The
+# generated facts (INDEX.md) are tracked, and that is what we actually compare against.
+reference/vehicles/**/*.yaml

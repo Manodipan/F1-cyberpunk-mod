@@ -76,13 +76,20 @@ There is a mod car known to reach **572 km/h** and stay driveable on straights (
 hairpin-at-500 stable — nobody's is). That car is proof the engine will go past the vanilla
 gear ceiling, and its numbers are a far better starting point than our guesses.
 
-`tools/fastcar-dump.ps1` scans every vehicle YAML installed in the game, **ranks them by
-top gear** and prints the deciding fields for anything above 400 km/h:
+Two tools, same idea:
 
 ```powershell
+# one-off look: ranks every installed car by top gear, prints fields for anything > 400 km/h
 powershell -ExecutionPolicy Bypass -File .\tools\fastcar-dump.ps1
-powershell -ExecutionPolicy Bypass -File .\tools\fastcar-dump.ps1 -Tweaks "G:\...\r6\tweaks\that_mod"
+
+# keep the whole set as a corpus + a committed index of the numbers (reference/vehicles/)
+python tools/collect_vehicles.py --copy
 ```
+
+`reference/vehicles/INDEX.md` becomes a table of every car's ceiling, drag, torque, mass
+and steering authority — the thing to check before inventing a value. Raw YAMLs from
+other authors stay out of git (see `reference/vehicles/README.md`); the index is the part
+that carries the information.
 
 What we borrow, in order of value:
 

@@ -3,7 +3,7 @@ PY ?= python3
 STOCK := reference/stock
 MOD := Phoenix_aston_cheats
 
-.PHONY: all port check test verify-package package check-strings clean
+.PHONY: all port check test verify-package package check-strings vehicles vehicles-index clean
 
 all: port check test verify-package
 
@@ -31,6 +31,13 @@ package: port check verify-package
 check-strings:
 	$(PY) tools/inspect_archive.py $(MOD)/archive/pc/mod/phoenix_strings.archive \
 		--json-only --expect 'phoenix\aston_valkyrie\en-us.json'
+
+# reference corpus: every vehicle tweak installed in the game (local) + the committed index
+vehicles:
+	$(PY) tools/collect_vehicles.py --copy
+
+vehicles-index:
+	$(PY) tools/collect_vehicles.py --index-only reference/vehicles
 
 clean:
 	rm -rf $(MOD)/r6 dist tools/__pycache__ tests/__pycache__
