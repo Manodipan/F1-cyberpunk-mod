@@ -237,7 +237,7 @@ Build 900022, Route B, 2026-11-24:
 
 | reading | value |
 |---|---|
-| flat-out plateau, manual, 11.3 km | **86 m/s** (310 km/h) |
+| flat-out plateau, manual, 11.3 km | **86 m/s** (310 km/h); **87 sustained / 88 in burst** on 900024 |
 | ADE sawtooth top | **81 m/s best**, 77-75 on some terrain, 80 typical |
 | ADE sawtooth trough | **61 m/s** (31-41 only after hitting a barrier - exclude those, it is external) |
 | cycle, brake to brake | 18-22 s |
@@ -254,6 +254,11 @@ Two readings give the whole force curve, assuming constant thrust in the top gea
 - terminal: net force is zero at **86 m/s**
 
 `k = 2188 / (86² - 71²) = 0.929 N/(m/s)²`, `T = k·86² = 6 870 N` at the top of the run.
+
+With 900024's measured 87 m/s sustained, the same fit gives `k = 0.866`, `T = 6 551 N`, and the
+900025 design moves from 543 to **549 km/h** terminal with the same 3.0 km to 500. The design is
+insensitive to a ±1.5 m/s baseline, which is what you want from something sized off a hand-held
+measurement.
 
 ### The design points
 
@@ -293,11 +298,13 @@ and the wobble stays a steering problem.
 | trough | 61 | **61-67** (same, collisions excluded) |
 | cycle | 18-22 s | ~25 s, erratic 12-30, many collisions |
 | recovery | recovers, occasionally spins | **recovers, but slower** |
-| manual plateau | 86 | **higher** (number to confirm) |
+| manual plateau | 86 | **87 sustained, 88 in burst** |
 
 Four levers have now been tried against the onset and none of them moved it: AWD, damping
 (step 1), and the three-part gain axis including a **-36 % cut in steering authority above 26 m/s**
-(900024). Meanwhile the same build *raised* the manual top speed. That combination is a real
+(900024). What that build did buy is a measured **+1 m/s of manual top speed (86 -> 87 sustained,
+88 in burst)**, at the cost of a lazier recovery - so the gain axis is worth its place for the
+driver's hands even though it does nothing for the controller. Meanwhile the same build *raised* the manual top speed. That combination is a real
 finding: **the weave is not driven by steering loop gain.** Reducing the controller's authority by
 more than a third changed the onset by zero, while changing something unrelated (drag-limited top
 speed) changed the manual number.
