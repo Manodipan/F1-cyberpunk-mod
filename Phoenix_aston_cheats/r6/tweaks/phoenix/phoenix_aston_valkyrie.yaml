@@ -321,13 +321,13 @@ Vehicle.phoenix_amv_drive_model:
   turnUpdateInputDiffProgressionPow: 0.7
   turnUpdateInputFastChangeSpeed: 1.7
   turnUpdateInputSlowChangeSpeed: 0.15
-  turnUpdateMaxSpeedThreshold: 45
+  turnUpdateMaxSpeedThreshold: 26
   turnUpdateMaxSpeedTurnChangeMul: 2.15
-  turnUpdateMaxSpeedTurnMul: 0.21
+  turnUpdateMaxSpeedTurnMul: 0.33
   turnUpdateMidSpeedThreshold: 22
   turnUpdateMidSpeedTurnChangeMul: 1.58
   turnUpdateMidSpeedTurnMul: 0.62
-  useAlternativeTurnUpdate: true
+  useAlternativeTurnUpdate: false
   waterParams: Vehicle.VehicleWaterDefault_4w
   wheelSetup: Vehicle.phoenix_amv_wheel_setup
   wheelsFrictionMap: CarDrivingFrictionMap.Default

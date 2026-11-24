@@ -17,6 +17,51 @@ which it corrects again — a sustained weave at the loop frequency, appearing a
 controller cannot fix that by being smarter, only by being slower.** Which is why the fix belongs
 in the car.
 
+## The measured comparison that reframes the whole thing (2026-11-24)
+
+Three cars, same road, same driver, same session. "Wobble" is the speed where ADE starts weaving;
+"hold" is the highest speed a skilled hand can keep.
+
+| car | ADE wobble | manual hold |
+|---|---|---|
+| stock Aston mod (xaires) | **80 m/s** | **85 m/s** |
+| the Jesko | 63 m/s | 77 m/s |
+| **our Phoenix** | **63 m/s** | **77 m/s** |
+
+Three conclusions, and the last one is uncomfortable:
+
+1. **The Jesko's chassis is the worst of the three** - 8 m/s below the stock Aston in both columns.
+   The reference is a 1,400 kg-downforce track car; the stock Aston is a road car on this chassis.
+   Copying the reference "exactly" copied the *worse* car, and inherited its ceiling.
+2. **Our car is exactly the Jesko's car.** Same 63, same 77. The limit was never our numbers, our
+   port, or our gearing - it is the chassis record we copied. That also explains why the top-speed
+   measurements kept landing on the reference's own declared gear.
+3. The stock Aston's 85 m/s is the number to beat, and it is reachable - it is the same mod, same
+   chassis, same base car, with a different drive model.
+
+Diverging the two drive models field by field, the whole `turnUpdate*` alternative family is
+**Jesko-only**: `useAlternativeTurnUpdate: true`, `turnUpdateMaxSpeedTurnChangeMul 2.15`,
+`turnUpdateMidSpeedTurnChangeMul 1.58`, `turnUpdateInputDiffForFastChange 1`,
+`turnUpdateInputFastChangeSpeed 1.7`, `turnUpdateInputDiffProgressionPow 0.7`. The stock Aston has
+**none of them** - it runs the plain model with `turnUpdateMaxSpeedThreshold 26` and
+`turnUpdateMaxSpeedTurnMul 0.33`.
+
+That is a mechanism, not a correlation: the alternative model scales the steering response by how
+fast the *input* is changing (TurnChangeMul 2.15 at high speed). A hand sweeps the wheel; a control
+loop taps it. A model that multiplies small fast changes by 2.15 is a model that turns ADE's
+dithering into yaw. It also fits the numbers being identical between our car and the Jesko, and
+different in the one car that lacks the feature.
+
+### Step 2 (shipped)
+
+    useAlternativeTurnUpdate      true -> false
+    turnUpdateMaxSpeedThreshold   45   -> 26      (stock Aston's)
+    turnUpdateMaxSpeedTurnMul     0.21 -> 0.33    (stock Aston's)
+
+If the wobble point moves from 63 toward 80, the mechanism is confirmed and the remaining gap is
+ordinary tuning. If nothing moves, the mechanism is wrong and the next lever is grip-floor
+`minLatFrictionCoef` 0.62 -> 0.95 (also stock Aston's).
+
 ## The physical basis, quantified
 
 Take the game's numbers at face value as SI-ish: `springStiffness` 27 as N/mm wheel rate, damping

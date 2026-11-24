@@ -174,7 +174,7 @@ class PhysicsTests(unittest.TestCase):
             "maxSpeed: 78.5",                 # its declared top gear, not ours
             "torqueMultiplier: 0.227",
             "tireRollingResistanceCoef: 0.002",
-            "useAlternativeTurnUpdate: true",
+            "useAlternativeTurnUpdate: false",   # stability overlay: the stock car never had it
             "gearCurvesPath: base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_turbo.curveset",
         ):
             self.assertIn(expected, self.out, expected)

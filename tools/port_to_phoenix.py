@@ -766,6 +766,14 @@ STABILITY_OVERLAY = (
     ("antiSwaybarDampingScalor", "0.75", "1"),
     ("wheelTurnMaxAddPerSecond", "137", "110"),
     ("turningRollFactor", "1", "0"),
+    # Step 2 (2026-11-24, from measurement): the reference's alternative turn-update is an
+    # input-derivative-sensitive steering model and it is the ONLY car in the corpus that has it.
+    # Measured limits - stock Aston 80 m/s under ADE / 85 held by hand, Jesko 63 / 77, ours 63 / 77
+    # (ours = the reference, so the limit was the chassis, not our work). Turning it off and taking
+    # the stock car's cruising steering authority is the one change that separates the two cars.
+    ("useAlternativeTurnUpdate", "true", "false"),
+    ("turnUpdateMaxSpeedThreshold", "45", "26"),      # stock Aston's
+    ("turnUpdateMaxSpeedTurnMul", "0.21", "0.33"),    # stock Aston's
 )
 
 
