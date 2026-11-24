@@ -162,6 +162,7 @@ class PhysicsTests(unittest.TestCase):
             "frictionMulLateral: 1.70",
             "frictionMulLongitudinal: 1.68",
             "maxBrakingTorque: 1400",
+            "gearCurvesPath: base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_na.curveset",
             "maxBrakingTorque: 1150",
             "springStiffness: 30",
             "springStiffness: 28",
@@ -171,7 +172,7 @@ class PhysicsTests(unittest.TestCase):
             "minLatFrictionCoef: 1.45",
             "minLongFrictionCoef: 1.45",
             "maxSpeedFactorGround: 0.70",
-            "maxRPM: 7900",
+            "maxRPM: 8200",
             "resistanceTorque: 150",
         ):
             self.assertIn(expected, self.out, expected)
@@ -265,19 +266,22 @@ class GearLadderTests(unittest.TestCase):
                     self.assertLess(self.gears[str(g)][0], hi, "window with no width")
 
     def test_ratio_steps_are_even(self):
+        """Even steps in the race-car range (LMH 1.22-1.28, F1 ~1.13); rounding to 0.01 m/s
+        means the steps are equal to ~0.1 %, not exactly."""
         tops = [self.gears[str(g)][1] for g in range(1, 8)]
         steps = [b / a for a, b in zip(tops, tops[1:])]
         for step in steps:
-            self.assertGreaterEqual(step, 1.20, steps)
+            self.assertGreaterEqual(step, 1.14, steps)
             self.assertLessEqual(step, 1.32, steps)
+        self.assertLess(max(steps) - min(steps), 0.01, steps)
 
     def test_top_gear_is_not_an_overdrive_cliff(self):
         # The failure mode is a gear the engine cannot pull (the original 1.80x overdrive).
-        # 1.50 is the ceiling because the engine upshifts at 0.90 of a gear's range: to leave
-        # ANY overlap at a 1.278 step the window has to be >= 1.278 / 0.90 = 1.42. Narrower
-        # windows are what put a hole at every shift (see the test below).
+        # 1.60 is the ceiling: to contain an upshift at 0.80 of a gear's range the next gear's
+        # floor needs window >= step / 0.80 = 1.20 / 0.80 = 1.50. Narrower windows put a hole
+        # at every shift (see the test below).
         lo, hi = self.gears["7"][0], self.gears["7"][1]
-        self.assertLessEqual(hi / lo, 1.50, "top gear window too tall to pull")
+        self.assertLessEqual(hi / lo, 1.60, "top gear window too tall to pull")
         self.assertGreaterEqual(self.gears["7"][2], 0.45, "top gear torque left on the floor")
 
     def test_every_shift_lands_inside_the_next_gear(self):
@@ -286,18 +290,25 @@ class GearLadderTests(unittest.TestCase):
         for, the engine falls under its floor, and the car brakes. 352 km/h, twice."""
         for g in range(1, 7):
             this_max = self.gears[str(g)][1]
-            shift = 0.90 * this_max
+            shift = 0.80 * this_max
             next_floor = self.gears[str(g + 1)][0]
             self.assertLessEqual(
                 next_floor, shift,
-                f"shift {g}->{g + 1} at {shift:.1f} m/s lands below gear {g + 1}'s "
+                f"shift {g}->{g + 1} at 0.80 of range ({shift:.1f} m/s) lands below gear "
+                f"{g + 1}'s "
                 f"{next_floor:.1f} m/s floor - the car will brake there")
 
     def test_engine_rpm_windows_sit_inside_maxrpm(self):
         for g in range(1, 8):
             lo, hi = self.gears[str(g)][3], self.gears[str(g)][4]
             self.assertLess(lo, hi, g)
-            self.assertLessEqual(hi, 7900, g)               # engine maxRPM
+            self.assertLessEqual(hi, 8200, g)               # engine maxRPM
+
+    def test_engine_limiter_never_cuts_before_a_shift(self):
+        """7900 against a 7800 gear ceiling is a 100 rpm gap - the limiter fires first and the
+        car reads as 'it just dies'. Keep a real margin."""
+        top_gear_rpm = max(self.gears[str(g)][4] for g in range(1, 8))
+        self.assertGreaterEqual(8200 - top_gear_rpm, 500, "no headroom over the gear ceiling")
 
     def test_each_gear_tracks_its_own_rpm_band(self):
         """The shipped 7th was 1.80x of speed over 1.28x of rpm - a gear with two ratios."""

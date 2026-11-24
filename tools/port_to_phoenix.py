@@ -91,7 +91,7 @@ RENAME = [
 STOCK_TO_F1 = {
     ("horsepower", "680"): "2000",                 # scanner hp        (VehicleUIData)
     ("engineMaxTorque", "1300"): "3824",           # torque
-    ("maxRPM", "10100"): "7900",                   # the curve's real ceiling, not the wish
+    ("maxRPM", "10100"): "8200",                   # 600 rpm above the 7600 gear ceiling
     ("airResistanceFactor", "1.35"): "0.60",       # drag (0.90 could not pass 300)
     ("turnUpdateMaxSpeedThreshold", "26"): "45",   # steering: authority still alive at 162 km/h
     ("turnUpdateMaxSpeedTurnMul", "0.33"): "0.21",  # ...then cut to 21% - the 572 km/h car's band
@@ -189,30 +189,39 @@ GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
 # Both working reference cars write their own `gearCurvesPath` and both top out around
 # 7 600-7 900 rpm. So the box is now geared to finish at 7 800 rpm: 500 km/h at 130 km/h
 # per 1 000 rpm is reachable *inside* the curve instead of past it.
-# Seven-speed sequential, speeds in m/s, 5300-7800 rpm per gear, top gear 138.89 m/s = 500 km/h.
+# Seven-speed sequential. Speeds in m/s; 5000-7600 rpm per gear; top gear 138.89 m/s = 500 km/h.
 #
-# THE RULE THAT TOOK FIVE BUILDS TO FIND. The game upshifts at about 0.90 of a gear's
-# maxEngineRPM, which in speed terms is 0.90 x that gear's maxSpeed. The next gear is taller
-# by the step (1.278 here), and it only contains that speed if
+# Three rules, all measured the hard way (2026-11-24):
 #
-#     minEngineRPM / maxEngineRPM  <=  0.90 / step      i.e.   window >= step / 0.90 = 1.42
+# 1. OVERLAP. The physics upshifts somewhere between 0.80 and 0.90 of a gear's range, so the
+#    next gear must already contain that speed or the box grabs a gear the car is too slow
+#    for, the engine falls under its floor and brakes the car (that was 308, then 352 km/h):
+#        minSpeed[next] <= 0.80 * maxSpeed[this]
+#    With a 1.20 step and a 1.52 window there is a positive margin from 0.80 upward, and
+#    +1.0 to +12.8 m/s at the two likely shift fractions.
 #
-# Ours sat at 5680/7800 = 0.728, which is above 0.70 (= 0.90/1.278), so EVERY shift landed
-# below the next gear's window: the box dropped the clutch into a gear the car was too slow
-# for, the engine fell under its floor, and the car braked. Small holes were survived on
-# momentum - 308 km/h in one build, 352 km/h in the next. The floors are now 5300 rpm, which
-# puts a 1.0-3.4 m/s overlap at every single step, and keeps the window at 1.47 rather than
-# the 1.80 cliff that started all of this.
+# 2. HEADROOM. The engine's maxRPM sits 600 rpm above every gear's ceiling, so the rev limiter
+#    can never fire before the shift does. With 7900/7800 it was 100 rpm apart, which is a
+#    power cut that reads as "the car just dies".
+#
+# 3. FORCE AT THE TOP. The last two gears carry 0.66 instead of 0.53/0.50: a real box is built
+#    so that v_max happens at peak power, and multiplying torque *down* in the gears that hold
+#    400+ km/h is backwards. Steps of 1.20 are LMH-real (the real car's Xtrac is 1.22-1.28).
 PHOENIX_GEARBOX = {
     #  gear: (minSpeed, maxSpeed, torqueMultiplier, minEngineRPM, maxEngineRPM)
-    "1": (0.0,    32.0,  0.780,  900, 7800),   # launch gear: floor is idle, not a band
-    "2": (27.8,   40.9,  0.720, 5300, 7800),
-    "3": (35.5,   52.2,  0.665, 5300, 7800),
-    "4": (45.3,   66.6,  0.610, 5300, 7800),
-    "5": (57.8,   85.0,  0.560, 5300, 7800),
-    "6": (73.8,  108.6,  0.530, 5300, 7800),
-    "7": (94.4, 138.89,  0.500, 5300, 7800),
+    "1": (0.0,    46.51, 0.780,  900, 7600),   # launch gear: floor is idle, not a band
+    "2": (36.7,   55.82, 0.720, 5000, 7600),
+    "3": (44.1,   66.98, 0.665, 5000, 7600),
+    "4": (52.9,   80.38, 0.610, 5000, 7600),
+    "5": (63.5,   96.45, 0.560, 5000, 7600),
+    "6": (76.1,  115.74, 0.660, 5000, 7600),   # was 0.53 - this gear holds 274-417 km/h
+    "7": (91.4,  138.89, 0.660, 5000, 7600),   # was 0.50 - this gear has to reach 500
 }
+
+# Base-game torque curve. The real Valkyrie LMH is a 6.5 naturally aspirated V12: NA curves hold
+# torque to the top of the range, which is where a 500 km/h run lives. `large_balanced_na` is the
+# closest vanilla shape (see docs/TUNING-FROM-REAL-RACING.md). One-line revert to inherited.
+TORQUE_CURVE = "base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_na.curveset"
 GEAR_FIELDS = ("minSpeed", "maxSpeed", "torqueMultiplier", "minEngineRPM", "maxEngineRPM")
 
 GEAR_RECORD_RE = re.compile(r"^Vehicle\.[A-Za-z0-9_]*_gear_(?P<g>[1-7]):[ \t]*$")
@@ -260,6 +269,10 @@ ENGINE_EXPLICIT = {
     # itself at 350. Reference values: Jesko 150, Quadra 202.78. Inherited value unknown, so
     # it is written out (2026-11-24).
     "resistanceTorque": "150",
+    # 2026-11-24: 600 rpm of headroom over the gear ceiling, so the limiter never cuts before
+    # a shift. At 7900 against a 7800 gear ceiling the gap was 100 rpm.
+    "maxRPM": "8200",
+    "gearCurvesPath": TORQUE_CURVE,
 }
 ENGINE_BLOCK_RE = re.compile(r"(?m)^(?P<indent>[ \t]+)vehEngineData:[ \t]*\r?\n")
 ENGINE_HEAD_RE = re.compile(r"(?m)^(?P<indent>[ \t]+)engineMaxTorque:[^\r\n]*\r?\n")

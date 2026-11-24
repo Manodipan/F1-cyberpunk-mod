@@ -226,6 +226,40 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
+## 3k. "It just dies": the limiter was 100 rpm above the gear ceiling
+
+Reported after 3j: manual driving, no ADE, and the car **dies** instead of braking. The ladder
+in 3j was geometrically right but had two structural faults left:
+
+| Fault | Numbers | Effect |
+|---|---|---|
+| **no limiter headroom** | `maxRPM` 7900 vs gear ceiling 7800 | a 100 rpm gap, so the rev limiter fires before the next shift lands. That is a power cut, and it reads as "the car just dies" |
+| **overlap only valid at 0.90** | floors 5300, window 1.47 | fine if the shift is at 0.90 of range and *negative* below that. The 6→7 overlap was 3.4 m/s — one bad shift and the hole is back |
+
+**Rebuilt on three rules that leave no room for either failure:**
+
+1. **Overlap from 0.80, not 0.90.** `minSpeed[next] <= 0.80 x maxSpeed[this]` → window
+   ≥ step / 0.80. With step **1.20** (LMH-real; the real car's Xtrac is 1.22–1.28) and floors
+   at **5000 rpm**, the window is **1.52** and every shift has +0.5 to +12.8 m/s of margin.
+2. **600 rpm of limiter headroom.** Gear ceilings at **7600**, engine `maxRPM` at **8200**. The
+   limiter now cannot fire before a shift under any circumstances.
+3. **Force where it is needed.** Gears 6 and 7 at **0.66** instead of 0.53/0.50, and the torque
+   curve swapped to **`large_balanced_na`** — the real car is a naturally aspirated V12, and NA
+   holds torque at the top of the range, which is where a 500 km/h run lives.
+
+| gear | m/s | km/h | overlap @0.80 |
+|---|---|---|---|
+| 1 | 0 → 46.51 | 0 → 167 | — |
+| 2 | 36.7 → 55.82 | 132 → 201 | +0.5 |
+| 3 | 44.1 → 66.98 | 159 → 241 | +0.6 |
+| 4 | 52.9 → 80.38 | 190 → 289 | +0.7 |
+| 5 | 63.5 → 96.45 | 228 → 347 | +0.8 |
+| 6 | 76.1 → 115.74 | 274 → 417 | +1.0 |
+| 7 | 91.4 → 138.89 | **329 → 500** | +1.2 |
+
+If it still dies, the two changes to bisect are, in order: the curve (one line, back to
+inherited) and the multipliers (6/7 back to 0.53/0.50).
+
 ## 3j. SOLVED: it was the gearbox braking the car, not the brakes (2026-11-24)
 
 Result of the ADE test: **it brakes at 350 km/h at 100 %, 85 % and 50 % alike.** So ADE is not

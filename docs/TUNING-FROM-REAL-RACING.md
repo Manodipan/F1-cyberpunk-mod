@@ -112,9 +112,13 @@ point, not of a curve ending.
 What survives from that episode: the **shift point is 0.90 of a gear's range**, and gear
 ladders must be built around it. That is now a test.
 
-## 7. Build B — the tuning this research implies
+## 7. Build B — applied 2026-11-24 (see TOPSPEED-TEST §3k)
 
-To be applied once the shift-hole build is measured, so the two changes never share a test:
+> **Status: shipped.** The shift-hole build did not fix it (the car died instead of braking,
+> which turned out to be the rev limiter sitting 100 rpm above the gear ceiling), so this was
+> applied together with a rebuilt ladder rather than after it.
+
+The tuning this research implies:
 
 | Change | From | To | Why |
 |---|---|---|---|

@@ -40,57 +40,57 @@ Vehicle.phoenix_amv_gear_1:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.78
   minSpeed: 0
-  maxSpeed: 32
+  maxSpeed: 46.51
   minEngineRPM: 900
-  maxEngineRPM: 7800
+  maxEngineRPM: 7600
 
 Vehicle.phoenix_amv_gear_2:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.72
-  minSpeed: 27.8
-  maxSpeed: 40.9
-  minEngineRPM: 5300
-  maxEngineRPM: 7800
+  minSpeed: 36.7
+  maxSpeed: 55.82
+  minEngineRPM: 5000
+  maxEngineRPM: 7600
 
 Vehicle.phoenix_amv_gear_3:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.665
-  minSpeed: 35.5
-  maxSpeed: 52.2
-  minEngineRPM: 5300
-  maxEngineRPM: 7800
+  minSpeed: 44.1
+  maxSpeed: 66.98
+  minEngineRPM: 5000
+  maxEngineRPM: 7600
 
 Vehicle.phoenix_amv_gear_4:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.61
-  minSpeed: 45.3
-  maxSpeed: 66.6
-  minEngineRPM: 5300
-  maxEngineRPM: 7800
+  minSpeed: 52.9
+  maxSpeed: 80.38
+  minEngineRPM: 5000
+  maxEngineRPM: 7600
 
 Vehicle.phoenix_amv_gear_5:
   $type: gamedataVehicleGear_Record
   torqueMultiplier: 0.56
-  minSpeed: 57.8
-  maxSpeed: 85
-  minEngineRPM: 5300
-  maxEngineRPM: 7800
+  minSpeed: 63.5
+  maxSpeed: 96.45
+  minEngineRPM: 5000
+  maxEngineRPM: 7600
 
 Vehicle.phoenix_amv_gear_6:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 0.53
-  minSpeed: 73.8
-  maxSpeed: 108.6
-  minEngineRPM: 5300
-  maxEngineRPM: 7800
+  torqueMultiplier: 0.66
+  minSpeed: 76.1
+  maxSpeed: 115.74
+  minEngineRPM: 5000
+  maxEngineRPM: 7600
 
 Vehicle.phoenix_amv_gear_7:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 0.5
-  minSpeed: 94.4
+  torqueMultiplier: 0.66
+  minSpeed: 91.4
   maxSpeed: 138.89
-  minEngineRPM: 5300
-  maxEngineRPM: 7800
+  minEngineRPM: 5000
+  maxEngineRPM: 7600
 
 Vehicle.phoenix_amv_wheel_dimensions:
   $type: VehicleWheelDimensionsSetup
@@ -212,7 +212,8 @@ Vehicle.phoenix_amv_engine:
   fastR1GearChange: true
   wheelsResistanceRatio: 15
   resistanceTorque: 150
-  maxRPM: 7900
+  gearCurvesPath: base\gameplay\vehicles\curves\engine_torque\large_balanced_na.curveset
+  maxRPM: 8200
   minRPM: 1000
   gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]
 

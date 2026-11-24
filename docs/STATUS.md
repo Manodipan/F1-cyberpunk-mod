@@ -30,7 +30,7 @@ Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 
 | # | Item | Why | Unblocks it |
 |---|---|---|---|
-| 1 | **v8 gear-overlap build** | the "brakes at 350" report was not the brakes: ADE brakes at 350 at 100/85/50 % alike, so it is in the car. Gear 6 upshifts at 0.90 × its range = 97.7 m/s (352 km/h) and gear 7's window started at 101.0 m/s (364 km/h) — the box grabbed a gear the car was too slow for, the engine fell below its floor and braked. Every shift had the same hole. Floors now 5 300 rpm → 1.0-3.4 m/s overlap everywhere, window 1.47 | `docs/TOPSPEED-TEST.md` §3j; the invariant is `test_every_shift_lands_inside_the_next_gear` |
+| 1 | **v9 robust-ladder build** | "it just dies" was the rev limiter: `maxRPM` 7900 against a 7800 gear ceiling is a 100 rpm gap. Rebuilt on three rules — overlap from 0.80 of range (step 1.20, floors 5000, window 1.52, +0.5 to +12.8 m/s margin at every shift), 600 rpm of headroom (gears 7600, engine 8200), and real top-end force (gears 6/7 at 0.66 plus the `large_balanced_na` curve) | `docs/TOPSPEED-TEST.md` §3k carries the table and the bisect order |
 | 2 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 | 3 | Reference corpus | every racing car mod's YAML is a worked example of drag/steering at speed, and comparing beats guessing | `make vehicles` (local corpus) + `reference/vehicles/INDEX.md` (committed facts) — see `reference/vehicles/README.md` |
 | 4 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |
