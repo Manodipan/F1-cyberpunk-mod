@@ -194,7 +194,7 @@ class PhysicsTests(unittest.TestCase):
         for keep in (
             "maxSpeedFactorAir: 0",
             "handbrakeBrakingTorque: 1600",
-            "wheelTurnMaxAddPerSecond: 94",   # stability overlay; the reference has 137
+            "wheelTurnMaxAddPerSecond: 85",   # stability overlay; the reference has 137
             "wheelTurnMaxSubPerSecond: 170",
             "total_mass: 1800",
             "chassis_mass: 1800",

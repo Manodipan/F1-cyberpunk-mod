@@ -746,7 +746,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 15
+BUILD = 16
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -822,6 +822,12 @@ STABILITY_OVERLAY = (
     # measured 77 m/s before and after step 7, so there is no induced drag. That removes the entire
     # usual trade on this axis: every other way of buying stability costs top end, and this one does
     # not. Final values are set in STABILITY_MAXSPEED_FACTOR_GROUND below.
+    # Step 9 (cont.): the slip curve scales are the last Jesko-only fields and they are the direct
+    # plant-gain lever - they scale the tyre's slip response, i.e. cornering stiffness. Step 8's
+    # measured trade (wobble 72 -> 57, ceiling 72 -> 78) is the frequency effect of extra load, so
+    # scaling these from 2 to 1 takes the stiffness back down without giving up the load.
+    ("slipAngleCurveScale", "2", "1"),
+    ("slipRatioCurveScale", "2", "1"),
     ("maxSpeedFactorGround", "0.7", "3.0"),
     ("maxSpeed", "80", "139"),
     ("antiSwaybarDampingScalor", "0.75", "1.15"),   # Pagani's
@@ -844,7 +850,7 @@ STABILITY_OVERLAY = (
     #   rearWheelsLatFrictionCoef 0.9 (Jesko only) -> the reference deliberately takes 10 % of
     #                      lateral grip off the rear wheels, which is a rotation bias, and rotation
     #                      bias at 80 m/s is a spin waiting for a reason
-    ("wheelTurnMaxAddPerSecond", "137", "94"),        # stock Aston's (Pagani 100)
+    ("wheelTurnMaxAddPerSecond", "137", "85"),        # step 9: 10 % slower than stock Aston's 94
     ("minLatFrictionCoef", "0.62", "0.95"),           # stock Aston's
     ("minLongFrictionCoef", "0.8", "0.95"),           # stock Aston's
     ("rearWheelsLatFrictionCoef", "0.9", "1"),        # no rear-grip reduction
@@ -862,7 +868,16 @@ STABILITY_OVERLAY = (
     #                a weave starts. Stock's vector, scaled to our 1800 kg from its 1750 (x1.0286).
     ("driftLimit", "2.3", "1.6"),
     ("handbrakeLimit", "2.49", "1.6"),
-    ("momentOfInertia", "{ x: 2600, y: 780, z: 3000 }", "{ x: 3137, y: 926, z: 3631 }"),
+        # Step 9 (2026-11-24, measured): step 8 raised the ADE ceiling to 78 m/s - the gear ceiling
+    # itself - but the wobble onset moved DOWN, exactly the frequency half of the prediction: more
+    # load means later saturation (ceiling up) AND higher cornering stiffness, so the yaw mode moved
+    # nearer the controller's bandwidth (wobble sooner). Both effects are real; this step keeps the
+    # load and pushes the frequency back down, without touching anything that produces speed.
+    #   momentOfInertia x1.10   2600/780/3000 -> 3450/1020/3995 (stock Aston's vector, scaled to our
+    #       mass, then +10 %). Yaw frequency goes as 1/sqrt(I_z): 926 -> 1020 is 4.7 % lower.
+    #   wheelTurnMaxAddPerSecond 94 -> 85   a slower command is a first-order lag on the input, and
+    #       the input is what ADE taps. Same lever that produced the first real gain (137 -> 94).
+    ("momentOfInertia", "{ x: 2600, y: 780, z: 3000 }", "{ x: 3450, y: 1020, z: 3995 }"),
     # Step 5 (2026-11-24). The wobble happens on STRAIGHTS, which rules out cornering and tyre
     # saturation: with near-zero steering angle it is a limit cycle between ADE's lane-keeping
     # corrections and the yaw mode. On a straight there are only two levers - yaw damping and

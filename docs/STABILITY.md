@@ -235,6 +235,34 @@ This is also a **testable disambiguation**: if the wobble is terrain-triggered, 
 reach a higher speed on genuinely flat ground. If it does not move on flat ground either, then the
 flat-road limit cycle of step 5 is the whole story and the terrain work is insurance rather than cure.
 
+## Step 9 (shipped): keep the load, take the frequency down
+
+Step 8's measured trade, and it is steep:
+
+| build | ADE wobble onset | ADE/manual ceiling |
+|---|---|---|
+| step 7 (`maxSpeedFactorGround` 1.4) | 72 m/s | 72 (hand 77) |
+| **step 8 (3.0)** | **55-58 m/s** | **78 m/s** (the gear ceiling) |
+
+Both halves of the prediction happened. More load means later tyre saturation, so the car now runs
+all the way to its 78.5 m/s gear ceiling — **ADE effectively drives flat out, which was the stated
+goal.** But more load also means higher cornering stiffness, so the yaw mode moved nearer the
+controller's bandwidth and the wobble starts 15 m/s sooner.
+
+Since the load is what bought the ceiling, this step keeps it and pushes the frequency back down -
+nothing here produces or removes speed:
+
+| field | reference | Phoenix | effect |
+|---|---|---|---|
+| `momentOfInertia` | 2600/780/3000 | **3450/1020/3995** | stock Aston's vector scaled to our mass, then +10 %. Yaw frequency ~ 1/sqrt(I): 926 -> 1020 is **4.7 % lower** |
+| `wheelTurnMaxAddPerSecond` | 137 | **85** | 10 % slower than the stock Aston's 94; a slower command is a first-order lag on the input, and the input is what ADE taps |
+| `slipAngleCurveScale` | 2 | **1** | the last Jesko-only fields, and the direct plant-gain lever: they scale the tyre's slip response, i.e. cornering stiffness. 2 -> 1 takes stiffness down without giving up load |
+| `slipRatioCurveScale` | 2 | **1** | same |
+
+**Order to give things back if the car turns vague:** the two slip scales first (they change how the
+car slides, the most likely to feel wrong), then the steering rate, then the inertia. The slip
+scales are the only genuinely untested semantics in the set.
+
 ## Step 8 (shipped): downforce is free, so spend it
 
 Measured: top speed was **77 m/s before and after step 7**. The engine models no induced drag, so

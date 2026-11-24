@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900015
+  horsepower: 900016
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 
@@ -298,13 +298,13 @@ Vehicle.phoenix_amv_drive_model:
   handbrakeBrakingTorque: 1600
   lowVelStoppingDeceleration: 0.8
   maxWheelTurnDeg: 38
-  momentOfInertia: { x: 3137, y: 926, z: 3631 }
+  momentOfInertia: { x: 3450, y: 1020, z: 3995 }
   momentOfInertiaScale: { x: 1, y: 1, z: 1 }
   perfectSteeringFactor: 1
   sideWeightTransferFactor: 0.2
-  slipAngleCurveScale: 2
+  slipAngleCurveScale: 1
   slipAngleMinSpeedThreshold: 3
-  slipRatioCurveScale: 2
+  slipRatioCurveScale: 1
   slipRatioMinSpeedThreshold: 5
   slopeTractionReductionBegin: 12
   slopeTractionReductionFactor: 1.5
@@ -331,7 +331,7 @@ Vehicle.phoenix_amv_drive_model:
   waterParams: Vehicle.VehicleWaterDefault_4w
   wheelSetup: Vehicle.phoenix_amv_wheel_setup
   wheelsFrictionMap: CarDrivingFrictionMap.Default
-  wheelTurnMaxAddPerSecond: 94
+  wheelTurnMaxAddPerSecond: 85
   wheelTurnMaxSubPerSecond: 170
 
 Vehicle.phoenix_amv_engine:
