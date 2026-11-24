@@ -30,7 +30,7 @@ Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 
 | # | Item | Why | Unblocks it |
 |---|---|---|---|
-| 1 | **v9 robust-ladder build** | "it just dies" was the rev limiter: `maxRPM` 7900 against a 7800 gear ceiling is a 100 rpm gap. Rebuilt on three rules — overlap from 0.80 of range (step 1.20, floors 5000, window 1.52, +0.5 to +12.8 m/s margin at every shift), 600 rpm of headroom (gears 7600, engine 8200), and real top-end force (gears 6/7 at 0.66 plus the `large_balanced_na` curve) | `docs/TOPSPEED-TEST.md` §3k carries the table and the bisect order |
+| 1 | **v10 Jesko map** | the car that works, copied wholesale: its gear construction (every floor = 0.90 × the previous gear's top, verified 6/6 to 0.01 m/s), its tapering steps scaled to 500 km/h, its ~40 drive-model fields (we were inheriting `turningRollFactor: 0` and a dozen more from the 911), and its torque curve — with grip 12 % ABOVE its numbers (1.46/1.44 against 1.30/1.28) | `docs/TOPSPEED-TEST.md` §3l; one-command revert if it is worse |
 | 2 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 | 3 | Reference corpus | every racing car mod's YAML is a worked example of drag/steering at speed, and comparing beats guessing | `make vehicles` (local corpus) + `reference/vehicles/INDEX.md` (committed facts) — see `reference/vehicles/README.md` |
 | 4 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |

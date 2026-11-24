@@ -90,8 +90,11 @@ RENAME = [
 # ---------------------------------------------------------------------------
 STOCK_TO_F1 = {
     ("horsepower", "680"): "2000",                 # scanner hp        (VehicleUIData)
-    ("engineMaxTorque", "1300"): "3824",           # torque
-    ("maxRPM", "10100"): "8200",                   # 600 rpm above the 7600 gear ceiling
+    # 2026-11-24 Jesko map: 1500 is 1.5x the torque the Jesko reaches 500+ km/h with, on the
+    # same curve and the same (scaled) ladder. 3824 was 3.8x and never helped top speed.
+    ("engineMaxTorque", "1300"): "1500",           # torque
+    ("maxRPM", "10100"): "7900",                   # the Jesko map: redline 7900, top gear 7800
+    ("minRPM", "1000"): "900",
     ("airResistanceFactor", "1.35"): "0.60",       # drag (0.90 could not pass 300)
     ("turnUpdateMaxSpeedThreshold", "26"): "45",   # steering: authority still alive at 162 km/h
     ("turnUpdateMaxSpeedTurnMul", "0.33"): "0.21",  # ...then cut to 21% - the 572 km/h car's band
@@ -189,39 +192,207 @@ GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
 # Both working reference cars write their own `gearCurvesPath` and both top out around
 # 7 600-7 900 rpm. So the box is now geared to finish at 7 800 rpm: 500 km/h at 130 km/h
 # per 1 000 rpm is reachable *inside* the curve instead of past it.
-# Seven-speed sequential. Speeds in m/s; 5000-7600 rpm per gear; top gear 138.89 m/s = 500 km/h.
+# ---------------------------------------------------------------------------
+# THE JESKO MAP (2026-11-24)
+# ---------------------------------------------------------------------------
+# The Jesko reaches 500+ km/h in this install on a gear table whose top gear says 283. Its file
+# is a blessing: it writes *every* record explicitly, so it is a complete specification of a car
+# that works, and we can copy it instead of deriving from a car that does not.
 #
-# Three rules, all measured the hard way (2026-11-24):
+# What the copy revealed, and it is the best evidence we have about how the game shifts: every
+# one of its six gear floors is EXACTLY 0.90 x the previous gear's top speed, to 0.01 m/s.
 #
-# 1. OVERLAP. The physics upshifts somewhere between 0.80 and 0.90 of a gear's range, so the
-#    next gear must already contain that speed or the box grabs a gear the car is too slow
-#    for, the engine falls under its floor and brakes the car (that was 308, then 352 km/h):
-#        minSpeed[next] <= 0.80 * maxSpeed[this]
-#    With a 1.20 step and a 1.52 window there is a positive margin from 0.80 upward, and
-#    +1.0 to +12.8 m/s at the two likely shift fractions.
+#     gear 2 floor 21.60 = 0.90 x 24.00      gear 5 floor 46.12 = 0.90 x 51.25
+#     gear 3 floor 29.78 = 0.90 x 33.08      gear 6 floor 54.30 = 0.90 x 60.33
+#     gear 4 floor 37.95 = 0.90 x 42.17      gear 7 floor 62.47 = 0.90 x 69.42
 #
-# 2. HEADROOM. The engine's maxRPM sits 600 rpm above every gear's ceiling, so the rev limiter
-#    can never fire before the shift does. With 7900/7800 it was 100 rpm apart, which is a
-#    power cut that reads as "the car just dies".
+# So the upshift fraction is 0.90, confirmed by construction rather than inferred from one stall.
+# We use 0.89 - one percent of margin, so a shift that lands a hair early still lands inside.
 #
-# 3. FORCE AT THE TOP. The last two gears carry 0.66 instead of 0.53/0.50: a real box is built
-#    so that v_max happens at peak power, and multiplying torque *down* in the gears that hold
-#    400+ km/h is backwards. Steps of 1.20 are LMH-real (the real car's Xtrac is 1.22-1.28).
+# Its steps NARROW toward the top (1.378, 1.275, 1.215, 1.177, 1.151, 1.131) where ours were a
+# flat 1.20, and its torque multipliers are a true ratio ladder (1.0 -> 0.265). Everything below
+# is the Jesko's ladder scaled so the top gear lands on 138.89 m/s = 500 km/h:
+JESKO_SCALE = 138.89 / 78.5
 PHOENIX_GEARBOX = {
     #  gear: (minSpeed, maxSpeed, torqueMultiplier, minEngineRPM, maxEngineRPM)
-    "1": (0.0,    46.51, 0.780,  900, 7600),   # launch gear: floor is idle, not a band
-    "2": (36.7,   55.82, 0.720, 5000, 7600),
-    "3": (44.1,   66.98, 0.665, 5000, 7600),
-    "4": (52.9,   80.38, 0.610, 5000, 7600),
-    "5": (63.5,   96.45, 0.560, 5000, 7600),
-    "6": (76.1,  115.74, 0.660, 5000, 7600),   # was 0.53 - this gear holds 274-417 km/h
-    "7": (91.4,  138.89, 0.660, 5000, 7600),   # was 0.50 - this gear has to reach 500
+    "1": (0.0,   42.46, 1.000,  900, 7600),   # launch gear: floor is idle, not a band
+    "2": (37.79, 58.53, 1.000, 4910, 7600),
+    "3": (52.09, 74.61, 0.670, 5310, 7600),
+    "4": (66.40, 90.68, 0.494, 5570, 7600),
+    "5": (80.71, 106.74, 0.387, 5750, 7600),
+    "6": (95.00, 122.82, 0.316, 5880, 7600),
+    "7": (109.31, 138.89, 0.265, 6140, 7800),
 }
 
-# Base-game torque curve. The real Valkyrie LMH is a 6.5 naturally aspirated V12: NA curves hold
-# torque to the top of the range, which is where a 500 km/h run lives. `large_balanced_na` is the
-# closest vanilla shape (see docs/TUNING-FROM-REAL-RACING.md). One-line revert to inherited.
-TORQUE_CURVE = "base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_na.curveset"
+# The curve the Jesko ships with and reaches 500+ on. `large_balanced_na` is the NA alternative
+# if we ever want the naturally aspirated character instead (see TUNING-FROM-REAL-RACING.md).
+TORQUE_CURVE = "base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_turbo.curveset"
+
+# Drive-model fields the Jesko writes out and we were inheriting from the 911 Turbo - the
+# `$base` chain hides ~40 numbers, and several of them (turningRollFactor 0 vs 1,
+# antiSwaybarDampingScalor, slipAngle/slipRatio curve scales, tireRollingResistanceCoef on the
+# wheels) plausibly govern both the wobble and the top end. Mass stays ours; inertia scaled by
+# 1750/1800 for the same handling balance at our weight.
+JESKO_DRIVE = {
+    "airResistanceFactor": "0.66",
+    "antiSwaybarDampingScalor": "0.75",
+    "bankBodyFBTanMultiplier": "0.1",
+    "bankBodyLRTanMultiplier": "0.1",
+    "bodyFriction": "0.6",
+    "brakingEstimationMagicFactor": "0.5",
+    "brakingFrictionFactor": "1.4",
+    "center_of_mass_offset": "{ x: 0.0, y: -0.16, z: 0.06 }",
+    "differentialOvershootFactor": "0",
+    "forwardWeightTransferFactor": "0.3",
+    "handbrakeBrakingTorque": "1600",
+    "lowVelStoppingDeceleration": "0.8",
+    "maxWheelTurnDeg": "38",
+    "momentOfInertia": "{ x: 2528, y: 758, z: 2917 }",
+    "perfectSteeringFactor": "1",
+    "sideWeightTransferFactor": "0.2",
+    "slipAngleCurveScale": "2",
+    "slipAngleMinSpeedThreshold": "3",
+    "slipRatioCurveScale": "2",
+    "slipRatioMinSpeedThreshold": "5",
+    "slopeTractionReductionBegin": "12",
+    "slopeTractionReductionFactor": "1.5",
+    "slopeTractionReductionMax": "30",
+    "smoothWheelContactDecreaseTime": "0",
+    "smoothWheelContactIncreseTime": "0",
+    "turningRollFactor": "1",
+    "turningRollFactorWeakContactMul": "1",
+    "turningRollFactorWeakContactThresholdMax": "0.6",
+    "turningRollFactorWeakContactThresholdMin": "0.9",
+    "turnUpdateBaseSpeedThreshold": "5",
+    "turnUpdateInputDiffForFastChange": "1",
+    "turnUpdateInputDiffForSlowChange": "0",
+    "turnUpdateInputDiffProgressionPow": "0.7",
+    "turnUpdateInputFastChangeSpeed": "1.7",
+    "turnUpdateInputSlowChangeSpeed": "0.15",
+    "turnUpdateMaxSpeedThreshold": "45",
+    "turnUpdateMaxSpeedTurnChangeMul": "2.15",
+    "turnUpdateMaxSpeedTurnMul": "0.21",
+    "turnUpdateMidSpeedThreshold": "22",
+    "turnUpdateMidSpeedTurnChangeMul": "1.58",
+    "turnUpdateMidSpeedTurnMul": "0.62",
+    "useAlternativeTurnUpdate": "true",
+    "wheelTurnMaxAddPerSecond": "137",
+    "wheelTurnMaxSubPerSecond": "170",
+    "wheelsFrictionMap": "CarDrivingFrictionMap.Default",
+}
+
+# Wheel presets: the Jesko's full field set, with grip 12 % above its numbers - that is the one
+# place we deliberately aim higher than the reference car.
+JESKO_FRONT = {
+    "extremeCompressionEventScalor": "0.46",
+    "frictionMulLateral": "1.46",       # Jesko 1.30
+    "frictionMulLongitudinal": "1.06",  # Jesko 0.95
+    "logicalSuspensionCompressionLength": "0.5",
+    "mass": "23",
+    "maxBrakingTorque": "1165",
+    "springBoundDampingLowRate": "2200",
+    "springDamping": "3000",
+    "springDampingHighRateCompression": "0.3",
+    "springDampingLowRateCompression": "0.2",
+    "springReboundDamping": "3300",
+    "springReboundDampingLowRate": "2300",
+    "springStiffness": "27",
+    "swaybarDisplacementLimit": "0.14",
+    "swaybarLengthScalar": "2.3",
+    "swaybarStiffness": "18",
+    "tenderSpringLength": "0",
+    "tireFrictionCoef": "1",
+    "tireLateralSlipEffectsMul": "1.46",
+    "tireLongitudinalSlipEffectsMul": "1.3",
+    "tireRollingResistanceCoef": "0.002",
+    "visualSuspensionCompressionLength": "0.03",
+    "visualSuspensionDroop": "0.12",
+    "wheelsVerticalOffset": "-0.017",
+}
+JESKO_BACK = {
+    "extremeCompressionEventScalor": "0.38",
+    "frictionMulLateral": "1.44",       # Jesko 1.28
+    "frictionMulLongitudinal": "1.10",  # Jesko 0.98
+    "logicalSuspensionCompressionLength": "0.5",
+    "mass": "25",
+    "maxBrakingTorque": "785",
+    "springBoundDampingLowRate": "2500",
+    "springDamping": "3200",
+    "springDampingHighRateCompression": "0.3",
+    "springDampingLowRateCompression": "0.2",
+    "springReboundDamping": "3500",
+    "springReboundDampingLowRate": "2500",
+    "springStiffness": "26",
+    "swaybarDisplacementLimit": "0.13",
+    "swaybarLengthScalar": "1.3",
+    "swaybarStiffness": "15",
+    "tenderSpringLength": "0",
+    "tireFrictionCoef": "1",
+    "tireLateralSlipEffectsMul": "1.3",
+    "tireLongitudinalSlipEffectsMul": "1.1",
+    "tireRollingResistanceCoef": "0.002",
+    "visualSuspensionCompressionLength": "0.03",
+    "visualSuspensionDroop": "0.12",
+    "wheelsVerticalOffset": "-0.004",
+}
+
+
+def _set_fields(lines, lo, hi, indent, fields):
+    """Set key: value pairs inside lines[lo:hi] at the given indent, appending what is missing."""
+    pad = " " * indent
+    for key, value in fields.items():
+        pattern = re.compile(r"^" + pad + re.escape(key) + r":")
+        for i in range(lo, hi):
+            if pattern.match(lines[i]):
+                lines[i] = f"{pad}{key}: {value}\n"
+                break
+        else:
+            lines.insert(hi, f"{pad}{key}: {value}\n")
+            hi += 1
+    return hi
+
+
+def _block(lines, header, start=0):
+    """Span of a top-level record: from its header line to the next line at indent 0."""
+    for i in range(start, len(lines)):
+        if lines[i].rstrip("\r\n") == header:
+            for j in range(i + 1, len(lines)):
+                if lines[j].strip() and not lines[j][0].isspace() and not lines[j].startswith("#"):
+                    return i + 1, j
+            return i + 1, len(lines)
+    raise KeyError(header)
+
+
+def apply_jesko_chassis(text: str) -> str:
+    """Write the Jesko's drive-model and wheel-preset numbers out in full."""
+    lines = text.splitlines(keepends=True)
+
+    try:
+        lo, hi = _block(lines, "Vehicle.phoenix_amv_drive_model:")
+    except KeyError:
+        return text          # not the hoisted vehicle YAML; nothing to map
+    _set_fields(lines, lo, hi, 2, JESKO_DRIVE)
+
+    lo, hi = _block(lines, "Vehicle.phoenix_amv_drive_model:")
+    for sub, fields in (("frontPreset:", JESKO_FRONT), ("backPreset:", JESKO_BACK)):
+        for i in range(lo, hi):
+            if lines[i].strip() == sub:
+                end = i + 1
+                while end < hi and lines[end].strip() and (lines[end].startswith("      ")
+                                    or lines[end].startswith("    #")):
+                    end += 1
+                _set_fields(lines, i + 1, end, 6, fields)
+                break
+
+    text = "".join(lines)
+    # helper values the Jesko runs and we inherited from the 911
+    text = text.replace("      driftLimit: 1.6\n", "      driftLimit: 2.3\n")
+    text = text.replace("      minLatFrictionCoef: 1.45\n      minLongFrictionCoef: 1.45",
+                        "      minLatFrictionCoef: 0.62\n      minLongFrictionCoef: 0.8")
+    text = text.replace("      baseAddedGravity: 1.0\n      driveSpeedAddedGravity: 0.4",
+                        "      baseAddedGravity: 0.4\n      driveSpeedAddedGravity: 0.2")
+    return text
+
 GEAR_FIELDS = ("minSpeed", "maxSpeed", "torqueMultiplier", "minEngineRPM", "maxEngineRPM")
 
 GEAR_RECORD_RE = re.compile(r"^Vehicle\.[A-Za-z0-9_]*_gear_(?P<g>[1-7]):[ \t]*$")
@@ -269,9 +440,10 @@ ENGINE_EXPLICIT = {
     # itself at 350. Reference values: Jesko 150, Quadra 202.78. Inherited value unknown, so
     # it is written out (2026-11-24).
     "resistanceTorque": "150",
-    # 2026-11-24: 600 rpm of headroom over the gear ceiling, so the limiter never cuts before
-    # a shift. At 7900 against a 7800 gear ceiling the gap was 100 rpm.
-    "maxRPM": "8200",
+    # The Jesko's own numbers: redline 7900 with the top gear ceiling at 7800. The shift happens
+    # at 0.90 of a gear's range (7020 here), so the limiter is never reached in normal running.
+    "maxRPM": "7900",
+    "minRPM": "900",
     "gearCurvesPath": TORQUE_CURVE,
 }
 ENGINE_BLOCK_RE = re.compile(r"(?m)^(?P<indent>[ \t]+)vehEngineData:[ \t]*\r?\n")
@@ -684,7 +856,8 @@ def port_text(text: str, suffix: str, physics: bool,
     text = explicit_gears("".join(out))
     # the hoist needs the *renamed* record name, so it runs after the rename pass
     if physics and suffix in (".yaml", ".yml"):
-        text = hoist_subrecords(text)
+        # the Jesko map needs the *hoisted* record names, so it runs after the hoist
+        text = apply_jesko_chassis(hoist_subrecords(text))
     return text
 
 

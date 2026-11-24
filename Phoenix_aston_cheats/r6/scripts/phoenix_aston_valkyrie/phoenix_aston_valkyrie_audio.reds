@@ -177,17 +177,17 @@ public static func PhoenixAMV_EngineReset() -> Void {
 public static func PhoenixAMV_GearSpeed(g: Int32) -> Float {
   switch g {
     case 1:
-      return 46.51;
+      return 42.46;
     case 2:
-      return 55.82;
+      return 58.53;
     case 3:
-      return 66.98;
+      return 74.61;
     case 4:
-      return 80.38;
+      return 90.68;
     case 5:
-      return 96.45;
+      return 106.74;
     case 6:
-      return 115.74;
+      return 122.82;
     case 7:
       return 138.89;
     default:

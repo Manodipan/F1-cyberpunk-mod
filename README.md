@@ -46,18 +46,18 @@ docs/                            install + test matrix, packaging, rename map, f
 
 | | Stock | Phoenix |
 |---|---|---|
-| Scanner hp / torque | 680 / 1300 | **2000 / 3824** |
-| Redline | 10100 | **8200 — 600 rpm above the 7600 gear ceiling, so the limiter never cuts before a shift** |
-| Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **7 gears, even 1.20× steps, top window 91.4→138.89 m/s (329→500 km/h); overlap at every shift, 600 rpm of limiter headroom** |
-| Drag | 1.35 | **0.60** |
-| Front grip | 1.29 / 1.15 | **1.60 / 1.50** |
-| Rear grip | 1.33 / 1.20 | **1.70 / 1.68** (axles within 6 %, as every reference car) |
+| Scanner hp / torque | 680 / 1300 | **2000 / 1500** (the Jesko does 500+ on 1000) |
+| Redline | 10100 | **7900**, top gear ceiling 7800, shift at 0.90 of range = 7020 |
+| Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **the Jesko's ladder scaled ×1.769: 1.378→1.131 tapering steps, top window 109.31→138.89 m/s; every floor = 0.90 × the previous gear's top** |
+| Drag | 1.35 | **0.66** (the Jesko's) |
+| Front grip | 1.29 / 1.15 | **1.46 / 1.06** (12 % above the Jesko's 1.30 / 0.95) |
+| Rear grip | 1.33 / 1.20 | **1.44 / 1.10** (axles within 1.5 %) |
 | Drivetrain | RWD | **AWD** (`DRIVETRAIN` flag; the real LMH is RWD) |
-| Rear friction helper | 0.95 / 0.95 | **1.45 / 1.45** |
+| Rear friction helper | 0.95 / 0.95 | **0.62 / 0.80** (the Jesko's) |
 | Downforce (`maxSpeedFactorGround`) | 0.60 | **0.70** (was 1.40 — twice every reference car) |
-| Sway F/R · braking F/R | 11/16 · 1410/1200 | **15/19 · 1400/1150** (ours were the strongest of five cars) |
-| Springs / damping | 23/22, 2000 | **30/28, 3000** |
-| Steering (add / return / threshold / mul) | 94 / inherited / 26 / 0.33 | **94 / 150 / 45 / 0.21** (the 572 km/h car's band, explicit return rate) |
+| Sway F/R · braking F/R | 11/16 · 1410/1200 | **18/15 · 1165/785** (the Jesko's) |
+| Springs / damping | 23/22, 2000 | **27/26, 3000/3200**, rebound 3300/3500 (the Jesko's) |
+| Steering (add / return / threshold / mul) | 94 / inherited / 26 / 0.33 | **137 / 170 / 45 / 0.21**, `turnUpdateMidSpeedTurnMul` 0.62, `useAlternativeTurnUpdate` (the Jesko's) |
 
 Unchanged: reverse gear, mass 1750 + chassis 1750, inertia,
 centre of mass, `turningRollFactor 0`, tyre dimensions, wheel setup geometry.

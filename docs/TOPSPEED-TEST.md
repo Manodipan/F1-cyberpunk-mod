@@ -226,6 +226,50 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
+## 3l. The Jesko map (2026-11-24)
+
+Requested: *"why not take the Jesko - that works - and map to the Phoenix, then tune grip to
+improve it?"* Correct instinct, and reading its file settled two things outright.
+
+**1. The 0.90 shift fraction is now measured, not inferred.** Every one of the Jesko's six gear
+floors is exactly 0.90 × the previous gear's top speed, to 0.01 m/s:
+
+| | floor | 0.90 × previous top |
+|---|---|---|
+| gear 2 | 21.60 | 0.90 × 24.00 = 21.60 |
+| gear 3 | 29.78 | 0.90 × 33.08 = 29.77 |
+| gear 4 | 37.95 | 0.90 × 42.17 = 37.95 |
+| gear 5 | 46.12 | 0.90 × 51.25 = 46.12 |
+| gear 6 | 54.30 | 0.90 × 60.33 = 54.30 |
+| gear 7 | 62.47 | 0.90 × 69.42 = 62.48 |
+
+**2. Our ladder shape was wrong in a second way.** The Jesko's steps *taper* toward the top
+(1.378, 1.275, 1.215, 1.177, 1.151, 1.131); ours were a flat 1.20. Ours are now its ladder
+scaled ×1.769 so the top gear lands on 138.89 m/s:
+
+| gear | m/s | km/h | torque mult |
+|---|---|---|---|
+| 1 | 0 → 42.46 | 0 → 153 | 1.000 |
+| 2 | 37.79 → 58.53 | 136 → 211 | 1.000 |
+| 3 | 52.09 → 74.61 | 188 → 269 | 0.670 |
+| 4 | 66.40 → 90.68 | 239 → 326 | 0.494 |
+| 5 | 80.71 → 106.74 | 291 → 384 | 0.387 |
+| 6 | 95.00 → 122.82 | 342 → 442 | 0.316 |
+| 7 | 109.31 → 138.89 | 393 → **500** | 0.265 |
+
+**3. The chassis we were inheriting is now written out.** The Jesko declares ~40 drive-model
+fields the 911 base was supplying silently — `turningRollFactor` (we had 0, it runs 1),
+`antiSwaybarDampingScalor`, `slipAngleCurveScale`, `slipRatioCurveScale`,
+`tireRollingResistanceCoef`, `brakingFrictionFactor`, `useAlternativeTurnUpdate`, weight-transfer
+factors, the full `turnUpdate*` set. All copied. Grip is the one place we aim **above** it:
+lateral **1.46 / 1.44** against its 1.30 / 1.28, longitudinal 1.06 / 1.10 against 0.95 / 0.98.
+
+| Outcome | Meaning |
+|---|---|
+| **500+** | the inherited chassis was the problem all along; we tune from a working base |
+| still ~350, but the wobble is gone | the chassis map fixed the driving, not the speed — then it is drag, and `airResistanceFactor` 0.66 is the dial |
+| worse everywhere | revert in one command: `git revert` the map commit; the 3fd6d17 build is intact behind it |
+
 ## 3k. "It just dies": the limiter was 100 rpm above the gear ceiling
 
 Reported after 3j: manual driving, no ADE, and the car **dies** instead of braking. The ladder

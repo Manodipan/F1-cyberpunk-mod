@@ -40,10 +40,10 @@ class TestProfile(unittest.TestCase):
         self.assertEqual(self.row["gears"], 8, "7 forward + reverse")
 
     def test_the_deciding_fields(self):
-        self.assertEqual(self.row["airResistanceFactor"], "0.60")
-        self.assertEqual(self.row["engineMaxTorque"], "3824")
+        self.assertEqual(self.row["airResistanceFactor"], "0.66")
+        self.assertEqual(self.row["engineMaxTorque"], "1500")
         self.assertEqual(self.row["total_mass"], "1750")
-        self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "94")
+        self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "137")
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")
 
     def test_vehicle_record_not_its_satellites(self):

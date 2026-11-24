@@ -57,7 +57,7 @@ Naming is `{size}_{character}_{induction}`, referenced as
 | character | `balanced` = flat, `torquey` = low-end biased, `peaky` = narrow powerband, `lowcomp_bigturbo` = boost cliff |
 | induction | `na` holds torque to redline; `sc`/`turbo` tail off at the top |
 
-**Our car should be on `large_balanced_na`.** It is a big, naturally aspirated, flat-curve
+**Our car is now on `large_balanced_turbo`** — the curve the Jesko reaches 500+ km/h with, chosen because the Jesko map is the experiment (see TOPSPEED-TEST §3l). `large_balanced_na` remains the shape the real car's naturally aspirated V12 would want, and is a one-line swap once the map is proven. The reasoning below stands: It is a big, naturally aspirated, flat-curve
 engine: the closest vanilla analogue to a 6.5 L NA V12, and the shape that keeps making torque
 at 0.9 of redline, which is where a 500 km/h run lives. Today we inherit the SuperSport's
 curve — a turbo-shaped curve, i.e. the one profile the real car does *not* have.

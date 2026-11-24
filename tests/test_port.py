@@ -150,30 +150,40 @@ class PhysicsTests(unittest.TestCase):
         self.out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
 
     def test_v2_table(self):
+        """The shipped numbers: the Jesko map (docs/TOPSPEED-TEST.md §3l)."""
         for expected in (
             "horsepower: 2000",
-            "engineMaxTorque: 3824",
+            "engineMaxTorque: 1500",
             "maxSpeed: 138.89",
-            "airResistanceFactor: 0.60",
+            "airResistanceFactor: 0.66",
             "turnUpdateMaxSpeedThreshold: 45",
             "turnUpdateMaxSpeedTurnMul: 0.21",
-            "frictionMulLateral: 1.60",
-            "frictionMulLongitudinal: 1.50",
-            "frictionMulLateral: 1.70",
-            "frictionMulLongitudinal: 1.68",
-            "maxBrakingTorque: 1400",
-            "gearCurvesPath: base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_na.curveset",
-            "maxBrakingTorque: 1150",
-            "springStiffness: 30",
-            "springStiffness: 28",
+            "turningRollFactor: 1",
+            "wheelTurnMaxAddPerSecond: 137",
+            "wheelTurnMaxSubPerSecond: 170",
+            "frictionMulLateral: 1.46",       # 12 % above the Jesko's 1.30
+            "frictionMulLongitudinal: 1.06",
+            "frictionMulLateral: 1.44",       # ...and 1.28 -> 1.44 at the back
+            "frictionMulLongitudinal: 1.10",
+            "maxBrakingTorque: 1165",
+            "maxBrakingTorque: 785",
+            "springStiffness: 27",
+            "springStiffness: 26",
             "springDamping: 3000",
+            "springDamping: 3200",
+            "springReboundDamping: 3300",
+            "springReboundDamping: 3500",
+            "swaybarStiffness: 18",
             "swaybarStiffness: 15",
-            "swaybarStiffness: 19",
-            "minLatFrictionCoef: 1.45",
-            "minLongFrictionCoef: 1.45",
+            "minLatFrictionCoef: 0.62",
+            "minLongFrictionCoef: 0.8",
             "maxSpeedFactorGround: 0.70",
-            "maxRPM: 8200",
+            "maxRPM: 7900",
+            "minRPM: 900",
             "resistanceTorque: 150",
+            "gearCurvesPath: base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_turbo.curveset",
+            "tireRollingResistanceCoef: 0.002",
+            "useAlternativeTurnUpdate: true",
         ):
             self.assertIn(expected, self.out, expected)
 
@@ -181,12 +191,11 @@ class PhysicsTests(unittest.TestCase):
         for keep in (
             "maxSpeedFactorAir: 0",
             "handbrakeBrakingTorque: 1600",
-            "wheelTurnMaxAddPerSecond: 94",
-            "wheelTurnMaxSubPerSecond: 150",
+            "wheelTurnMaxAddPerSecond: 137",
+            "wheelTurnMaxSubPerSecond: 170",
             "total_mass: 1750",
             "chassis_mass: 1750",
-            "turningRollFactor: 0",
-            "swaybarLengthScalar: 2",
+            "swaybarLengthScalar: 2.3",
             "torqueMultiplier: 0.765",  # reverse stays stock
             "maxSpeed: 15",             # ...and so does its window
         ):
@@ -215,7 +224,9 @@ class PhysicsTests(unittest.TestCase):
         front = float(re.search(r"frictionMulLateral: ([0-9.]+)", self.out).group(1))
         rear = float(re.findall(r"frictionMulLateral: ([0-9.]+)", self.out)[1])
         self.assertLessEqual(abs(rear / front - 1), 0.10, "lateral grip split too wide")
-        self.assertGreaterEqual(rear, front, "a RWD car should not have less rear grip")
+        # either axle may lead by a percent or two - the Jesko runs 1.30 front / 1.28 rear -
+        # but never by the 25 % of the old build
+        self.assertLess(abs(rear / front - 1), 0.05)
 
     def test_engine_stops_inheriting_the_top_gear_half(self):
         """The 572 km/h car writes these out; ours inherited them from a 911-class base."""
@@ -265,15 +276,15 @@ class GearLadderTests(unittest.TestCase):
                 if self.gears[str(g)][1] == hi:
                     self.assertLess(self.gears[str(g)][0], hi, "window with no width")
 
-    def test_ratio_steps_are_even(self):
-        """Even steps in the race-car range (LMH 1.22-1.28, F1 ~1.13); rounding to 0.01 m/s
-        means the steps are equal to ~0.1 %, not exactly."""
+    def test_ratio_steps_narrow_toward_the_top(self):
+        """Not even steps: the Jesko - which is the car that actually reaches 500 km/h here -
+        tapers 1.378, 1.275, 1.215, 1.177, 1.151, 1.131. Ours is that ladder scaled to 500."""
         tops = [self.gears[str(g)][1] for g in range(1, 8)]
         steps = [b / a for a, b in zip(tops, tops[1:])]
         for step in steps:
-            self.assertGreaterEqual(step, 1.14, steps)
-            self.assertLessEqual(step, 1.32, steps)
-        self.assertLess(max(steps) - min(steps), 0.01, steps)
+            self.assertGreaterEqual(step, 1.10, steps)
+            self.assertLessEqual(step, 1.40, steps)
+        self.assertEqual(steps, sorted(steps, reverse=True), steps)
 
     def test_top_gear_is_not_an_overdrive_cliff(self):
         # The failure mode is a gear the engine cannot pull (the original 1.80x overdrive).
@@ -282,15 +293,16 @@ class GearLadderTests(unittest.TestCase):
         # at every shift (see the test below).
         lo, hi = self.gears["7"][0], self.gears["7"][1]
         self.assertLessEqual(hi / lo, 1.60, "top gear window too tall to pull")
-        self.assertGreaterEqual(self.gears["7"][2], 0.45, "top gear torque left on the floor")
+        self.assertGreaterEqual(self.gears["7"][2], 0.25, "below the Jesko's own 0.265")
 
     def test_every_shift_lands_inside_the_next_gear(self):
-        """The bug that ate four builds: the game upshifts at ~0.90 of a gear's range, so if
-        the next gear's floor is above that speed the box grabs a gear the car is too slow
-        for, the engine falls under its floor, and the car brakes. 352 km/h, twice."""
+        """The Jesko's construction, and now ours: every gear's floor is 0.90 x the previous
+        gear's top speed - checked to 0.01 m/s in reference/vehicles/jesko_attack.yaml, six
+        for six. Set any floor higher and the box grabs a gear the car is too slow for, the
+        engine falls under its floor, and the car brakes (308 and 352 km/h, twice)."""
         for g in range(1, 7):
             this_max = self.gears[str(g)][1]
-            shift = 0.80 * this_max
+            shift = 0.90 * this_max
             next_floor = self.gears[str(g + 1)][0]
             self.assertLessEqual(
                 next_floor, shift,
@@ -304,11 +316,13 @@ class GearLadderTests(unittest.TestCase):
             self.assertLess(lo, hi, g)
             self.assertLessEqual(hi, 8200, g)               # engine maxRPM
 
-    def test_engine_limiter_never_cuts_before_a_shift(self):
-        """7900 against a 7800 gear ceiling is a 100 rpm gap - the limiter fires first and the
-        car reads as 'it just dies'. Keep a real margin."""
+    def test_engine_limiter_sits_above_the_gear_ceiling(self):
+        """The limiter only ever matters if a gear can rev to it. Every shift happens at 0.90
+        of a gear's ceiling, so the guard is: redline above the ceiling, AND the shift point
+        below the redline (7900 redline / 7800 top gear / 7020 shift, exactly the Jesko)."""
         top_gear_rpm = max(self.gears[str(g)][4] for g in range(1, 8))
-        self.assertGreaterEqual(8200 - top_gear_rpm, 500, "no headroom over the gear ceiling")
+        self.assertGreater(7900, top_gear_rpm, "redline must sit above the gear ceiling")
+        self.assertLess(0.90 * top_gear_rpm, 7900, "the shift must happen before the limiter")
 
     def test_each_gear_tracks_its_own_rpm_band(self):
         """The shipped 7th was 1.80x of speed over 1.28x of rpm - a gear with two ratios."""
