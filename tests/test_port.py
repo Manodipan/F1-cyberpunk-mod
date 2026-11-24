@@ -168,7 +168,7 @@ class PhysicsTests(unittest.TestCase):
             "maxBrakingTorque: 1165",
             "maxBrakingTorque: 785",
             "maxSpeedFactorGround: 0.7",
-            "minLatFrictionCoef: 0.62",
+            "minLatFrictionCoef: 0.95",   # stability overlay
             "turningRollFactor: 0",           # stability overlay; the reference has 1
             "wheelTurnMaxSubPerSecond: 170",
             "maxSpeed: 78.5",                 # its declared top gear, not ours
@@ -189,7 +189,7 @@ class PhysicsTests(unittest.TestCase):
         for keep in (
             "maxSpeedFactorAir: 0",
             "handbrakeBrakingTorque: 1600",
-            "wheelTurnMaxAddPerSecond: 110",  # stability overlay; the reference has 137
+            "wheelTurnMaxAddPerSecond: 94",   # stability overlay; the reference has 137
             "wheelTurnMaxSubPerSecond: 170",
             "total_mass: 1800",
             "chassis_mass: 1800",

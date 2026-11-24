@@ -209,9 +209,9 @@ Vehicle.phoenix_amv_helper_rear_friction:
   maxLatSlipRatio: 5
   maxLongSlipRatio: 1.5
   maxSpeed: 18
-  minLatFrictionCoef: 0.62
+  minLatFrictionCoef: 0.95
   minLatSlipRatio: 0.25
-  minLongFrictionCoef: 0.8
+  minLongFrictionCoef: 0.95
   minLongSlipRatio: 0.3
 
 Vehicle.phoenix_amv_helper_accel_noise:
@@ -232,7 +232,7 @@ Vehicle.phoenix_amv_helper_handbrake:
   additionalBrakeForLongUse: 0.7
   blendOutTime: 0.6
   postHandbrakeTractionBoost: 2
-  rearWheelsLatFrictionCoef: 0.9
+  rearWheelsLatFrictionCoef: 1
   rearWheelsLongFrictionCoef: 0.6
 
 Vehicle.phoenix_amv_helper_uphill:
@@ -331,7 +331,7 @@ Vehicle.phoenix_amv_drive_model:
   waterParams: Vehicle.VehicleWaterDefault_4w
   wheelSetup: Vehicle.phoenix_amv_wheel_setup
   wheelsFrictionMap: CarDrivingFrictionMap.Default
-  wheelTurnMaxAddPerSecond: 110
+  wheelTurnMaxAddPerSecond: 94
   wheelTurnMaxSubPerSecond: 170
 
 Vehicle.phoenix_amv_engine:

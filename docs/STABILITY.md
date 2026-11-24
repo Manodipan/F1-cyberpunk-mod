@@ -62,6 +62,42 @@ If the wobble point moves from 63 toward 80, the mechanism is confirmed and the 
 ordinary tuning. If nothing moves, the mechanism is wrong and the next lever is grip-floor
 `minLatFrictionCoef` 0.62 -> 0.95 (also stock Aston's).
 
+## The third car, and what it does and does not prove (2026-11-24)
+
+The **Pagani (Zonda Revo)** tops at **48 m/s** against a 50 m/s top gear and is ADE-stable at
+everything it can reach. It is a *weak* control and should be read that way: it never goes fast
+enough to encounter the problem, so it cannot prove any drive model is stable at 80 m/s. What it
+can do is vote on individual fields, and on the fields that matter it votes with the stock Aston:
+
+| field | Jesko (63 / 77) | stock Aston (80 / 85) | Pagani (stable, slow) |
+|---|---|---|---|
+| `useAlternativeTurnUpdate` | **true** | absent | absent |
+| `wheelTurnMaxAddPerSecond` | **137** | 94 | 100 |
+| `turningRollFactor` | **1** | 0 | absent |
+| `minLatFrictionCoef` | **0.62** | 0.95 | absent |
+| `rearWheelsLatFrictionCoef` | **0.9** | absent | absent |
+
+Every row is a thing **only the wobbling car has**. The two cars that do not wobble either lack
+the field or set it to the conservative value. That is not proof of mechanism, but it is a
+consistent direction across two independent witnesses, and the top-speed design work has already
+taught us what happens when one coincidence is mistaken for a mechanism.
+
+### Step 3 (shipped)
+
+    wheelTurnMaxAddPerSecond    137 -> 94     stock Aston's; the Pagani runs 100
+    minLatFrictionCoef          0.62 -> 0.95  the floor of lateral grip once sliding
+    minLongFrictionCoef         0.8  -> 0.95  same, longitudinally
+    rearWheelsLatFrictionCoef   0.9  -> 1     the reference's deliberate 10 % rear-grip cut
+
+`minLatFrictionCoef` is the one with real physics behind it: it is how much lateral force the tyre
+still makes once it is past its peak. A low floor is a car that lets go and keeps going; a high
+floor is a car that slides predictably and recovers. At 77 m/s, "lets go and keeps going" is the
+difference between a wobble and a spin.
+
+The cost, stated honestly: `rearWheelsLatFrictionCoef` 0.9 -> 1 removes some of the handbrake's
+rotation, so handbrake turns will be less lurid. That is a deliberate trade - rotation bias is
+exactly what makes a 280 km/h car bite.
+
 ## The physical basis, quantified
 
 Take the game's numbers at face value as SI-ish: `springStiffness` 27 as N/mm wheel rate, damping

@@ -764,7 +764,6 @@ STABILITY_OVERLAY = (
     ("springReboundDampingLowRate", "2300", "5000"),    # front, stock Aston's rate
     ("springReboundDampingLowRate", "2500", "5000"),    # rear
     ("antiSwaybarDampingScalor", "0.75", "1"),
-    ("wheelTurnMaxAddPerSecond", "137", "110"),
     ("turningRollFactor", "1", "0"),
     # Step 2 (2026-11-24, from measurement): the reference's alternative turn-update is an
     # input-derivative-sensitive steering model and it is the ONLY car in the corpus that has it.
@@ -774,6 +773,21 @@ STABILITY_OVERLAY = (
     ("useAlternativeTurnUpdate", "true", "false"),
     ("turnUpdateMaxSpeedThreshold", "45", "26"),      # stock Aston's
     ("turnUpdateMaxSpeedTurnMul", "0.21", "0.33"),    # stock Aston's
+    # Step 3 (2026-11-24): the remaining things ONLY the wobbling car has. Measured limits again -
+    # stock Aston 80/85, Jesko 63/77, ours 63/77. The Pagani (Zonda Revo) is a weak control: it
+    # tops at 48 m/s against a 50 m/s gear, so it never reaches the speeds where this matters. But
+    # it does agree with the stock Aston on one thing: neither of them has any of the fields below.
+    #   steering rate      137 (Jesko) vs 94 (stock Aston) / 100 (Pagani) -> the two cars that do
+    #                      not wobble steer at 80-73 % of the reference's rate
+    #   minLatFrictionCoef 0.62 (Jesko) vs 0.95 (stock) -> the floor of lateral grip once sliding,
+    #                      i.e. how hard the car bites when it is already at the limit
+    #   rearWheelsLatFrictionCoef 0.9 (Jesko only) -> the reference deliberately takes 10 % of
+    #                      lateral grip off the rear wheels, which is a rotation bias, and rotation
+    #                      bias at 80 m/s is a spin waiting for a reason
+    ("wheelTurnMaxAddPerSecond", "137", "94"),        # stock Aston's (Pagani 100)
+    ("minLatFrictionCoef", "0.62", "0.95"),           # stock Aston's
+    ("minLongFrictionCoef", "0.8", "0.95"),           # stock Aston's
+    ("rearWheelsLatFrictionCoef", "0.9", "1"),        # no rear-grip reduction
 )
 
 

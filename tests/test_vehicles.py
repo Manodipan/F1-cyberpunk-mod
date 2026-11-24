@@ -46,7 +46,7 @@ class TestProfile(unittest.TestCase):
         self.assertEqual(self.row["airResistanceFactor"], "0.66")
         self.assertEqual(self.row["engineMaxTorque"], "1000")
         self.assertEqual(self.row["total_mass"], "1800")
-        self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "110")   # stability overlay
+        self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "94")    # stability overlay
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.33")   # stock Aston's, stability overlay
 
     def test_vehicle_record_not_its_satellites(self):
