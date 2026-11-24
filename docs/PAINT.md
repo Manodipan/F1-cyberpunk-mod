@@ -261,6 +261,30 @@ the literal `'Vehicle.phoenix_aston_valkyrie'`. Extra keys in `recordIndex` cost
 records = (function() local t = rec('xaires_aston_valkyrie') local p = rec('phoenix_aston_valkyrie') if type(p) == 'table' then for i = 1, #p do t[#t + 1] = p[i] end end t[#t + 1] = 'Vehicle.phoenix_aston_valkyrie' return t end)(),
 ```
 
+### Proven with a Lua interpreter, not by eye
+
+The three candidate lines were loaded into a real Lua VM (`lupa`) with the manager's own
+logic stubbed out — `rec()` returning `Vehicle.<name>`, `carOf()`'s hash lookup, and
+`GetRecordID()` as the TweakDBID of `Vehicle.phoenix_aston_valkyrie`:
+
+| Line | File parses? | stock Aston resolves | Phoenix resolves |
+|---|---|---|---|
+| v1 (bare string) | yes | **yes** | **no** |
+| v2 (`end)(),,`) | **no** — `unexpected symbol near ','` | — | — |
+| v3 (`rec()` + `'Vehicle.phoenix_aston_valkyrie'`) | yes | yes | **yes** |
+
+That table is the whole story: v1 reproduces the reported symptom exactly, v2 explains
+why nothing worked at all afterwards, v3 is the one that resolves both cars.
+
+Also checked: our archive contains **no** `paint_`, `body_01` or `body_renk2` strings —
+the component names and paint appearances live in the **shared** `xaires\aston_valkyrie\
+aston_valkyrie.ent` (our YAML still points at it, line 122), which is why one added record
+id is enough and why the Phoenix inherits every colour the stock car has.
+
+A static test now guards all of this: `tests/test_compat.py` (14 checks) — the canonical
+line must be identical in `repatch.ps1` and this README, must end in exactly one comma,
+must carry both id forms, and the script must keep its `),,` refusal.
+
 ### What the rest of the source confirms
 
 | Line | Fact |

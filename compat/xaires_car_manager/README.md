@@ -57,29 +57,31 @@ records = (function() local t = rec('xaires_aston_valkyrie') t[#t+1] = 'phoenix_
 Same as v1 but built through `rec('phoenix_aston_valkyrie')`; shipped with the double
 comma above, so it never loaded.
 
-## How to apply — option A: one PowerShell block (recommended)
-
-Paste this whole thing into PowerShell. It backs the file up, replaces the line, writes
-it back as UTF-8 (no BOM) and prints the result:
+## How to apply — option A: run the script (recommended)
 
 ```powershell
-$f = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty\bin\x64\plugins\cyber_engine_tweaks\mods\xaires_car_manager\init.lua"
-Copy-Item $f "$f.orig" -Force
-$t = [System.IO.File]::ReadAllText($f)
-$old = "records = rec('xaires_aston_valkyrie'),"
-$new = "records = (function() local t = rec('xaires_aston_valkyrie') t[#t+1] = 'phoenix_aston_valkyrie' return t end)(),"
-if (-not $t.Contains($old)) {
-  "NOT FOUND - nothing was changed"
-} else {
-  $t = $t.Replace($old, $new)
-  [System.IO.File]::WriteAllText($f, $t, (New-Object System.Text.UTF8Encoding($false)))
-  "PATCHED"
-}
-Select-String -Path $f -Pattern "phoenix_aston_valkyrie" | Select-Object LineNumber, Line
+cd $HOME\f1-cyberpunk-mod
+git pull
+powershell -ExecutionPolicy Bypass -File .\compat\xaires_car_manager\repatch.ps1
 ```
 
-`PATCHED` + one hit on line 225 = done. Undo = copy `init.lua.orig` back over
-`init.lua`.
+It rewrites the **whole** `records` line from the v3 text above, keeps your current file
+as `init.lua.prev`, refuses to write anything containing `),,`, and prints
+`double-comma check : clean` plus the body of `rec()`. Running it twice is harmless.
+
+## Undo (or "put it back so the manager at least works")
+
+```powershell
+$d = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty\bin\x64\plugins\cyber_engine_tweaks\mods\xaires_car_manager"
+Copy-Item "$d\init.lua.orig" "$d\init.lua" -Force
+```
+
+Restart the game. `init.lua.orig` is the untouched file, so this always gets a working
+manager back — it just will not paint the Phoenix.
+
+Verified against manager **1.0.10** (`local VER = '1.0.10'`, 1,065 lines). If a manager
+update changes the table, `repatch.ps1` says `could not find the records = ... line` and
+writes nothing.
 
 ## How to apply — option B: Notepad++ (manual)
 
@@ -93,8 +95,10 @@ Select-String -Path $f -Pattern "phoenix_aston_valkyrie" | Select-Object LineNum
 2. Open `init.lua` in **Notepad++** (right-click ▸ Edit with Notepad++). Do **not** use
    `Set-Content`/`Out-File` in PowerShell here: the file is UTF-8 with Turkish text, and
    the default encodings will mangle it.
-3. **Ctrl+H** → Find: `records = rec('xaires_aston_valkyrie'),`
-   Replace with the patched line above → **Replace** (only once!) → **Ctrl+S**.
+3. **Ctrl+H** → Find: `records = rec('xaires_aston_valkyrie')` (leave the comma on the
+   line alone) → Replace with the **v3 line above, minus its trailing comma** (the file
+   already has one; adding a second makes `,,` and kills the whole file) → **Replace**
+   (once) → **Ctrl+S**.
 4. Verify:
 
    ```powershell

@@ -108,7 +108,9 @@ Write-Host ("double-comma check : " + $(if ($doubles.Count -eq 0) { "clean" } el
 Write-Host ""
 Write-Host "rec() - this is what the ids look like before carOf() hashes them:"
 $recDef = Select-String -Path $init -Pattern "local function rec" -Context 0, 12
-if ($recDef) { $recDef.Context.PostContext | ForEach-Object { Write-Host ("  " + $_) } }
+foreach ($rd in @($recDef)) {
+    foreach ($l in @($rd.Context.PostContext)) { Write-Host ("  " + $l) }
+}
 
 Write-Host ""
 Write-Host "Now: CET -> Reload all mods. If the manager does not appear in the CET list at all,"
