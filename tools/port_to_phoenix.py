@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 25
+BUILD = 26
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -973,11 +973,31 @@ STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 #       transition sat at 80.6 against a plateau of 86, i.e. right on top of it, which is the one
 #       coincidence every failed stability build had in common.
 # Power at 500 km/h: 8 600 N x 138.9 m/s = 1 195 kW = 1 602 hp - the Chiron SS's 1 578 hp.
-STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 69.4, 100.0, 155.0]
+#
+# Step 17 (2026-11-24, MEASURED): 900025 put the 6->7 shift at 100 m/s and the weave moved from
+# 81 to exactly 100. That is the third confirmation of the law, and the first one where we moved
+# the variable:
+#
+#     car                      top-gear entry     weave onset
+#     stock Aston                    80.6 m/s         81
+#     Jesko, verbatim control        62.47 m/s        63
+#     build 900025, 6->7 at 100     100 m/s          100
+#
+# **The car weaves when it shifts into its top gear.** Not at its drag limit (900025's weave was
+# 52 m/s BELOW its terminal), not at a fixed 80, not from steering gain (four levers failed to
+# move it). The obvious mechanism is gear hunting at the boundary: upshift, revs fall under the
+# downshift threshold, downshift, upshift again - each cycle a torque transient, and a torque
+# transient through the rear tyres is a yaw kick the loop then amplifies.
+#
+# So: never let the car reach its top gear. Stretch 6th to 160 m/s and lift 7th's floor above
+# anything the car can reach (160 > its ~148 m/s terminal). The last upshift the car ever makes is
+# into 6th at 95 m/s, and if the law holds the weave goes with the hunt.
+STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 95.0, 160.0, 180.0]
 STOCK_LADDER_PAIRS = (
-    ("maxSpeed", "80.6", "100"),        # gear 6 ceiling 290 -> 360 km/h
-    ("minSpeed", "77", "100"),          # gear 7 floor
-    ("maxSpeed", "91.7", "155"),        # gear 7 ceiling 330 -> 558 km/h
+    ("maxSpeed", "69.4", "95"),         # gear 5 ceiling 250 -> 342 km/h
+    ("maxSpeed", "80.6", "160"),        # gear 6 ceiling 290 -> 576 km/h
+    ("minSpeed", "77", "160"),          # gear 7 floor: above the terminal, so it is never used
+    ("maxSpeed", "91.7", "180"),        # gear 7 ceiling, inert
     ("airResistanceFactor", "1.35", "0.55"),
     ("engineMaxTorque", "1300", "2750"),
 )

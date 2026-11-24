@@ -35,8 +35,8 @@ class TestProfile(unittest.TestCase):
     def test_top_gear_clears_the_plateau(self):
         """Step 16: 155 m/s = 558 km/h declared, so a 542 km/h terminal sits INSIDE the top gear
         instead of on top of the 6->7 transition the way the stock car's 86 m/s/80.6 did."""
-        self.assertAlmostEqual(self.row["top"], 155.0, places=2)
-        self.assertEqual(round(self.row["top"] * 3.6), 558)
+        self.assertAlmostEqual(self.row["top"], 180.0, places=2)
+        self.assertEqual(round(self.row["top"] * 3.6), 648)
 
     def test_gear_count(self):
         self.assertEqual(self.row["gears"], 8, "7 forward + reverse")
@@ -78,7 +78,7 @@ class TestIndex(unittest.TestCase):
             cv.write_index(cv.collect(ROOT / "Phoenix_aston_cheats" / "r6" / "tweaks", True, tmp), tmp)
             again = cv.index_from_corpus(tmp)
             self.assertEqual(len(again), 1)
-            self.assertAlmostEqual(again[0]["top"], 155.0, places=2)   # step 16 ladder
+            self.assertAlmostEqual(again[0]["top"], 180.0, places=2)   # step 17 ladder
 
 
 class TestCommittedCorpus(unittest.TestCase):

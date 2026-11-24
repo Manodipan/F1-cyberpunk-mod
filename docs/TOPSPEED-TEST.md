@@ -354,6 +354,57 @@ Both predictions say the same thing: **watch whether the weave appears below 100
 above 300 km/h.** Any of those three answers identifies the mechanism, and the third one is the
 deliverable.
 
+## 2i. SOLVED (mechanism): the car weaves when it shifts into its top gear
+
+900025 moved the 6 -> 7 shift to 100 m/s. The weave moved to **100 m/s**. Third confirmation, and
+the first where the variable was ours:
+
+| car | top-gear entry | weave onset |
+|---|---|---|
+| stock Aston | 80.6 m/s | 81 |
+| Jesko, verbatim control | 62.47 m/s | 63 |
+| build 900025 (6 -> 7 at 100) | 100 m/s | **100** |
+
+Three for three, and 900025 rules out the alternatives that had survived: its weave sat **52 m/s
+below its own drag-limited terminal**, so it is not the drag wall; it was not 80, so it is not a
+fixed speed; and four levers (AWD, damping, and a three-part gain cut including -36 % steering
+authority) had already failed to move it, so it is not steering loop gain.
+
+**Why a gearbox does this.** The top gear is the one gear with nothing above it, so the shift logic
+can hunt at its boundary: upshift, the revs land under the downshift threshold, downshift, upshift
+again. Every cycle is a torque transient, and a torque transient through driven tyres is a yaw
+kick - which the loop then amplifies into the weave ADE reacts to. It also explains the terrain
+sensitivity: whether the engine can pull the tall gear at all depends on load, so the hunt starts
+sooner or later depending on the road.
+
+It explains every failed build, too. Nothing done to the steering, the dampers, the inertia or the
+driven wheels can stop a gearbox hunting.
+
+## 2j. Step 17 — never reach the top gear (build 900026)
+
+| field | 900025 | 900026 |
+|---|---|---|
+| gear 5 ceiling | 69.4 | **95** |
+| gear 6 ceiling | 100 | **160** (576 km/h) |
+| gear 7 floor / ceiling | 100 / 155 | **160 / 180** - above the terminal, so the gear is never used |
+| drag, torque | 0.55, 2750 | unchanged |
+
+The car's terminal is ~148 m/s (534 km/h), so **7th becomes unreachable** and the last upshift it
+ever makes is into 6th at 95 m/s.
+
+- **If the weave appears at ~95 m/s** -> any upshift does it, and the gearing must be arranged so
+  the final upshift happens below the speed range that matters.
+- **If the weave vanishes** -> it is specific to the top gear, which is what the stock car's record
+  says (its 33 / 44 / 55 / 66 m/s upshifts were all harmless), and the 500 km/h car just needs a
+  gear above its terminal that it never reaches.
+
+Either answer is a design rule; the second one is the deliverable.
+
+Numbers for 900026: 6th thrust 8 328 N, terminal 148.3 m/s = **534 km/h**, 500 km/h reached
+**3.6 km** into 6th, **1 157 kW = 1 551 hp** at 500. Acceleration in 6th: 2.81 m/s² at 95, 0.59 at
+500. One caution: 5th now makes 14 kN of thrust (~0.8 g) and may spin the tyres - if it does, the
+torque comes down before the gearing does.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |
