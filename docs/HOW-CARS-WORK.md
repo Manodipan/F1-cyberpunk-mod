@@ -119,10 +119,13 @@ everything we measured.)
 
 Three things people get wrong:
 
-1. **The speedo is not an odometer.** Community measurements put the displayed value at
-   roughly double the "real" one on some cars, and the cheat sheet gives an internal speed
-   unit of ≈2.40 mph. Our own arithmetic worked in plain m/s → km/h and matched every
-   number we could cross-check, so treat display as *relative*, never absolute.
+1. **The speedo is not a measurement.** The game displays speed through a
+   `speed_to_multiplier` curve that **inflates the number as speed rises** (the comment in
+   this mod's own redscript says so). This car's dash bypasses that curve with
+   `SpeedValue × 3.6`, so **its numbers are true km/h while every vanilla car's are
+   inflated** — which means "the Jesko showed 500" and "the Phoenix showed 350" are not
+   comparable quantities. Treat display as *relative*, never absolute, and never compare a
+   modded dash with a vanilla one.
 2. **`maxSpeed` per gear is not a top speed.** Measured this week: the Zonda does **355 km/h
    on a gear table whose last gear says 180** (1.97×), the Jesko **500+ on 283** (1.77×).
 3. **`maxRPM` is a label; the torque curve is the engine.** Our record said 10 100 rpm and

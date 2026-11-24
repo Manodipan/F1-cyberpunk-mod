@@ -226,6 +226,36 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
+## 3i. Is it the car, or is it Auto Drive? (and a units landmine)
+
+Asked 2026-11-24: *"is it because of some definition not letting ADE drive faster than 1x max
+speed?"*
+
+**In that form, no — but the evidence is weaker than it looks, and here is why.**
+
+Ruled-out version: ADE capping at 1× the vehicle's declared top gear. Under the same ADE at
+100 %, the Zonda reached 355 km/h on a table that says 180 (1.97×) and the Jesko 500+ on 283
+(1.77×). A cap at 1× declared would have stopped both dead at 180 and 283.
+
+**The units landmine that weakens all of it:** this car's dash shows `SpeedValue × 3.6`, raw
+km/h, because `phoenix_aston_valkyrie.reds` bypasses the game's `speed_to_multiplier` display
+curve *for this vehicle only*. Every vanilla car goes through that curve, which inflates the
+number as speed rises. So "Jesko 500+ displayed" is not "500 km/h real", and comparing it to
+our honest 350 is comparing an inflated number with a true one. The rpm evidence in §3g is
+unaffected (rpm is rpm), but no cross-car *speed* comparison in this document is trustworthy
+until the inflation curve is known.
+
+**Three runs that settle it** (in order of value):
+
+| # | Test | If the brake point… |
+|---|---|---|
+| A | ADE max speed **50 %** instead of 100 % | **halves** → ADE is capping, and it scales with the setting. The car is fine |
+| B | **manual** full throttle, no ADE, long straight | disappears → ADE was braking. Still happens → the car does it |
+| C | ADE 100 % in the **Zonda** | still overshoots its 180 table → ADE does not read the table; the Phoenix cap would have to come from something the Zonda lacks |
+
+Test A is the cheapest and the most decisive, because it turns ADE's own setting into the
+measuring instrument.
+
 ## 3h. The car braking itself at 350 (2026-11-24)
 
 Reported right after 3g worked: *"it hits 350+ but as soon as it does it hits the brakes,
