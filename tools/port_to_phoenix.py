@@ -746,7 +746,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 17
+BUILD = 18
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -830,6 +830,20 @@ STABILITY_OVERLAY = (
     # plant-gain lever - they scale the tyre's slip response, i.e. cornering stiffness. Step 8's
     # measured trade (wobble 72 -> 57, ceiling 72 -> 78) is the frequency effect of extra load, so
     # scaling these from 2 to 1 takes the stiffness back down without giving up the load.
+    # Step 11 (2026-11-24): the wobble is a BAND (55-58 m/s), not a threshold, and that band sits
+    # inside the downforce ramp (20 -> 80 m/s). A ramp means the aerodynamic load is changing with
+    # speed, so the plant's stiffness, yaw frequency and damping all MOVE as the car accelerates; a
+    # closed loop whose phase margin varies with speed can dip below zero in a band and recover either
+    # side of it. That is what a wobble between two speeds looks like, and it explains why raising the
+    # factor made the band lower and wider - it steepened the sweep.
+    # The experiment separates level from sweep: load it 3x harder than the known-good build, but
+    # FINISH the ramp at 45 m/s so the band has constant aero instead of moving aero.
+    #   maxSpeed 80 -> 45        ramp complete at 162 km/h: constant load above it
+    #   maxSpeedFactorGround 0.7 -> 2.0
+    # Outcomes: band moves UP or disappears -> the sweep was the problem, load is free, crank it.
+    #           band moves DOWN -> absolute load is the problem and downforce is not the lever.
+    ("maxSpeedFactorGround", "0.7", "2.0"),
+    ("maxSpeed", "80", "45"),
     ("slipAngleCurveScale", "2", "1"),
     ("slipRatioCurveScale", "2", "1"),
     ("antiSwaybarDampingScalor", "0.75", "1.15"),   # Pagani's

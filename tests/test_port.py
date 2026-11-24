@@ -172,7 +172,7 @@ class PhysicsTests(unittest.TestCase):
             "frictionMulLongitudinal: 0.98",
             "maxBrakingTorque: 1165",
             "maxBrakingTorque: 785",
-            "maxSpeedFactorGround: 0.7",   # step 8 reverted: load cost 15 m/s of ADE stability
+            "maxSpeedFactorGround: 2.0",   # step 11: level vs sweep experiment
             "minLatFrictionCoef: 0.95",   # stability overlay
             "turningRollFactor: 0",           # stability overlay; the reference has 1
             "wheelTurnMaxSubPerSecond: 170",

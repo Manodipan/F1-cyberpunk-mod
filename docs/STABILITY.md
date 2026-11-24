@@ -235,6 +235,32 @@ This is also a **testable disambiguation**: if the wobble is terrain-triggered, 
 reach a higher speed on genuinely flat ground. If it does not move on flat ground either, then the
 flat-road limit cycle of step 5 is the whole story and the terrain work is insurance rather than cure.
 
+## Step 11 (shipped): level or sweep?
+
+The wobble is a **band** (55-58 m/s), not a threshold — and that band sits inside the downforce ramp
+(20 -> 80 m/s). A ramp means the aerodynamic load is changing with speed, so the plant's stiffness,
+its yaw frequency and its damping all *move* while the car accelerates. A closed loop whose phase
+margin varies with speed can dip below zero in a band and come back either side of it, which is what
+an oscillation between two speeds looks like. It also explains why raising the factor made the band
+lower and wider: it steepened the sweep.
+
+| build | ramp | factor | effective load at 58 m/s | ADE |
+|---|---|---|---|---|
+| step 5 | 20 -> 80 | 0.7 | 0.443 | wobble at 72 |
+| step 8 | 20 -> 139 | 3.0 | 0.958 | wobble at 55-58 |
+| **step 11** | **20 -> 45** | **2.0** | **2.000 (constant above 45)** | to measure |
+
+Step 11 loads the car **4.5x harder** than the known-good build at 58 m/s and **3x harder** across
+72-139 m/s, but finishes the ramp at 45 m/s (162 km/h) so the band has *constant* aero instead of
+moving aero. It is a single discriminating experiment:
+
+- **Band moves up or vanishes** -> the sweep was the problem, load is essentially free, and we crank
+  the factor further (3.0, 4.0) with the ramp ending early.
+- **Band moves down** -> absolute load is the problem, downforce is not the lever for ADE stability,
+  and the answer stays on the gain axis (slip scales, steering rate, inertia).
+
+Either answer is worth more than another guess, which is the point.
+
 ## Step 10 (shipped): step 8 was wrong — measured, and reverted
 
 The corrected measurement (the 78 was the human, not ADE):
