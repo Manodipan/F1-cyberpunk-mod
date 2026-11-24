@@ -267,6 +267,32 @@ it (the game's own trip/distance readout works, or a phone stopwatch). If the Je
 The long north-south straight out of the city works, or any highway between two junctions with a
 rolling start.
 
+### MEASURED (2026-11-24, user): the display was the answer
+
+Distance/timed runs over 1 km, rolling start, same stretch, same session:
+
+| car | 1 km | real speed | dash reading | inflate |
+|---|---|---|---|---|
+| Jesko | **13 s** | **277 km/h** | 572 | **2.07x** |
+| Phoenix (Jesko control build) | **13 s** | **277 km/h** | 278 | 1.00x |
+
+**The reference car does not do 500 km/h. It does 277 km/h and displays 572.** Our control
+build does the same 277 km/h - the physics copy was correct and complete, and the two cars are
+equal in real terms. The whole 278-vs-500 gap was the game's `speed_to_multiplier` display curve,
+which the Phoenix is the only car in the install to bypass (see `phoenix_aston_valkyrie.reds`).
+
+Consequences:
+- **There is no speed cap in TweakDB.** Nothing clipped us at 278; 278 *is* the Jesko's real
+  top speed with those records.
+- **"500 km/h" is a display value.** It corresponds to ~242 km/h real (500 / 2.07).
+- **Genuinely 500 km/h real** is a different project: drag-dominated power scales with v^3, so
+  500 real needs ~2.9x the driving force we had at the 350 km/h real of v9 (`3fd6d17`), i.e.
+  ~1,800-2,000 hp-equivalent at CdA ~0.9 - Chiron territory, not hypercar-copy territory. Our
+  earlier real-physics anchor (2,000 hp + CdA 0.95 -> 493 km/h) says the game's force model can
+  represent it, but the 350 km/h "brake" event of v9 has to be cracked first.
+
+Original hypothesis section follows.
+
 ### If the display is the answer
 
 Then the fix is one file: make the Phoenix's HUD use the game's own speed math like every other
