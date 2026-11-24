@@ -365,10 +365,18 @@ the first where the variable was ours:
 | Jesko, verbatim control | 62.47 m/s | 63 |
 | build 900025 (6 -> 7 at 100) | 100 m/s | **100** |
 
-Three for three, and 900025 rules out the alternatives that had survived: its weave sat **52 m/s
-below its own drag-limited terminal**, so it is not the drag wall; it was not 80, so it is not a
-fixed speed; and four levers (AWD, damping, and a three-part gain cut including -36 % steering
-authority) had already failed to move it, so it is not steering loop gain.
+Three for three, and 900025 rules out the surviving alternatives one by one:
+
+- **not the drag wall** - the weave sat 52 m/s below 900025's own terminal
+- **not a fixed speed** - it was 100, not 80
+- **not steering loop gain** - four levers failed to move it, including -36 % authority above 26 m/s
+- **not a constant fraction of terminal** - stock 81/86 = 0.94, Jesko control 63/78.5 = 0.80,
+  900025 100/148 = **0.68**. No constant exists, so "onset tracks top speed" dies here too.
+
+And it is **intermittent, not a wall**: on 900025 ADE is *capable* of reaching 100 m/s, weaving
+sometimes and not others. That fits a hunting loop rather than a hard limit - whether the revs
+settle above the downshift threshold depends on the load at that instant, so the same car on the
+same road either catches the gear or hunts for it.
 
 **Why a gearbox does this.** The top gear is the one gear with nothing above it, so the shift logic
 can hunt at its boundary: upshift, the revs land under the downshift threshold, downshift, upshift
