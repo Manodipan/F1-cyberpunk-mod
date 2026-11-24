@@ -17,7 +17,7 @@ Vehicle.phoenix_aston_valkyrie_data:
 # Arkadan itis (AMR-LMH: V12 arkada, hibrit yok); el freni arkada
 Vehicle.phoenix_amv_wheel_front:
   $type: VehicleWheelRole
-  isDrive: false
+  isDrive: true
   isHandBrake: false
   isMainBrake: true
 
@@ -140,7 +140,7 @@ Vehicle.phoenix_amv_drive_model:
     - Vehicle.HandbrakeFrictionModifier_Exotic
     - Vehicle.UphillDriveHelper_Standard
     - $base: Vehicle.DynamicDownforceHelper_Exotic
-      maxSpeedFactorGround: 1.40
+      maxSpeedFactorGround: 0.70
       maxSpeedFactorAir: 0
     # havada yere cekme: 911'in kendi kaydi (InAirGravityModifier), Bolide/Apollo agir ayari
     - $base: Vehicle.VehicleDriveModelData_911Turbo_inline7
@@ -161,9 +161,9 @@ Vehicle.phoenix_amv_drive_model:
       mass: 25
       springStiffness: 30
       springDamping: 3000
-      springReboundDamping: 4300
+      springReboundDamping: 3750
       springBoundDampingLowRate: 2900
-      springReboundDampingLowRate: 5000
+      springReboundDampingLowRate: 3600
       springDampingLowRateCompression: 0.2
       springDampingHighRateCompression: 0.35
       swaybarStiffness: 15
@@ -183,9 +183,9 @@ Vehicle.phoenix_amv_drive_model:
       mass: 20
       springStiffness: 28
       springDamping: 3000
-      springReboundDamping: 4500
+      springReboundDamping: 3900
       springBoundDampingLowRate: 2900
-      springReboundDampingLowRate: 2900
+      springReboundDampingLowRate: 3600
       springDampingLowRateCompression: 0.2
       springDampingHighRateCompression: 0.35
       swaybarStiffness: 19

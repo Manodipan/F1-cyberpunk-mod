@@ -76,26 +76,23 @@ class DrivetrainTests(unittest.TestCase):
         self.port = port
         self.stock = (root / "reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml").read_text(encoding="utf-8")
 
-    def test_shipped_build_is_rear_drive(self):
+    def test_shipped_build_is_all_wheel_drive(self):
+        """Shipped 2026-11-24 as a diagnosis: is the wobble power oversteer?"""
         out = self.port.port_text(self.stock, ".yaml", True)
-        front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
-        back = out.split("Vehicle.phoenix_amv_wheel_back:")[1].split("Vehicle.")[0]
-        self.assertIn("isDrive: false", front)
-        self.assertIn("isDrive: true", back)
-
-    def test_awd_flag_drives_all_four(self):
-        from unittest import mock
-        with mock.patch.object(self.port, "DRIVETRAIN", "awd"):
-            out = self.port.port_text(self.stock, ".yaml", True)
         front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
         back = out.split("Vehicle.phoenix_amv_wheel_back:")[1].split("Vehicle.")[0]
         self.assertIn("isDrive: true", front)
         self.assertIn("isDrive: true", back)
-        self.assertNotIn("isDrive: false", front + back)
+
+    def test_rwd_is_still_one_flag_away(self):
+        """The real LMH is rear-drive: this must stay reversible."""
+        from unittest import mock
+        with mock.patch.object(self.port, "DRIVETRAIN", "rwd"):
+            out = self.port.port_text(self.stock, ".yaml", True)
+        front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
+        self.assertIn("isDrive: false", front)
 
     def test_awd_does_not_touch_the_handbrake(self):
-        from unittest import mock
-        with mock.patch.object(self.port, "DRIVETRAIN", "awd"):
-            out = self.port.port_text(self.stock, ".yaml", True)
+        out = self.port.port_text(self.stock, ".yaml", True)
         front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
         self.assertIn("isHandBrake: false", front)

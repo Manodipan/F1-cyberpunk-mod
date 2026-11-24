@@ -226,37 +226,32 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
-## 3f. Deferred: RWD → AWD (your call, waiting on §3e)
+## 3f. Wobble build: AWD + downforce + damping (shipped 2026-11-24)
 
-**Not shipped.** The real AMR-LMH is rear-drive and so is the Phoenix. But the switch is
-built and tested: `DRIVETRAIN = "awd"` in `tools/port_to_phoenix.py` makes the front wheels
-drive too, because both fronts share one `VehicleWheelRole` record — a single `isDrive`
-flag, not a rebuild.
+Three changes, all aimed at the wobble, none of them aimed at top speed. If the car gets
+stable but no faster, that is the expected result and it is progress.
 
-What it would and would not do:
+| Change | Was | Now | Why this one |
+|---|---|---|---|
+| drivetrain | RWD | **AWD** (`DRIVETRAIN` in the port tool) | Auto Drive holds **100 % throttle**; 3824 Nm through two tyres keeps them at the friction limit for the whole run, and that is where yaw instability lives. Four driven wheels halve the longitudinal demand per tyre. It cannot raise top speed — drag, gearing and any native cap still own that |
+| `maxSpeedFactorGround` | 1.40 | **0.70** | twice every car we have data for (0.35 / 0.6 / 0.7). Excessive downforce through stiff springs is a porpoising source on a bumpy road, and it costs drag |
+| `springReboundDamping` / `…LowRate` | 4300/4500 and 5000/2900 | **3750/3900** and **3600/3600** | the stock pair was the real outlier: front low-rate rebound 5000 against a 2900 bound (1.72×), while the rear used 2900 for the same part (1.00×). Every reference car sits near 1.25× |
 
-| | Effect |
+`docs/VEHICLE-COMPARISON.md` has all five cars side by side, including the new damping rows.
+
+**AWD is a diagnosis, not a destination.** The real AMR-LMH is rear-drive. If AWD fixes the
+weave, we know the cause is power oversteer — and the authentic cure is rear grip and torque
+delivery, then flip `DRIVETRAIN` back to `"rwd"`. If it changes nothing, the wobble is
+aerodynamic or suspension and AWD was never the answer.
+
+Read the result in this order:
+
+| What you see | Meaning |
 |---|---|
-| top speed | **no direct effect** — drag, gearing and any native cap still set that |
-| launch / traction | large: 3824 Nm shared across four tyres instead of two |
-| wobble at speed | plausible fix, and this is the interesting part — Auto Drive holds **100 % throttle**, so a 3824 Nm RWD car spends the entire run with its rear tyres at the friction limit. That is exactly where yaw instability lives |
-| authenticity | worse: it stops being an LMH |
-
-So treat it as a **diagnosis, not a destination**. If AWD removes the weave, the cause is
-power oversteer, and the RWD-authentic cure is rear grip and torque delivery rather than
-permanent four-wheel drive. If AWD changes nothing, the wobble is aerodynamic/steering and
-AWD is irrelevant.
-
-Flipping it is one word, then the normal update block:
-
-```powershell
-# edit tools/port_to_phoenix.py:  DRIVETRAIN = "awd"
-cd $HOME\f1-cyberpunk-mod
-python tools/port_to_phoenix.py --from stock reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml --out Phoenix_aston_cheats/r6/tweaks/phoenix/phoenix_aston_valkyrie.yaml
-```
-
-(`make port` does the same thing if you have make.) Tests already cover both states:
-`test_shipped_build_is_rear_drive`, `test_awd_flag_drives_all_four`.
+| stable, still ~310 | wobble was drivetrain/aero — now tune grip and put RWD back |
+| stable **and** faster | downforce was costing speed as well as stability |
+| still wobbly | it is not power oversteer. Next: `RotationLimiter.maxAngularSpeedRad` (2.6 → ~1.2), which caps how fast the car can yaw at all |
+| worse / understeers | AWD took too much away — say so and we revert to RWD with the other two kept |
 
 ## 4. If it wobbles while autodriving
 

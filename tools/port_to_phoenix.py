@@ -107,7 +107,15 @@ STOCK_TO_F1 = {
     ("swaybarStiffness", "16"): "19",              # rear anti-roll
     ("minLatFrictionCoef", "0.95"): "1.45",        # RearWheelsFrictionModifier_Exotic
     ("minLongFrictionCoef", "0.95"): "1.45",
-    ("maxSpeedFactorGround", "0.6"): "1.40",       # DynamicDownforceHelper_Exotic
+    ("maxSpeedFactorGround", "0.6"): "0.70",       # DynamicDownforceHelper_Exotic (was 1.40)
+    # Damping: rebound vs bound was wildly asymmetric (front low-rate rebound 5000 against
+    # a 2900 bound = 1.72x, rear the same part at 2900 = 1.00x). Every reference car sits
+    # near 1.25x. On a bumpy Badlands straight at 300+, an inconsistent rebound pair is
+    # an oscillator, and oscillation is what "wobbly" looks like from the driver seat.
+    ("springReboundDamping", "4300"): "3750",       # front, 1.25x the 3000 bound
+    ("springReboundDamping", "4500"): "3900",       # rear,  1.30x
+    ("springReboundDampingLowRate", "5000"): "3600",  # front low rate, 1.24x bound
+    ("springReboundDampingLowRate", "2900"): "3600",  # rear low rate, same
 }
 
 # ---------------------------------------------------------------------------
@@ -126,7 +134,7 @@ STOCK_TO_F1 = {
 # So: AWD is the cheapest way to ask "is the wobble power oversteer?". If it fixes it, the
 # answer is yes - and the RWD-authentic version of that fix is rear grip / torque curve, not
 # permanent AWD.
-DRIVETRAIN = "rwd"
+DRIVETRAIN = "awd"
 
 FRONT_ROLE_RE = re.compile(r"(?m)^Vehicle\.[A-Za-z0-9_]*_wheel_front:[ \t]*$")
 ISDRIVE_FALSE_RE = re.compile(r"(?P<key>isDrive:[ \t]*)false")

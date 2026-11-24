@@ -75,7 +75,7 @@ The physics block. What the fields we actually use do:
 
 | Helper | Field | Effect |
 |---|---|---|
-| `DynamicDownforceHelper` | `maxSpeedFactorGround` | how hard the car is pushed into the road at speed — free cornering grip. `0.6` stock, `1.40` on our car, `0.7` on the 572 km/h reference |
+| `DynamicDownforceHelper` | `maxSpeedFactorGround` | how hard the car is pushed into the road at speed — free cornering grip. `0.6` stock, `0.7` on the 572 km/h reference, and `0.70` on ours since 2026-11-24 (it had been `1.40`, twice every car we have data for) |
 | `RotationLimiter` | `maxAngularSpeedRad`, `driftLimit` | hard cap on yaw rate; also the drift thresholds |
 | `RearWheelsFrictionModifier` | `minLatFrictionCoef` / `minLongFrictionCoef` | how much the rear tyres are *allowed* to slide — the difference between planted and snappy |
 | `InAirGravityModifier` | `baseAddedGravity`, `driveSpeedAddedGravity` | how eagerly the car comes back down |

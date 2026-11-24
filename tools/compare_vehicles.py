@@ -63,6 +63,8 @@ SCALARS = [
     ("`maxBrakingTorque` f/b", "maxBrakingTorque", "fb"),
     ("`springStiffness` f/b", "springStiffness", "fb"),
     ("`springDamping` f/b", "springDamping", "fb"),
+    ("`springReboundDamping` f/b", "springReboundDamping", "fb"),
+    ("`springReboundDampingLowRate` f/b", "springReboundDampingLowRate", "fb"),
     ("`flyWheelMomentOfInertia`", "flyWheelMomentOfInertia", None),
     ("`finalGearTorqueDecimationScalor`", "finalGearTorqueDecimationScalor", None),
     ("`gearChangeTime` / `gearChangeCooldown`", "gearChangeTime", None),
@@ -130,7 +132,8 @@ def load(path: Path) -> dict | None:
         return None
     # profile() keeps one value per field; pull the axle pairs separately.
     for field in ("frictionMulLateral", "frictionMulLongitudinal", "swaybarStiffness",
-                  "maxBrakingTorque", "springStiffness", "springDamping"):
+                  "maxBrakingTorque", "springStiffness", "springDamping",
+                  "springReboundDamping", "springReboundDampingLowRate"):
         vals = re.findall(rf"(?m)^\s*{field}\s*:\s*([0-9.]+)", text)
         if len(vals) >= 2:
             row[field] = f"{vals[0]} / {vals[1]}"

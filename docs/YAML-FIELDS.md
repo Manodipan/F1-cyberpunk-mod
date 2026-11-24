@@ -15,12 +15,12 @@ gearbox and speed units work — see [`VEHICLE-MODEL.md`](VEHICLE-MODEL.md).
 | Front grip | 1.29 / 1.15 | 1.60 / 1.50 | `wheelSetup.frontPreset.frictionMulLateral` / `.frictionMulLongitudinal` | Confirmed |
 | Rear grip | 1.33 / 1.20 | 1.70 / 1.68 | `wheelSetup.backPreset.…` | Confirmed |
 | Rear helper | 0.95 | 1.45 | `driveHelpers` → `RearWheelsFrictionModifier_Exotic.minLatFrictionCoef` **and** `.minLongFrictionCoef` (both 0.95) | Confirmed |
-| Downforce | 0.60 | 1.40 | `driveHelpers` → `DynamicDownforceHelper_Exotic.maxSpeedFactorGround` (`maxSpeedFactorAir: 0` stays) | Confirmed |
+| Downforce | 0.60 | 0.70 | `driveHelpers` → `DynamicDownforceHelper_Exotic.maxSpeedFactorGround` (`maxSpeedFactorAir: 0` stays) | Confirmed |
 | Sway F/R | 11 / 16 | 15 / 19 | `frontPreset` / `backPreset` `swaybarStiffness` | Confirmed |
 | Braking F/R | 1410 / 1200 | 1850 / 1550 | `frontPreset` / `backPreset` `maxBrakingTorque` | Confirmed |
 | Steering | 94 / 26 / 0.33 | 94 / **150** / **45** / **0.21** | `wheelTurnMaxAddPerSecond` / `wheelTurnMaxSubPerSecond` (added) / `turnUpdateMaxSpeedThreshold` / `turnUpdateMaxSpeedTurnMul` (source note: "86 derece/s, 24 m/s üstü %29") | Confirmed — "45" is a speed threshold in m/s, **not** the steering return rate; the pair now matches the 572 km/h reference car |
 | Springs F/R | 23 / 22 | 30 / 28 | `springStiffness` | Confirmed |
-| Damping | 2000 | 3000 | `springDamping` (rebound/bound damping left alone) | Confirmed |
+| Damping | 2000 | 3000 | `springDamping`, plus `springReboundDamping` 3750/3900 and `…LowRate` 3600/3600 — the stock rebound pair was 5000 front vs 2900 rear against the same 2900 bound | Confirmed |
 | Mass | 1750 | 1750 | `total_mass`, `chassis_mass` | Confirmed |
 | Roll factor | 0 | 0 | `turningRollFactor` | Confirmed |
 | Tyres | model | model | `vehWheelDimensionsSetup` (0.392 m radius, 0.341 / 0.374 width) | Untouched |

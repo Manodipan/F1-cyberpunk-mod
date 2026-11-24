@@ -170,7 +170,7 @@ class PhysicsTests(unittest.TestCase):
             "swaybarStiffness: 19",
             "minLatFrictionCoef: 1.45",
             "minLongFrictionCoef: 1.45",
-            "maxSpeedFactorGround: 1.40",
+            "maxSpeedFactorGround: 0.70",
         ):
             self.assertIn(expected, self.out, expected)
 
