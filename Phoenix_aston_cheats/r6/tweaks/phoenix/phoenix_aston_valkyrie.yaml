@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900016
+  horsepower: 900017
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 
@@ -245,8 +245,8 @@ Vehicle.phoenix_amv_helper_downforce:
   $type: gamedataDynamicDownforceHelper_Record
   type: Vehicle.DynamicDownforceHelper_HelperType
   minSpeed: 20
-  maxSpeed: 139
-  maxSpeedFactorGround: 3.0
+  maxSpeed: 80
+  maxSpeedFactorGround: 0.7
   maxSpeedFactorAir: 0
 
 Vehicle.phoenix_amv_helper_air_gravity:

@@ -235,6 +235,31 @@ This is also a **testable disambiguation**: if the wobble is terrain-triggered, 
 reach a higher speed on genuinely flat ground. If it does not move on flat ground either, then the
 flat-road limit cycle of step 5 is the whole story and the terrain work is insurance rather than cure.
 
+## Step 10 (shipped): step 8 was wrong — measured, and reverted
+
+The corrected measurement (the 78 was the human, not ADE):
+
+| build | `maxSpeedFactorGround` | ADE wobble | manual top |
+|---|---|---|---|
+| step 5 | 0.7 @ 80 | **72 m/s** | 77 m/s |
+| step 8 | 3.0 @ 139 | **55-58 m/s** | 78 m/s |
+
+**+1 m/s of manual top speed, -15 m/s of ADE stability.** A straight loss, and it also inverts the
+reasoning that motivated step 8:
+
+- The ceiling is the **gearbox** (78.5 m/s), so load cannot buy speed in this car at all.
+- Load *does* raise cornering stiffness, and with it the yaw frequency — the quantity that decides
+  where ADE starts weaving. **Less load, later wobble.**
+
+`maxSpeedFactorGround` is therefore back to the reference's 0.7 with the ramp ending at 80 m/s, i.e.
+the last known-good aero state, while step 9's gain reductions (inertia, steering rate 85, slip
+scales 1) are kept — they push in the same direction, less plant gain.
+
+Note for the ladder build: once the top gear is stretched past 80 m/s the ramp **must** be extended
+again, or downforce flat-lines at 281 km/h while drag keeps growing as v². That fix (ramp to 139) is
+correct but belongs with the gearing change, not before it — it does nothing while the car is
+gear-limited below 80.
+
 ## Step 9 (shipped): keep the load, take the frequency down
 
 Step 8's measured trade, and it is steep:

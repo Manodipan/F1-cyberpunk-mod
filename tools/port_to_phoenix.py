@@ -746,7 +746,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 16
+BUILD = 17
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -818,18 +818,20 @@ STABILITY_OVERLAY = (
     #       as v^2 - i.e. the car got relatively lighter the faster it went. Extending the ramp to
     #       the new top-speed target makes downforce track v^2 up to 500 km/h, which is what the
     #       real thing does.
-    # Step 8 (2026-11-24, measured): downforce has NO effect on top speed in this engine - the user
-    # measured 77 m/s before and after step 7, so there is no induced drag. That removes the entire
-    # usual trade on this axis: every other way of buying stability costs top end, and this one does
-    # not. Final values are set in STABILITY_MAXSPEED_FACTOR_GROUND below.
+    # Step 8 REVERTED (2026-11-24, measured): raising maxSpeedFactorGround 1.4 -> 3.0 moved the ADE
+    # wobble from 72 to 55-58 m/s and moved the MANUAL top speed only 77 -> 78. A straight loss on
+    # the stability goal, and it inverts the earlier reasoning: the ceiling is the GEARBOX (78.5 m/s),
+    # so load cannot buy speed here, while load DOES raise cornering stiffness and with it the yaw
+    # frequency - which is the quantity that decides where ADE starts weaving. Less load, later
+    # wobble. Aero is restored to the last known-good state (0.7 with the ramp ending at 80 m/s).
+    # Keep the downforce ramp fix in mind for the ladder build: once the top gear is stretched past
+    # 80 m/s the ramp must be extended again or downforce flat-lines while drag keeps growing.
     # Step 9 (cont.): the slip curve scales are the last Jesko-only fields and they are the direct
     # plant-gain lever - they scale the tyre's slip response, i.e. cornering stiffness. Step 8's
     # measured trade (wobble 72 -> 57, ceiling 72 -> 78) is the frequency effect of extra load, so
     # scaling these from 2 to 1 takes the stiffness back down without giving up the load.
     ("slipAngleCurveScale", "2", "1"),
     ("slipRatioCurveScale", "2", "1"),
-    ("maxSpeedFactorGround", "0.7", "3.0"),
-    ("maxSpeed", "80", "139"),
     ("antiSwaybarDampingScalor", "0.75", "1.15"),   # Pagani's
     ("turningRollFactor", "1", "0"),
     # Step 2 (2026-11-24, from measurement): the reference's alternative turn-update is an
