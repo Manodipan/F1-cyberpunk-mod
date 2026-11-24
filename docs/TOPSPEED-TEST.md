@@ -136,6 +136,65 @@ How to read it:
 - **ADE dips even with an empty road** → the controller is reacting to something other than
   geometry (traffic, a lane edge, a junction it plans for).
 
+## 2d. The controller is a mod, and it has settings (2026-11-24)
+
+Auto Drive is not vanilla: a Mod Settings screen for **Auto Drive Enhanced** drives it, and its
+values are part of the measurement whether or not anyone looks at them. As configured on
+2026-11-24:
+
+| setting | value | what it does |
+|---|---|---|
+| Driving AI | Modded Normal AI | which AI the player's autodrive uses |
+| **Auto Speed Control** | **ON** | selects the speed *policy*: cruise as a fraction of the car's own maximum |
+| **Max Speed Ratio** | **1.0** | "ratio of maximum cruising speed to maximum vehicle speed" — the fraction in question |
+| Cruising Max / Min Speed | 30 / 10 | the *other* policy: fixed speeds, used when Auto Speed Control is **OFF** |
+| Clear Traffic On Path | **ON** | ADE paths around traffic — so a lane change is **its own decision**, not geometry |
+| Sync speed with vehicle in front | OFF | it will not match the car ahead |
+| Stopping Distance | 50 | planning distance for stops |
+| Base / Speed / Mass / Braking-Torque factor for brake time | 1 / 1 / 1 / 1 | default brake model |
+
+Two consequences that were invisible until now:
+
+1. **The ceiling may be a target, not a limit.** With `Max Speed Ratio 1.0` ADE aims at the car's
+   own maximum speed. If its idea of that maximum is ~80 m/s, then every "ADE stops at 80" in this
+   log is ADE *arriving at its target*, and the weave starts where it begins modulating around it —
+   not where the car runs out of anything. One slider settles it (matrix below).
+2. **Lane changes are ADE's own idea, and they are violent.** See the arithmetic below.
+
+### What a lane change costs at 80 m/s
+
+For a lane change of one lane width, d = 3.5 m, modelled as a half-cosine offset, peak lateral
+acceleration is `a = (d/2)(π/T)²`:
+
+| duration T | peak lateral | 
+|---|---|
+| 0.8 s | 27.0 m/s² = **2.75 g** |
+| 1.0 s | 17.3 m/s² = **1.76 g** |
+| 1.5 s | 7.7 m/s² = **0.78 g** |
+| 2.0 s | 4.3 m/s² = **0.44 g** |
+| 3.0 s | 1.9 m/s² = **0.20 g** |
+
+A road car's lateral budget is order 1 g, and with downforce more — but not 2.75 g at 288 km/h. So
+**a one-second lane change at 80 m/s is a demand no tyre can meet**: the car breaks away because it
+was asked to, not because it is unstable. The owner's own version of the same manoeuvre takes two
+to three seconds and costs 0.2-0.4 g, which is why it never skids.
+
+At 80 m/s the whole manoeuvre must fit inside ~1.5 s of road (119 m) to stay under 0.8 g. ADE does
+not appear to budget for that.
+
+### The matrix that separates policy from physics — no restart, no new build
+
+All three runs on one build, changing only Mod Settings (they apply live):
+
+| run | change | if the ceiling moves | if it holds at 80 |
+|---|---|---|---|
+| 1 | ratio 1.0, traffic ON (as now) | — | baseline |
+| 2 | **ratio raised to its maximum** | the ceiling was ADE's target | the ceiling is the car |
+| 3 | **Clear Traffic On Path OFF** on an empty road | the weave was the lane change | the weave is the car |
+
+Run 2 is the single most informative test in this document: it is the only setting that can make
+the "80 m/s onset" vanish without touching the car at all.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |
