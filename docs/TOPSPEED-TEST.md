@@ -226,6 +226,53 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
+## 3n. The control result: 278 km/h, and a display hypothesis (2026-11-24)
+
+With **every** physics value and the whole vehicle record copied from the Jesko - engine, gears,
+drive model, helpers, wheels, `curvesPath` - the car tops out at **278 km/h**. Twice, before and
+after the vehicle record was made explicit.
+
+The Jesko, on the identical records, is reported at **500+**. That is not a data difference, so
+the data is no longer the suspect. Look at the ratios instead:
+
+| car | declared top gear | dash reading | dash / declared |
+|---|---|---|---|
+| Zonda | 180 km/h | 355 | **1.97×** |
+| Jesko | 283 km/h | 500+ | **1.77×** |
+| **Phoenix** | **283 km/h** | **278** | **0.98×** |
+
+Both reference cars read *exactly* a multiple of their own declared top speed. Our car reads
+its declared top speed, because **our dashboard is the only one in this install that does not go
+through the game's `speed_to_multiplier` curve** - `phoenix_aston_valkyrie.reds` writes
+`SpeedValue × 3.6` straight into the HUD, and its own comment says the game inflates the number
+at high speed.
+
+So the leading hypothesis is that nothing was ever capped: the game stops cars at their declared
+top gear, the two "fast" cars are reporting an inflated number, and 278 km/h real is *exactly*
+what a 500 km/h dash reading is made of here - 278 × 1.77 is 492.
+
+### The test that settles it without touching the display
+
+Time, not speed. Time is display-independent.
+
+| If the car really does | 1 km takes |
+|---|---|
+| 278 km/h | **12.9 s** |
+| 500 km/h | 7.2 s |
+
+Run the same stretch in both cars - the Jesko and the Phoenix - from a rolling start, and time
+it (the game's own trip/distance readout works, or a phone stopwatch). If the Jesko is genuinely
+77 % faster it will be unmistakable. If they arrive together, the 500 was a number on a screen.
+
+The long north-south straight out of the city works, or any highway between two junctions with a
+rolling start.
+
+### If the display is the answer
+
+Then the fix is one file: make the Phoenix's HUD use the game's own speed math like every other
+car, and the dash reads ~500 at 278 km/h real. The physical car is already as fast as the reference
+- and the remaining work is the wobble, not the top end.
+
 ## 3m. THE CONTROL: the Jesko's physics, copied byte for byte (2026-11-24)
 
 Instruction: *"copy the jesko curves exactly, precisely. don't innovate, we need a control."*
