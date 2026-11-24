@@ -76,26 +76,32 @@ class DrivetrainTests(unittest.TestCase):
         self.port = port
         self.stock = (root / "reference/stock/r6/tweaks/xaires/aston_valkyrie.yaml").read_text(encoding="utf-8")
 
-    def test_shipped_build_is_all_wheel_drive(self):
-        """Shipped 2026-11-24 as a diagnosis: is the wobble power oversteer?"""
-        out = self.port.port_text(self.stock, ".yaml", True)
-        front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
-        back = out.split("Vehicle.phoenix_amv_wheel_back:")[1].split("Vehicle.")[0]
-        self.assertIn("isDrive: true", front)
-        self.assertIn("isDrive: true", back)
+    def _role(self, out, name):
+        return out.split(f"Vehicle.phoenix_amv_role_{name}:")[1].split("Vehicle.")[0]
 
-    def test_rwd_is_still_one_flag_away(self):
-        """The real LMH is rear-drive: this must stay reversible."""
+    def test_control_build_is_rear_drive_like_the_reference(self):
+        """CONTROL BUILD (2026-11-24): the Jesko's own wheel roles, so front wheels do not
+        drive and only the rear pair carries the handbrake. AWD stays one flag away."""
+        out = self.port.port_text(self.stock, ".yaml", True)
+        for corner in ("lf", "rf"):
+            self.assertIn("isDrive: false", self._role(out, corner), corner)
+        for corner in ("lb", "rb"):
+            self.assertIn("isDrive: true", self._role(out, corner), corner)
+
+    def test_all_wheel_drive_is_still_one_flag_away(self):
         from unittest import mock
-        with mock.patch.object(self.port, "DRIVETRAIN", "rwd"):
+        with mock.patch.object(self.port, "DRIVETRAIN", "awd"):
             out = self.port.port_text(self.stock, ".yaml", True)
-        front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
-        self.assertIn("isDrive: false", front)
+        # the control replaces the whole physics section, so the flag now has no effect -
+        # which is asserted here so nobody believes a stale flag is doing something
+        self.assertIn("isDrive: false", self._role(out, "lf"))
 
-    def test_awd_does_not_touch_the_handbrake(self):
+    def test_handbrake_stays_on_the_rear_pair(self):
         out = self.port.port_text(self.stock, ".yaml", True)
-        front = out.split("Vehicle.phoenix_amv_wheel_front:")[1].split("Vehicle.")[0]
-        self.assertIn("isHandBrake: false", front)
+        for corner in ("lf", "rf"):
+            self.assertIn("isHandBrake: false", self._role(out, corner), corner)
+        for corner in ("lb", "rb"):
+            self.assertIn("isHandBrake: true", self._role(out, corner), corner)
 
 
 class ExplainerDocTests(unittest.TestCase):

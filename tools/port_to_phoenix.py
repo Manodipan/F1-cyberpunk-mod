@@ -54,6 +54,7 @@ of this tool prefixed it and would have broken the audio metadata copy.
 from __future__ import annotations
 
 import argparse
+import pathlib
 import re
 import sys
 from pathlib import Path
@@ -212,20 +213,24 @@ GEAR7_FROM, GEAR7_TO = "91.7", "138.89"
 # Its steps NARROW toward the top (1.378, 1.275, 1.215, 1.177, 1.151, 1.131) where ours were a
 # flat 1.20, and its torque multipliers are a true ratio ladder (1.0 -> 0.265). Everything below
 # is the Jesko's ladder scaled so the top gear lands on 138.89 m/s = 500 km/h:
-JESKO_SCALE = 138.89 / 78.5
+# ---------------------------------------------------------------------------
+# THE CONTROL BUILD (2026-11-24): the Jesko's physics, copied verbatim.
+# ---------------------------------------------------------------------------
+# No scaling, no adaptation, no "improvement". The reference mod reaches 500+ km/h on this
+# exact gear table, engine and chassis, so if the Phoenix behaves differently it is the car and
+# not our numbers. Only the mesh, entity, textures, name, icons and audio stay ours.
 PHOENIX_GEARBOX = {
     #  gear: (minSpeed, maxSpeed, torqueMultiplier, minEngineRPM, maxEngineRPM)
-    "1": (0.0,   42.46, 1.000,  900, 7600),   # launch gear: floor is idle, not a band
-    "2": (37.79, 58.53, 1.000, 4910, 7600),
-    "3": (52.09, 74.61, 0.670, 5310, 7600),
-    "4": (66.40, 90.68, 0.494, 5570, 7600),
-    "5": (80.71, 106.74, 0.387, 5750, 7600),
-    "6": (95.00, 122.82, 0.316, 5880, 7600),
-    "7": (109.31, 138.89, 0.265, 6140, 7800),
+    "1": (0.0,   24.0,  1.000,  900, 7600),
+    "2": (21.6,  33.08, 0.670, 4960, 7600),
+    "3": (29.78, 42.17, 0.494, 5370, 7600),
+    "4": (37.95, 51.25, 0.387, 5630, 7600),
+    "5": (46.12, 60.33, 0.316, 5810, 7600),
+    "6": (54.30, 69.42, 0.265, 5940, 7600),
+    "7": (62.47, 78.50, 0.227, 6050, 7800),
 }
 
-# The curve the Jesko ships with and reaches 500+ on. `large_balanced_na` is the NA alternative
-# if we ever want the naturally aspirated character instead (see TUNING-FROM-REAL-RACING.md).
+# The Jesko's own curve; copied with everything else.
 TORQUE_CURVE = "base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_turbo.curveset"
 
 # Drive-model fields the Jesko writes out and we were inheriting from the 911 Turbo - the
@@ -336,6 +341,85 @@ JESKO_BACK = {
     "wheelsVerticalOffset": "-0.004",
 }
 
+
+# ---------------------------------------------------------------------------
+# Verbatim copy of the Jesko's physics records
+# ---------------------------------------------------------------------------
+# Raw text blocks, lifted from the reference mod and renamed into our namespace, so "copy it
+# exactly" is literally true rather than true-by-my-typing. The only edits are record IDs.
+JESKO_REF = pathlib.Path(__file__).resolve().parents[1] / "reference" / "vehicles" / "jesko_attack.yaml"
+
+JESKO_RECORD_MAP = [
+    ("Vehicle.jesko_attack_wheel_role_lf", "Vehicle.phoenix_amv_role_lf"),
+    ("Vehicle.jesko_attack_wheel_role_rf", "Vehicle.phoenix_amv_role_rf"),
+    ("Vehicle.jesko_attack_wheel_role_lb", "Vehicle.phoenix_amv_role_lb"),
+    ("Vehicle.jesko_attack_wheel_role_rb", "Vehicle.phoenix_amv_role_rb"),
+    ("Vehicle.jesko_attack_gear_r", "Vehicle.phoenix_amv_gear_r"),
+    ("Vehicle.jesko_attack_gear_1", "Vehicle.phoenix_amv_gear_1"),
+    ("Vehicle.jesko_attack_gear_2", "Vehicle.phoenix_amv_gear_2"),
+    ("Vehicle.jesko_attack_gear_3", "Vehicle.phoenix_amv_gear_3"),
+    ("Vehicle.jesko_attack_gear_4", "Vehicle.phoenix_amv_gear_4"),
+    ("Vehicle.jesko_attack_gear_5", "Vehicle.phoenix_amv_gear_5"),
+    ("Vehicle.jesko_attack_gear_6", "Vehicle.phoenix_amv_gear_6"),
+    ("Vehicle.jesko_attack_gear_7", "Vehicle.phoenix_amv_gear_7"),
+    ("Vehicle.jesko_attack_wheel_dims_front", "Vehicle.phoenix_amv_wheel_dims_front"),
+    ("Vehicle.jesko_attack_wheel_dims_back", "Vehicle.phoenix_amv_wheel_dims_back"),
+    ("Vehicle.jesko_attack_wheel_dims", "Vehicle.phoenix_amv_wheel_dimensions"),
+    ("Vehicle.jesko_attack_wheel_front", "Vehicle.phoenix_amv_wheel_preset_front"),
+    ("Vehicle.jesko_attack_wheel_back", "Vehicle.phoenix_amv_wheel_preset_back"),
+    ("Vehicle.jesko_attack_wheel_setup", "Vehicle.phoenix_amv_wheel_setup"),
+    ("Vehicle.jesko_attack_helper_rotation", "Vehicle.phoenix_amv_helper_rotation"),
+    ("Vehicle.jesko_attack_helper_rear_friction", "Vehicle.phoenix_amv_helper_rear_friction"),
+    ("Vehicle.jesko_attack_helper_accel_noise", "Vehicle.phoenix_amv_helper_accel_noise"),
+    ("Vehicle.jesko_attack_helper_handbrake", "Vehicle.phoenix_amv_helper_handbrake"),
+    ("Vehicle.jesko_attack_helper_uphill", "Vehicle.phoenix_amv_helper_uphill"),
+    ("Vehicle.jesko_attack_helper_downforce", "Vehicle.phoenix_amv_helper_downforce"),
+    ("Vehicle.jesko_attack_helper_air_gravity", "Vehicle.phoenix_amv_helper_air_gravity"),
+    ("Vehicle.jesko_attack_burnout", "Vehicle.phoenix_amv_burnout"),
+    ("Vehicle.jesko_attack_drive_model", "Vehicle.phoenix_amv_drive_model"),
+    ("Vehicle.jesko_attack_engine", "Vehicle.phoenix_amv_engine"),
+]
+
+
+def jesko_records() -> dict:
+    """Every top-level record of the reference mod, as raw text blocks."""
+    raw = JESKO_REF.read_text(encoding="utf-8").replace("\r\n", "\n")
+    recs, cur, buf = {}, None, []
+    for line in raw.splitlines(keepends=True):
+        if line and not line[0].isspace() and not line.startswith("#") and line.rstrip().endswith(":"):
+            if cur:
+                recs[cur] = "".join(buf)
+            cur, buf = line.rstrip()[:-1].strip(), [line]
+        elif cur:
+            buf.append(line)
+    if cur:
+        recs[cur] = "".join(buf)
+    return recs
+
+
+def jesko_control_block() -> str:
+    """The Jesko's physics records, renamed into our namespace, in dependency order."""
+    recs = jesko_records()
+    out = ["# ---- PHYSICS COPIED VERBATIM FROM reference/vehicles/jesko_attack.yaml ----\n",
+           "# Record IDs renamed only. Values are byte-identical to the car that reaches 500+ km/h\n",
+           "# here; nothing in this section is ours (docs/TOPSPEED-TEST.md 3m).\n\n"]
+    for src, dst in JESKO_RECORD_MAP:
+        block = recs[src]
+        for a, b in JESKO_RECORD_MAP:          # rename every reference, not just the header
+            block = block.replace(a, b)
+        out.append(block.strip("\n") + "\n\n")
+    return "".join(out)
+
+
+def apply_jesko_control(text: str) -> str:
+    """Replace our wheel roles, gears, wheels, drive model and engine with the Jesko's."""
+    begin = "Vehicle.phoenix_amv_wheel_front:"
+    end = "Vehicle.phoenix_aston_valkyrie:"
+    if begin not in text or end not in text:
+        return text
+    head = text[: text.index(begin)]
+    tail = text[text.index(end):]
+    return head + jesko_control_block() + tail
 
 def _set_fields(lines, lo, hi, indent, fields):
     """Set key: value pairs inside lines[lo:hi] at the given indent, appending what is missing."""
@@ -856,8 +940,9 @@ def port_text(text: str, suffix: str, physics: bool,
     text = explicit_gears("".join(out))
     # the hoist needs the *renamed* record name, so it runs after the rename pass
     if physics and suffix in (".yaml", ".yml"):
-        # the Jesko map needs the *hoisted* record names, so it runs after the hoist
-        text = apply_jesko_chassis(hoist_subrecords(text))
+        # CONTROL BUILD: the whole physics section is replaced with the Jesko's own records,
+        # so the chassis tune must not run - it would edit records that no longer exist.
+        text = apply_jesko_control(hoist_subrecords(text))
     return text
 
 

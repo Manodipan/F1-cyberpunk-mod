@@ -44,7 +44,7 @@ class ComparisonTests(unittest.TestCase):
         phoenix = dict((n, r) for n, r, _ in self.cars)["Phoenix AMV LMH"]
         top = phoenix["ladder"][-1]
         self.assertLessEqual(top["maxSpeed"] / top["minSpeed"], 1.60)
-        self.assertGreaterEqual(top["torqueMultiplier"], 0.25)   # the Jesko ships 0.265
+        self.assertGreaterEqual(top["torqueMultiplier"], 0.22)   # the Jesko ships 0.227
 
 
 if __name__ == "__main__":

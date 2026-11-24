@@ -32,17 +32,20 @@ class TestProfile(unittest.TestCase):
     def test_finds_the_car(self):
         self.assertIsNotNone(self.row)
 
-    def test_top_gear_is_the_500_kmh_ceiling(self):
-        self.assertAlmostEqual(self.row["top"], 138.89, places=2)
-        self.assertEqual(round(self.row["top"] * 3.6), 500)
+    def test_top_gear_is_the_reference_ceiling(self):
+        """CONTROL BUILD: the shipped top gear is the Jesko's 78.5 m/s (283 km/h). The game lets
+        that car run to 500+, and the point of the control is to see whether ours does the same
+        from the same numbers rather than from a 138.89 table of our own."""
+        self.assertAlmostEqual(self.row["top"], 78.5, places=2)
+        self.assertEqual(round(self.row["top"] * 3.6), 283)
 
     def test_gear_count(self):
         self.assertEqual(self.row["gears"], 8, "7 forward + reverse")
 
     def test_the_deciding_fields(self):
         self.assertEqual(self.row["airResistanceFactor"], "0.66")
-        self.assertEqual(self.row["engineMaxTorque"], "1500")
-        self.assertEqual(self.row["total_mass"], "1750")
+        self.assertEqual(self.row["engineMaxTorque"], "1000")
+        self.assertEqual(self.row["total_mass"], "1800")
         self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "137")
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")
 
@@ -75,7 +78,7 @@ class TestIndex(unittest.TestCase):
             cv.write_index(cv.collect(ROOT / "Phoenix_aston_cheats" / "r6" / "tweaks", True, tmp), tmp)
             again = cv.index_from_corpus(tmp)
             self.assertEqual(len(again), 1)
-            self.assertAlmostEqual(again[0]["top"], 138.89, places=2)
+            self.assertAlmostEqual(again[0]["top"], 78.5, places=2)
 
 
 class TestCommittedCorpus(unittest.TestCase):

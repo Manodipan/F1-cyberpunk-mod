@@ -46,13 +46,14 @@ docs/                            install + test matrix, packaging, rename map, f
 
 | | Stock | Phoenix |
 |---|---|---|
-| Scanner hp / torque | 680 / 1300 | **2000 / 1500** (the Jesko does 500+ on 1000) |
+| Scanner hp / torque | 680 / 1300 | **2000 / 1000** — the control: the scanner still says 2000 hp, the physics is the reference's 1000 |
 | Redline | 10100 | **7900**, top gear ceiling 7800, shift at 0.90 of range = 7020 |
-| Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **the Jesko's ladder scaled ×1.769: 1.378→1.131 tapering steps, top window 109.31→138.89 m/s; every floor = 0.90 × the previous gear's top** |
+| Gearbox | 7 gears, top window 77→91.7 m/s (1.19×) | **the Jesko's ladder, verbatim: top window 62.47→78.5 m/s (283 km/h declared). The game lets that car run to 500+ from it** |
+| Mass | 1750 | **1800** (the Jesko's) |
 | Drag | 1.35 | **0.66** (the Jesko's) |
-| Front grip | 1.29 / 1.15 | **1.46 / 1.06** (12 % above the Jesko's 1.30 / 0.95) |
-| Rear grip | 1.33 / 1.20 | **1.44 / 1.10** (axles within 1.5 %) |
-| Drivetrain | RWD | **AWD** (`DRIVETRAIN` flag; the real LMH is RWD) |
+| Front grip | 1.29 / 1.15 | **1.30 / 0.95** (the Jesko's) |
+| Rear grip | 1.33 / 1.20 | **1.28 / 0.98** (the Jesko's) |
+| Drivetrain | RWD | **RWD** — the control uses the Jesko's wheel roles |
 | Rear friction helper | 0.95 / 0.95 | **0.62 / 0.80** (the Jesko's) |
 | Downforce (`maxSpeedFactorGround`) | 0.60 | **0.70** (was 1.40 — twice every reference car) |
 | Sway F/R · braking F/R | 11/16 · 1410/1200 | **18/15 · 1165/785** (the Jesko's) |

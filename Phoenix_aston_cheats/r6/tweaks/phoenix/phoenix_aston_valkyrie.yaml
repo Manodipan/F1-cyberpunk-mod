@@ -15,207 +15,291 @@ Vehicle.phoenix_aston_valkyrie_data:
   info: LocKey#phoenix_aston_valkyrie_info
 
 # Arkadan itis (AMR-LMH: V12 arkada, hibrit yok); el freni arkada
-Vehicle.phoenix_amv_wheel_front:
-  $type: VehicleWheelRole
-  isDrive: true
+# ---- PHYSICS COPIED VERBATIM FROM reference/vehicles/jesko_attack.yaml ----
+# Record IDs renamed only. Values are byte-identical to the car that reaches 500+ km/h
+# here; nothing in this section is ours (docs/TOPSPEED-TEST.md 3m).
+
+Vehicle.phoenix_amv_role_lf:
+  $type: gamedataVehicleWheelRole_Record
+  isDrive: false
   isHandBrake: false
   isMainBrake: true
 
-Vehicle.phoenix_amv_wheel_back:
-  $type: VehicleWheelRole
+Vehicle.phoenix_amv_role_rf:
+  $type: gamedataVehicleWheelRole_Record
+  isDrive: false
+  isHandBrake: false
+  isMainBrake: true
+
+Vehicle.phoenix_amv_role_lb:
+  $type: gamedataVehicleWheelRole_Record
   isDrive: true
   isHandBrake: true
   isMainBrake: true
 
-# 7 ileri sirali (hizlar m/s), V12 10000 devir sinirli. Vites = oran penceresi, hiz siniri degil: araliklar ~1.28x, son vites 101 -> 138.89 m/s (500 km/h)
+Vehicle.phoenix_amv_role_rb:
+  $type: gamedataVehicleWheelRole_Record
+  isDrive: true
+  isHandBrake: true
+  isMainBrake: true
+
 Vehicle.phoenix_amv_gear_r:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 0.765
-  minSpeed: 0
-  maxSpeed: 15
-  minEngineRPM: 1000
-  maxEngineRPM: 8300
+  minSpeed: 0.0
+  maxSpeed: 10.0
+  minEngineRPM: 900
+  maxEngineRPM: 6000
+  torqueMultiplier: 1.0
 
 Vehicle.phoenix_amv_gear_1:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 1
-  minSpeed: 0
-  maxSpeed: 42.46
+  minSpeed: 0.0
+  maxSpeed: 24.0
   minEngineRPM: 900
   maxEngineRPM: 7600
+  torqueMultiplier: 1.0
 
 Vehicle.phoenix_amv_gear_2:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 1
-  minSpeed: 37.79
-  maxSpeed: 58.53
-  minEngineRPM: 4910
+  minSpeed: 21.6
+  maxSpeed: 33.08
+  minEngineRPM: 4960
   maxEngineRPM: 7600
+  torqueMultiplier: 0.67
 
 Vehicle.phoenix_amv_gear_3:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 0.67
-  minSpeed: 52.09
-  maxSpeed: 74.61
-  minEngineRPM: 5310
+  minSpeed: 29.78
+  maxSpeed: 42.17
+  minEngineRPM: 5370
   maxEngineRPM: 7600
+  torqueMultiplier: 0.494
 
 Vehicle.phoenix_amv_gear_4:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 0.494
-  minSpeed: 66.4
-  maxSpeed: 90.68
-  minEngineRPM: 5570
+  minSpeed: 37.95
+  maxSpeed: 51.25
+  minEngineRPM: 5630
   maxEngineRPM: 7600
+  torqueMultiplier: 0.387
 
 Vehicle.phoenix_amv_gear_5:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 0.387
-  minSpeed: 80.71
-  maxSpeed: 106.74
-  minEngineRPM: 5750
+  minSpeed: 46.12
+  maxSpeed: 60.33
+  minEngineRPM: 5810
   maxEngineRPM: 7600
+  torqueMultiplier: 0.316
 
 Vehicle.phoenix_amv_gear_6:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 0.316
-  minSpeed: 95
-  maxSpeed: 122.82
-  minEngineRPM: 5880
+  minSpeed: 54.3
+  maxSpeed: 69.42
+  minEngineRPM: 5940
   maxEngineRPM: 7600
+  torqueMultiplier: 0.265
 
 Vehicle.phoenix_amv_gear_7:
   $type: gamedataVehicleGear_Record
-  torqueMultiplier: 0.265
-  minSpeed: 109.31
-  maxSpeed: 138.89
-  minEngineRPM: 6140
+  minSpeed: 62.47
+  maxSpeed: 78.5
+  minEngineRPM: 6050
   maxEngineRPM: 7800
+  torqueMultiplier: 0.227
+
+Vehicle.phoenix_amv_wheel_dims_front:
+  $type: gamedataVehicleWheelDimensionsPreset_Record
+  rimRadius: 0.2781
+  tireRadius: 0.3798
+  tireWidth: 0.2902
+  wheelOffset: 0
+
+Vehicle.phoenix_amv_wheel_dims_back:
+  $type: gamedataVehicleWheelDimensionsPreset_Record
+  rimRadius: 0.2921
+  tireRadius: 0.3988
+  tireWidth: 0.3559
+  wheelOffset: 0
 
 Vehicle.phoenix_amv_wheel_dimensions:
-  $type: VehicleWheelDimensionsSetup
-  frontPreset:
-    $type: VehicleWheelDimensionsPreset
-    tireRadius: 0.392
-    rimRadius: 0.251
-    tireWidth: 0.341
-    wheelOffset: 0.10
-  backPreset:
-    $type: VehicleWheelDimensionsPreset
-    tireRadius: 0.392
-    rimRadius: 0.251
-    tireWidth: 0.374
-    wheelOffset: 0.08
+  $type: gamedataVehicleWheelDimensionsSetup_Record
+  frontPreset: Vehicle.phoenix_amv_wheel_dims_front
+  backPreset: Vehicle.phoenix_amv_wheel_dims_back
+
+Vehicle.phoenix_amv_wheel_preset_front:
+  $type: gamedataVehicleWheelDrivingPreset_Record
+  extremeCompressionEventScalor: 0.46
+  frictionMulLateral: 1.3
+  frictionMulLongitudinal: 0.95
+  logicalSuspensionCompressionLength: 0.5
+  mass: 23
+  maxBrakingTorque: 1165
+  springBoundDampingLowRate: 2200
+  springDamping: 3000
+  springDampingHighRateCompression: 0.3
+  springDampingLowRateCompression: 0.2
+  springReboundDamping: 3300
+  springReboundDampingLowRate: 2300
+  springStiffness: 27
+  swaybarDisplacementLimit: 0.14
+  swaybarLengthScalar: 2.3
+  swaybarStiffness: 18
+  tenderSpringLength: 0
+  tireFrictionCoef: 1
+  tireLateralSlipEffectsMul: 1.46
+  tireLongitudinalSlipEffectsMul: 1.3
+  tireRollingResistanceCoef: 0.002
+  visualSuspensionCompressionLength: 0.03
+  visualSuspensionDroop: 0.12
+  wheelsVerticalOffset: -0.017
+
+Vehicle.phoenix_amv_wheel_preset_back:
+  $type: gamedataVehicleWheelDrivingPreset_Record
+  extremeCompressionEventScalor: 0.38
+  frictionMulLateral: 1.28
+  frictionMulLongitudinal: 0.98
+  logicalSuspensionCompressionLength: 0.5
+  mass: 25
+  maxBrakingTorque: 785
+  springBoundDampingLowRate: 2500
+  springDamping: 3200
+  springDampingHighRateCompression: 0.3
+  springDampingLowRateCompression: 0.2
+  springReboundDamping: 3500
+  springReboundDampingLowRate: 2500
+  springStiffness: 26
+  swaybarDisplacementLimit: 0.13
+  swaybarLengthScalar: 1.3
+  swaybarStiffness: 15
+  tenderSpringLength: 0
+  tireFrictionCoef: 1
+  tireLateralSlipEffectsMul: 1.3
+  tireLongitudinalSlipEffectsMul: 1.1
+  tireRollingResistanceCoef: 0.002
+  visualSuspensionCompressionLength: 0.03
+  visualSuspensionDroop: 0.12
+  wheelsVerticalOffset: -0.004
+
+Vehicle.phoenix_amv_wheel_setup:
+  $type: gamedataVehicleWheelDrivingSetup_4_Record
+  frontPreset: Vehicle.phoenix_amv_wheel_preset_front
+  backPreset: Vehicle.phoenix_amv_wheel_preset_back
+  LF: Vehicle.phoenix_amv_role_lf
+  RF: Vehicle.phoenix_amv_role_rf
+  LB: Vehicle.phoenix_amv_role_lb
+  RB: Vehicle.phoenix_amv_role_rb
+
+Vehicle.phoenix_amv_helper_rotation:
+  $type: gamedataRotationLimiter_Record
+  type: Vehicle.RotationLimiter_HelperType
+  driftExceededAngle: 60
+  driftFullAngleBegin: 20
+  driftFullAngleEnd: 40
+  driftLimit: 2.3
+  driftLimitMaxVel: 18
+  driftLimitStartVel: 8
+  handbrakeLimit: 2.49
+  maxAngularSpeedRad: 2.6
+  smoothingTime: 0.2
+
+Vehicle.phoenix_amv_helper_rear_friction:
+  $type: gamedataRearWheelsFrictionModifier_Record
+  type: Vehicle.RearWheelsFrictionModifier_HelperType
+  maxHelperAcceleration: 10
+  maxLatSlipRatio: 5
+  maxLongSlipRatio: 1.5
+  maxSpeed: 18
+  minLatFrictionCoef: 0.62
+  minLatSlipRatio: 0.25
+  minLongFrictionCoef: 0.8
+  minLongSlipRatio: 0.3
+
+Vehicle.phoenix_amv_helper_accel_noise:
+  $type: gamedataDriveWheelsAccelerateNoise_Record
+  type: Vehicle.DriveWheelsAccelerateNoise_HelperType
+  accelerationBoost: 0.3
+  accelerationBoostMaxSpeed: 10
+  accelerationBoostReverse: 2
+  accelerationNoiseMaxSpeed: 12
+  maxApplyTime: 1.6
+  maxForcesDifference: 1
+  minApplyTime: 0.8
+  minForcesDifference: 1
+
+Vehicle.phoenix_amv_helper_handbrake:
+  $type: gamedataHandbrakeFrictionModifier_Record
+  type: Vehicle.HandbrakeFrictionModifier_HelperType
+  additionalBrakeForLongUse: 0.7
+  blendOutTime: 0.6
+  postHandbrakeTractionBoost: 2
+  rearWheelsLatFrictionCoef: 0.9
+  rearWheelsLongFrictionCoef: 0.6
+
+Vehicle.phoenix_amv_helper_uphill:
+  $type: gamedataUphillDriveHelper_Record
+  type: Vehicle.UphillDriveHelper_HelperType
+  slopeCompensationFactor: 0.5
+  slopeCompensationMaxAngle: 20
+
+Vehicle.phoenix_amv_helper_downforce:
+  $type: gamedataDynamicDownforceHelper_Record
+  type: Vehicle.DynamicDownforceHelper_HelperType
+  minSpeed: 20
+  maxSpeed: 80
+  maxSpeedFactorGround: 0.7
+  maxSpeedFactorAir: 0
+
+Vehicle.phoenix_amv_helper_air_gravity:
+  $type: gamedataInAirGravityModifier_Record
+  type: Vehicle.InAirGravityModifier_HelperType
+  baseAddedGravity: 0.4
+  driveSpeedAddedGravity: 0.2
+  maxDriveSpeed: 20
+  minDriveSpeed: 3
+  smoothingFactor: 0.2
+  zVelReductionEnd: -10
+  zVelReductionStart: -4
+
+Vehicle.phoenix_amv_burnout:
+  $type: gamedataVehicleBurnOut_Record
+  burnOutGripBonus: 6.8
+  gripBonusMaxLaunchSpeed: 11
+  gripBonusMaxSpeedMultiplier: 1.7
+  lateralAccelForwardSpeedMaxDecimation: 0.65
+  lateralForceMaxAcceleration: 0.4
+  lateralForceMaxSpeed: 6.8
+  lateralSlipRatioInfluence: 0.62
+  maxBrakeForceModifier: 0.8
+  maxDriveWheelSlipRatio: 25
+  maxLateralAccelSlipRatioMultipler: 0.64
+  maxLongFrictionSlipRatioMultipler: 0.7
+  maxSpeedToInitiateBurnOut: 27
+  minBrakeForceModifier: 0.01
+  minLongFrictionCoeff: 0.66
+  minLongFrictionSlipRatioScaled: 0.1
 
 Vehicle.phoenix_amv_drive_model:
-  $base: Vehicle.VehicleDriveModelData_911Turbo
-  total_mass: 1750
-  chassis_mass: 1750
-  # 2026-11-13 tester: 260 km/h ustune cikmiyordu -> hava direnci 911 1.93 -> 1.35; el freni hafif 1000 -> 2600
+  $type: gamedataVehicleDriveModelData_Record
   airResistanceFactor: 0.66
-  handbrakeBrakingTorque: 1600
-  momentOfInertiaScale: { x: 1, y: 1, z: 1 }
-  # Caliburn atalet (2026-10-29; onceki Apollo x kutle 4030/1200/4410 fazlaydi)
-  momentOfInertia: { x: 2528, y: 758, z: 2917 }
-  # ortadan motorlu, %43/57: agirlik merkezi arka aksa dogru; yapay viraj yatmasi kapali
-  # z teker merkezi (Root) yuksekligine gore: vanilla 911 +0.14 (yerden ~0.49 m). Apollodan gelen -0.18 agirlik merkezini yerden
-  # ~0.17 m, akslarin ALTINA koyuyordu -> kaldirim/rampada arac agirliksiz gibi ucuyordu (oyun testi 2026-10-28, Apollo da).
-  # Countach ile ayni +0.08 (yerden ~0.43 m); y Caliburn (-0.13, ortadan motorlu)
-  center_of_mass_offset: { x: 0.0, y: -0.16, z: 0.06 }
-  turningRollFactor: 1
-  # Direksiyon (Apollo "cok agir" sonrasi): 86 derece/s, 24 m/s ustu %29
-  wheelTurnMaxAddPerSecond: 137
-  wheelTurnMaxSubPerSecond: 170
-  turnUpdateMaxSpeedThreshold: 45
-  turnUpdateMaxSpeedTurnMul: 0.21
-  driveHelpers:
-    - $base: Vehicle.RotationLimiter_Exotic
-      maxAngularSpeedRad: 2.6
-      driftLimit: 2.3
-    # Exotic: kayan arka tekerin yanal tutusu %62'ye duser (bilerek oversteer) -> %95
-    - $base: Vehicle.RearWheelsFrictionModifier_Exotic
-      minLatFrictionCoef: 0.62
-      minLongFrictionCoef: 0.8
-    - Vehicle.DriveWheelsAccelerateNoise_Sport
-    - Vehicle.HandbrakeFrictionModifier_Exotic
-    - Vehicle.UphillDriveHelper_Standard
-    - $base: Vehicle.DynamicDownforceHelper_Exotic
-      maxSpeedFactorGround: 0.70
-      maxSpeedFactorAir: 0
-    # havada yere cekme: 911'in kendi kaydi (InAirGravityModifier), Bolide/Apollo agir ayari
-    - $base: Vehicle.VehicleDriveModelData_911Turbo_inline7
-      baseAddedGravity: 0.4
-      driveSpeedAddedGravity: 0.2
-  wheelSetup:
-    $base: Vehicle.VehicleDriveModelData_911Turbo_inline0
-    LF: Vehicle.phoenix_amv_wheel_front
-    RF: Vehicle.phoenix_amv_wheel_front
-    LB: Vehicle.phoenix_amv_wheel_back
-    RB: Vehicle.phoenix_amv_wheel_back
-    # karbon frenler; Apollo 660/560 @ 1350 kg kutle oraniyla. yay/sonum/viraj demiri Caliburn
-    frontPreset:
-      $base: Vehicle.VehicleDriveModelData_911Turbo_inline1
-      frictionMulLateral: 1.46
-      frictionMulLongitudinal: 1.06
-      maxBrakingTorque: 1165
-      mass: 23
-      springStiffness: 27
-      springDamping: 3000
-      springReboundDamping: 3300
-      springBoundDampingLowRate: 2200
-      springReboundDampingLowRate: 2300
-      springDampingLowRateCompression: 0.2
-      springDampingHighRateCompression: 0.3
-      swaybarStiffness: 18
-      swaybarLengthScalar: 2.3
-      swaybarDisplacementLimit: 0.14
-      extremeCompressionEventScalor: 0.46
-      logicalSuspensionCompressionLength: 0.5
-      visualSuspensionCompressionLength: 0.03
-      tenderSpringLength: 0
-      wheelsVerticalOffset: -0.017
-      visualSuspensionDroop: 0.12
-      tireFrictionCoef: 1
-      tireLateralSlipEffectsMul: 1.46
-      tireLongitudinalSlipEffectsMul: 1.3
-      tireRollingResistanceCoef: 0.002
-    backPreset:
-      $base: Vehicle.VehicleDriveModelData_911Turbo_inline2
-      frictionMulLateral: 1.44
-      frictionMulLongitudinal: 1.10
-      maxBrakingTorque: 785
-      mass: 25
-      springStiffness: 26
-      springDamping: 3200
-      springReboundDamping: 3500
-      springBoundDampingLowRate: 2500
-      springReboundDampingLowRate: 2500
-      springDampingLowRateCompression: 0.2
-      springDampingHighRateCompression: 0.3
-      swaybarStiffness: 15
-      swaybarLengthScalar: 1.3
-      extremeCompressionEventScalor: 0.38
-      swaybarDisplacementLimit: 0.13
-      logicalSuspensionCompressionLength: 0.5
-      visualSuspensionCompressionLength: 0.03
-      tenderSpringLength: 0
-      wheelsVerticalOffset: -0.004
-      visualSuspensionDroop: 0.12
-      tireFrictionCoef: 1
-      tireLateralSlipEffectsMul: 1.3
-      tireLongitudinalSlipEffectsMul: 1.1
-      tireRollingResistanceCoef: 0.002
-
   antiSwaybarDampingScalor: 0.75
   bankBodyFBTanMultiplier: 0.1
   bankBodyLRTanMultiplier: 0.1
   bodyFriction: 0.6
   brakingEstimationMagicFactor: 0.5
   brakingFrictionFactor: 1.4
+  burnOut: Vehicle.phoenix_amv_burnout
+  center_of_mass_offset: { x: 0, y: -0.16, z: 0.06 }
+  chassis_mass: 1800
+  total_mass: 1800
   differentialOvershootFactor: 0
+  driveHelpers: [ Vehicle.phoenix_amv_helper_rotation, Vehicle.phoenix_amv_helper_rear_friction, Vehicle.phoenix_amv_helper_accel_noise, Vehicle.phoenix_amv_helper_handbrake, Vehicle.phoenix_amv_helper_uphill, Vehicle.phoenix_amv_helper_downforce, Vehicle.phoenix_amv_helper_air_gravity ]
+  flatTireSim: Vehicle.VehicleFlatTireSimulation_RWD_4w
   forwardWeightTransferFactor: 0.3
+  handbrakeBrakingTorque: 1600
   lowVelStoppingDeceleration: 0.8
   maxWheelTurnDeg: 38
+  momentOfInertia: { x: 2600, y: 780, z: 3000 }
+  momentOfInertiaScale: { x: 1, y: 1, z: 1 }
   perfectSteeringFactor: 1
   sideWeightTransferFactor: 0.2
   slipAngleCurveScale: 2
@@ -227,6 +311,7 @@ Vehicle.phoenix_amv_drive_model:
   slopeTractionReductionMax: 30
   smoothWheelContactDecreaseTime: 0
   smoothWheelContactIncreseTime: 0
+  turningRollFactor: 1
   turningRollFactorWeakContactMul: 1
   turningRollFactorWeakContactThresholdMax: 0.6
   turningRollFactorWeakContactThresholdMin: 0.9
@@ -236,30 +321,35 @@ Vehicle.phoenix_amv_drive_model:
   turnUpdateInputDiffProgressionPow: 0.7
   turnUpdateInputFastChangeSpeed: 1.7
   turnUpdateInputSlowChangeSpeed: 0.15
+  turnUpdateMaxSpeedThreshold: 45
   turnUpdateMaxSpeedTurnChangeMul: 2.15
+  turnUpdateMaxSpeedTurnMul: 0.21
   turnUpdateMidSpeedThreshold: 22
   turnUpdateMidSpeedTurnChangeMul: 1.58
   turnUpdateMidSpeedTurnMul: 0.62
   useAlternativeTurnUpdate: true
+  waterParams: Vehicle.VehicleWaterDefault_4w
+  wheelSetup: Vehicle.phoenix_amv_wheel_setup
   wheelsFrictionMap: CarDrivingFrictionMap.Default
+  wheelTurnMaxAddPerSecond: 137
+  wheelTurnMaxSubPerSecond: 170
+
 Vehicle.phoenix_amv_engine:
-  $base: Vehicle.VehicleEngineData_4_SuperSport
-  # 2026-11-13 tester: hizlanma zayif -> tork 960 (SuperSport) -> 1300
-  engineMaxTorque: 1500
-  # 2026-11-24: motor kaydinin gizli yarisi (son vites torku, debriyaj ataleti,
-  # sanziman suresi) SuperSport'tan miras kaliyordu; 572 km/h'lik referans arabanin
-  # degerleri acikca yazildi.
-  flyWheelMomentOfInertia: 0.12
-  finalGearTorqueDecimationScalor: 1.0
-  gearChangeTime: 0.1
-  gearChangeCooldown: 0.15
+  $type: gamedataVehicleEngineData_Record
+  engineMaxTorque: 1000
   fastR1GearChange: true
-  wheelsResistanceRatio: 15
-  resistanceTorque: 150
+  finalGearTorqueDecimationScalor: 1.0
+  flyWheelMomentOfInertia: 0.12
+  forceReverseRPMToMin: false
+  gearChangeCooldown: 0.15
+  gearChangeTime: 0.1
   gearCurvesPath: base\gameplay\vehicles\curves\engine_torque\large_balanced_turbo.curveset
+  gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]
   maxRPM: 7900
   minRPM: 900
-  gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]
+  resistanceTorque: 150
+  reverseDirDelay: 0.3
+  wheelsResistanceRatio: 15
 
 Vehicle.phoenix_aston_valkyrie:
   $base: Vehicle.v_sport2_porsche_911turbo

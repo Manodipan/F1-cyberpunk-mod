@@ -30,7 +30,7 @@ Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 
 | # | Item | Why | Unblocks it |
 |---|---|---|---|
-| 1 | **v10 Jesko map** | the car that works, copied wholesale: its gear construction (every floor = 0.90 × the previous gear's top, verified 6/6 to 0.01 m/s), its tapering steps scaled to 500 km/h, its ~40 drive-model fields (we were inheriting `turningRollFactor: 0` and a dozen more from the 911), and its torque curve — with grip 12 % ABOVE its numbers (1.46/1.44 against 1.30/1.28) | `docs/TOPSPEED-TEST.md` §3l; one-command revert if it is worse |
+| 1 | **v11 CONTROL — Jesko physics copied byte for byte** | every physics record lifted as raw text out of `reference/vehicles/jesko_attack.yaml` and renamed only: engine, gearbox (283 km/h declared top gear), RWD roles, all 51 drive-model fields, 7 helper records, burnout, wheels. Ours is only mesh/entity/paint/name/audio. A test asserts each block is byte-identical to the source, so it cannot drift | `docs/TOPSPEED-TEST.md` §3m: 500+ means our numbers were wrong; stopping where the Jesko doesn't means it is the base/entity |
 | 2 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 | 3 | Reference corpus | every racing car mod's YAML is a worked example of drag/steering at speed, and comparing beats guessing | `make vehicles` (local corpus) + `reference/vehicles/INDEX.md` (committed facts) — see `reference/vehicles/README.md` |
 | 4 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |

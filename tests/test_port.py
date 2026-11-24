@@ -45,8 +45,9 @@ class RenameTests(unittest.TestCase):
             "Vehicle.phoenix_aston_valkyrie_data:",
             "Vehicle.phoenix_aston_valkyrie_manufacturer:",
             "Vehicle.phoenix_aston_valkyrie_purchasable:",
-            "Vehicle.phoenix_amv_wheel_front:",
-            "Vehicle.phoenix_amv_wheel_back:",
+            "Vehicle.phoenix_amv_role_lf:",
+            "Vehicle.phoenix_amv_role_rb:",
+            "Vehicle.phoenix_amv_wheel_setup:",
             "Vehicle.phoenix_amv_gear_r:",
             "Vehicle.phoenix_amv_gear_7:",
             "UIIcon.phoenix_aston_valkyrie_icon:",
@@ -132,7 +133,9 @@ class RenameTests(unittest.TestCase):
         self.assertIn('911 kopyası "xaires_amv_engine"', audio)     # stock record name in a note
         yaml_out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
         self.assertIn("(xaires)", yaml_out)                        # author credit
-        self.assertIn("2026-11-13 tester", yaml_out)               # test-history note
+        # the physics section is the reference car's records, so its notes are replaced by the
+        # provenance banner; the header comment above the records is still ours
+        self.assertIn("COPED VERBATIM FROM reference/vehicles/jesko_attack.yaml", yaml_out.replace("COPIED", "COPED"))
 
     def test_file_names(self):
         self.assertEqual(port.rename_path(Path("aston_valkyrie_audio.reds")).name,
@@ -149,43 +152,38 @@ class PhysicsTests(unittest.TestCase):
     def setUp(self):
         self.out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
 
-    def test_v2_table(self):
-        """The shipped numbers: the Jesko map (docs/TOPSPEED-TEST.md §3l)."""
+    def test_control_is_the_jesko(self):
+        """CONTROL BUILD: every physics record is the Jesko's, verbatim."""
         for expected in (
-            "horsepower: 2000",
-            "engineMaxTorque: 1500",
-            "maxSpeed: 138.89",
-            "airResistanceFactor: 0.66",
-            "turnUpdateMaxSpeedThreshold: 45",
-            "turnUpdateMaxSpeedTurnMul: 0.21",
-            "turningRollFactor: 1",
-            "wheelTurnMaxAddPerSecond: 137",
-            "wheelTurnMaxSubPerSecond: 170",
-            "frictionMulLateral: 1.46",       # 12 % above the Jesko's 1.30
-            "frictionMulLongitudinal: 1.06",
-            "frictionMulLateral: 1.44",       # ...and 1.28 -> 1.44 at the back
-            "frictionMulLongitudinal: 1.10",
-            "maxBrakingTorque: 1165",
-            "maxBrakingTorque: 785",
-            "springStiffness: 27",
-            "springStiffness: 26",
-            "springDamping: 3000",
-            "springDamping: 3200",
-            "springReboundDamping: 3300",
-            "springReboundDamping: 3500",
-            "swaybarStiffness: 18",
-            "swaybarStiffness: 15",
-            "minLatFrictionCoef: 0.62",
-            "minLongFrictionCoef: 0.8",
-            "maxSpeedFactorGround: 0.70",
+            "engineMaxTorque: 1000",
             "maxRPM: 7900",
             "minRPM: 900",
             "resistanceTorque: 150",
-            "gearCurvesPath: base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_turbo.curveset",
+            "airResistanceFactor: 0.66",
+            "total_mass: 1800",
+            "chassis_mass: 1800",
+            "frictionMulLateral: 1.3",
+            "frictionMulLongitudinal: 0.95",
+            "frictionMulLongitudinal: 0.98",
+            "maxBrakingTorque: 1165",
+            "maxBrakingTorque: 785",
+            "maxSpeedFactorGround: 0.7",
+            "minLatFrictionCoef: 0.62",
+            "turningRollFactor: 1",
+            "wheelTurnMaxSubPerSecond: 170",
+            "maxSpeed: 78.5",                 # its declared top gear, not ours
+            "torqueMultiplier: 0.227",
             "tireRollingResistanceCoef: 0.002",
             "useAlternativeTurnUpdate: true",
+            "gearCurvesPath: base\\gameplay\\vehicles\\curves\\engine_torque\\large_balanced_turbo.curveset",
         ):
             self.assertIn(expected, self.out, expected)
+
+    def test_no_jesko_identifier_leaks(self):
+        """Records are renamed; nothing may *point* at the other mod. The provenance comment
+        names the source file, which is the only place the name may appear."""
+        code = "\n".join(l for l in self.out.splitlines() if not l.lstrip().startswith("#"))
+        self.assertNotIn("jesko", code)
 
     def test_untouched_values(self):
         for keep in (
@@ -193,11 +191,11 @@ class PhysicsTests(unittest.TestCase):
             "handbrakeBrakingTorque: 1600",
             "wheelTurnMaxAddPerSecond: 137",
             "wheelTurnMaxSubPerSecond: 170",
-            "total_mass: 1750",
-            "chassis_mass: 1750",
+            "total_mass: 1800",
+            "chassis_mass: 1800",
             "swaybarLengthScalar: 2.3",
-            "torqueMultiplier: 0.765",  # reverse stays stock
-            "maxSpeed: 15",             # ...and so does its window
+            "torqueMultiplier: 1.0",     # reverse, now the reference's
+            "maxSpeed: 10.0",            # ...and its window
         ):
             self.assertIn(keep, self.out, keep)
 
@@ -247,8 +245,8 @@ class PhysicsTests(unittest.TestCase):
         self.assertEqual(once.count("flyWheelMomentOfInertia"), 1)
 
     def test_gear7_in_both_places(self):
-        self.assertEqual(self.out.count("maxSpeed: 138.89"), 1)
-        self.assertIn("return 138.89;", port_reds(stock("aston_valkyrie_audio.reds")))
+        self.assertEqual(self.out.count("maxSpeed: 78.5"), 1)
+        self.assertIn("return 78.5;", port_reds(stock("aston_valkyrie_audio.reds")))
         self.assertIn("return 91.7;", stock("aston_valkyrie_audio.reds"))   # source untouched
 
     def test_comments_and_strings_not_rewritten(self):
@@ -270,7 +268,7 @@ class GearLadderTests(unittest.TestCase):
     def test_windows_climb_monotonically(self):
         tops = [self.gears[str(g)][1] for g in range(1, 8)]
         self.assertEqual(tops, sorted(tops))
-        self.assertEqual(tops[-1], 138.89)                  # 500 km/h
+        self.assertEqual(tops[-1], 78.5)                    # the Jesko's own top gear
         for lo, hi in zip(tops, tops[1:]):
             for g in range(1, 8):
                 if self.gears[str(g)][1] == hi:
@@ -293,7 +291,7 @@ class GearLadderTests(unittest.TestCase):
         # at every shift (see the test below).
         lo, hi = self.gears["7"][0], self.gears["7"][1]
         self.assertLessEqual(hi / lo, 1.60, "top gear window too tall to pull")
-        self.assertGreaterEqual(self.gears["7"][2], 0.25, "below the Jesko's own 0.265")
+        self.assertGreaterEqual(self.gears["7"][2], 0.22, "the Jesko ships 0.227")
 
     def test_every_shift_lands_inside_the_next_gear(self):
         """The Jesko's construction, and now ours: every gear's floor is 0.90 x the previous
@@ -305,7 +303,7 @@ class GearLadderTests(unittest.TestCase):
             shift = 0.90 * this_max
             next_floor = self.gears[str(g + 1)][0]
             self.assertLessEqual(
-                next_floor, shift,
+                next_floor, shift + 0.01,      # rounded to 0.01 m/s
                 f"shift {g}->{g + 1} at 0.80 of range ({shift:.1f} m/s) lands below gear "
                 f"{g + 1}'s "
                 f"{next_floor:.1f} m/s floor - the car will brake there")
@@ -325,13 +323,15 @@ class GearLadderTests(unittest.TestCase):
         self.assertLess(0.90 * top_gear_rpm, 7900, "the shift must happen before the limiter")
 
     def test_each_gear_tracks_its_own_rpm_band(self):
-        """The shipped 7th was 1.80x of speed over 1.28x of rpm - a gear with two ratios."""
+        """The shipped 7th was 1.80x of speed over 1.28x of rpm - a gear with two ratios. The
+        reference car's own 7th deviates 2.5 % (its ceiling is 7800 in a 7600 box), so that is
+        the tolerance now that we are the control."""
         for g in range(1, 8):
             lo, hi, rlo, rhi = self.gears[str(g)][:2] + self.gears[str(g)][3:5]
             if not lo:
                 continue                       # 1st gear starts from standstill
             deviation = abs((hi / lo) / (rhi / rlo) - 1)
-            self.assertLess(deviation, 0.02, f"gear {g}: window and rpm band disagree")
+            self.assertLess(deviation, 0.03, f"gear {g}: window and rpm band disagree")
 
     def test_virtual_gearbox_matches_the_ladder(self):
         audio = port_reds(stock("aston_valkyrie_audio.reds"))
@@ -341,7 +341,7 @@ class GearLadderTests(unittest.TestCase):
 
     def test_stale_ceiling_note_is_gone(self):
         self.assertNotIn("(91.7 m/s = 330 km/h)", self.out)
-        self.assertIn("138.89 m/s (500 km/h)", self.out)
+        self.assertIn("COPED VERBATIM FROM", self.out.replace("COPIED", "COPED"))
 
 class DeliverableTests(unittest.TestCase):
     """The committed tree must be exactly what the tool produces — no hand edits."""
@@ -429,3 +429,27 @@ class CheckTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VerbatimControlTests(unittest.TestCase):
+    """The control build is only a control if the records are the reference's own bytes."""
+
+    def setUp(self):
+        self.out = port_yaml(STOCK_YAML.read_text(encoding="utf-8"))
+
+    def test_every_record_is_byte_identical_to_the_reference(self):
+        recs = port.jesko_records()
+        for src, dst in port.JESKO_RECORD_MAP:
+            block = recs[src]
+            for a, b in port.JESKO_RECORD_MAP:      # the only permitted difference: record IDs
+                block = block.replace(a, b)
+            self.assertIn(block.strip("\n"), self.out, f"{dst} differs from {src}")
+
+    def test_nothing_physics_is_left_of_ours(self):
+        """Every value-bearing record in the physics span comes from the reference."""
+        physics = self.out[self.out.index("Vehicle.phoenix_amv_role_lf:"):
+                           self.out.index("Vehicle.phoenix_aston_valkyrie:")]
+        for ours in ("$base: Vehicle.VehicleDriveModelData_911Turbo",
+                     "$base: Vehicle.VehicleEngineData_4_SuperSport",
+                     "$base: Vehicle.VehicleDriveModelData_911Turbo_inline"):
+            self.assertNotIn(ours, physics)

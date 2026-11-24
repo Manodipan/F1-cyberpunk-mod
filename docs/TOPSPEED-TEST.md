@@ -226,6 +226,40 @@ Quadra and the Jesko), and the gears declare `$type: gamedataVehicleGear_Record`
 inheriting from `..._quadra_turbo_r_inline10…14`. Values are unchanged; the shape no longer
 depends on the position of somebody else's record.
 
+## 3m. THE CONTROL: the Jesko's physics, copied byte for byte (2026-11-24)
+
+Instruction: *"copy the jesko curves exactly, precisely. don't innovate, we need a control."*
+
+Done, and done literally: `tools/port_to_phoenix.py` now **reads
+`reference/vehicles/jesko_attack.yaml` and copies its record blocks as raw text**, renaming only
+the record IDs (`Vehicle.jesko_attack_X` → `Vehicle.phoenix_amv_X`). A test
+(`test_every_record_is_byte_identical_to_the_reference`) asserts that every copied block appears
+in the deliverable unchanged, so this cannot drift into an "adaptive" build by accident.
+
+What is now the reference car's, not ours:
+
+| | value |
+|---|---|
+| Engine | 1000 torque, 7900 rpm, 900 idle, `large_balanced_turbo`, 0.12 flywheel, 150 engine braking |
+| Gearbox | its 8 gears verbatim — top gear 62.47 → **78.5 m/s (283 km/h declared)** |
+| Drivetrain | **RWD** (its wheel roles: front not driven, handbrake rear only) |
+| Drive model | all 51 fields: drag 0.66, downforce 0.7, mass 1800, inertia 2600/780/3000, grip 1.30/1.28, brakes 1165/785, damping 3000/3200 + 3300/3500, swaybar 18/15, steering 137/170, `turningRollFactor` 1, `useAlternativeTurnUpdate` |
+| Helpers | its seven helper records and its burnout record, values included |
+| Wheels | its dimensions (tireRadius 0.3798 / 0.3988) and its two driving presets |
+
+Ours: mesh, entity, textures, paint, name, icons, audio resource, scanner card, dealer entry.
+
+**This is a measurement, not a tune. Two outcomes, both informative:**
+
+| Result | What it proves |
+|---|---|
+| **runs to ~500 km/h like the Jesko** | our numbers were the problem all along, and the last four builds were chasing a ladder fault in a car that was fine |
+| **stops where the Jesko does not (283 or ~350)** | the physics is not the difference — the meshes/entity/base are — and no further tuning of these fields can fix it |
+
+If it is the second, the next question is what else the Phoenix inherits that the Jesko does not:
+`$base: Vehicle.v_sport2_porsche_911turbo` on the vehicle record, its entity, and the data
+package. That is where a cut-off would live that no drive-model value can reach.
+
 ## 3l. The Jesko map (2026-11-24)
 
 Requested: *"why not take the Jesko - that works - and map to the Phoenix, then tune grip to
