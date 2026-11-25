@@ -45,9 +45,19 @@ Two places, both writing the same `settings.ini`:
 
 1. **CET overlay** (`~`) — a *Phoenix True Speedometer* window, drawn whenever the overlay is open.
    Needs nothing but CET.
-2. **Settings → Mods** — a *Phoenix Speedometer* tab, with HUD and Units subcategories. That page is
-   supplied by **Native Settings UI** ([Nexus 3518](https://www.nexusmods.com/cyberpunk2077/mods/3518));
-   without it the tab simply does not appear and nothing else changes.
+2. **Settings → Mods** — a *Phoenix Speedometer* tab, in three subcategories plus a reset:
+
+   | subcategory | widgets |
+   |---|---|
+   | HUD | Show the HUD · Print the units · First person only |
+   | Units | Slot 1 unit · Slot 2 unit (both offer `off`) · two custom multipliers |
+   | Position and look | text size · X · Y · colour R/G/B · fallback smoothing |
+   | (tab root) | **Reset to defaults** — also wired into Native Settings' own restore-defaults |
+
+   That page is supplied by **Native Settings UI**
+   ([Nexus 3518](https://www.nexusmods.com/cyberpunk2077/mods/3518)); without it the tab simply does
+   not appear and nothing else changes. Resetting from either surface updates both, so the Mods tab
+   never shows a stale value.
 
 The redscript "Mod Settings" mod ([Nexus 4885](https://www.nexusmods.com/cyberpunk2077/mods/4885))
 that the old build used plays no part here — that row disappeared with the `.reds`.
@@ -129,6 +139,7 @@ CET's own source.
 | `onDraw` takes no arguments, `onUpdate` gets the delta | `ScriptContext.cpp` (`TryLuaFunction(m_logger, m_onDraw)`) |
 | `registerHotkey(id, label, fn)` | `ScriptContext.cpp` overloads; BetterVehicleFirstPerson |
 | sandbox has **no `debug` library**; `io.open` resolves relative paths against the mod folder | `LuaSandbox.cpp` whitelist + `InitializeIOForSandbox` |
+| CET calls **nothing** after loading `init.lua`, and sets `registerForEvent` to nil straight after — a mod has to start itself during load | `ScriptContext.cpp` (`ExecuteFile`, then `env["registerForEvent"] = sol::nil`) |
 | `_G` is not whitelisted | same whitelist — the mod never touches it |
 | `ImGuiWindowFlags.<Name>`, `ImGuiCol.<Name>` are tables | whitelist entries; BetterVehicleFirstPerson, CET-Mod-Manager, GameUI-WhereAmI |
 | `ImGui.Checkbox` / `DragFloat` return **value, changed** | BetterVehicleFirstPerson, CyberpunkVRPort_WristHud (both assign the first return) |
@@ -143,7 +154,7 @@ CET's own source.
 
 ## Verified
 
-The Lua is executed against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`): **50 tests**,
+The Lua is executed against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`): **57 tests**,
 all passing, and the harness deliberately reproduces CET's restrictions — `debug` is removed, the
 working directory is the mod folder, and the stubs use CET's real return shapes. Putting
 `debug.traceback` back into `guard()` fails 17 of them.
@@ -174,6 +185,11 @@ Drawing and settings:
 - settings round-trip; a corrupt line keeps the default; a hand-edited file cannot hide the HUD
   (`scale=99`, `posX=5.5`, `posY=-3`, unknown units → clamped); an unwritable file is not fatal
 - Native Settings UI receives `addSwitch` and index-based selectors, and its callbacks move the slot
+
+Startup:
+
+- simply loading the file registers both events and both hotkeys — no explicit call needed. (Removing
+  the self-start line fails 27 tests.)
 
 Static:
 

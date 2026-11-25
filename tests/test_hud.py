@@ -118,6 +118,41 @@ GetMod = function(name) return _G.__nativeSettings end
 """
 
 
+NS_STUB = """
+_G.__ns = { switches = {}, selectors = {}, ranges = {}, buttons = 0, setOption = 0, restore = nil }
+_G.__nativeSettings = {
+    addTab = function(path, label) _G.__ns.tab = path; _G.__ns.tabLabel = label end,
+    addSubcategory = function(path, label)
+        _G.__ns.subs = _G.__ns.subs or {}
+        _G.__ns.subs[#_G.__ns.subs + 1] = path
+    end,
+    addSwitch = function(path, label, desc, current, default, cb)
+        assert(type(current) == "boolean", "addSwitch current must be a bool, got " .. type(current))
+        assert(type(default) == "boolean", "addSwitch default must be a bool")
+        _G.__ns.switches[#_G.__ns.switches + 1] = { label = label, cb = cb }
+    end,
+    addSelectorString = function(path, label, desc, elements, selected, default, cb)
+        assert(type(selected) == "number", "selector needs an index, got " .. type(selected))
+        assert(type(default) == "number", "selector default needs an index")
+        _G.__ns.selectors[#_G.__ns.selectors + 1] =
+            { label = label, cb = cb, elements = elements, selected = selected }
+    end,
+    addRangeFloat = function(path, label, desc, min, max, step, fmt, current, default, cb)
+        assert(type(min) == "number" and type(max) == "number" and min < max, "range bounds")
+        assert(type(fmt) == "string" and fmt:find("%%"), "range needs a format string")
+        assert(type(current) == "number" and type(default) == "number", "range values must be numbers")
+        _G.__ns.ranges[#_G.__ns.ranges + 1] = { label = label, cb = cb, min = min, max = max }
+    end,
+    addButton = function(path, label, desc, text, size, cb)
+        _G.__ns.buttons = _G.__ns.buttons + 1
+        _G.__ns.buttonCb = cb
+    end,
+    registerRestoreDefaultsCallback = function(path, override, cb) _G.__ns.restore = cb end,
+    setOption = function(option, value) _G.__ns.setOption = _G.__ns.setOption + 1 end,
+}
+"""
+
+
 @unittest.skipUnless(HAVE_LUA, "lupa not installed - Lua tests need it")
 class HudLuaTests(unittest.TestCase):
     def setUp(self):
@@ -130,7 +165,7 @@ class HudLuaTests(unittest.TestCase):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute(STUBS)
         self.mod = self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
-        self.mod.start()
+        # deliberately no start() call: CET does not call anything, so loading must be enough
 
     def tearDown(self):
         os.chdir(self._cwd)
@@ -150,6 +185,15 @@ class HudLuaTests(unittest.TestCase):
         events = self.lua.eval("_G.__events")
         for name in ("onInit", "onUpdate", "onDraw", "onOverlayOpen", "onOverlayClose"):
             self.assertIn(name, events, name)
+        hotkeys = self.lua.eval("_G.__hotkeys")
+        self.assertIn("PhoenixSpeedometer_ToggleHud", hotkeys)
+        self.assertIn("PhoenixSpeedometer_ToggleLabels", hotkeys)
+
+    def test_loading_the_file_is_enough_to_start_the_mod(self):
+        """CET calls nothing after loading init.lua; the mod must register itself."""
+        events = self.lua.eval("_G.__events")
+        self.assertIn("onDraw", events, "no onDraw handler: the file loaded but never started")
+        self.assertIn("onInit", events)
         hotkeys = self.lua.eval("_G.__hotkeys")
         self.assertIn("PhoenixSpeedometer_ToggleHud", hotkeys)
         self.assertIn("PhoenixSpeedometer_ToggleLabels", hotkeys)
@@ -385,19 +429,61 @@ class HudLuaTests(unittest.TestCase):
         self.assertFalse(self.mod.setSlot("slot1", "furlongs"))
         self.assertEqual(self.mod.config().slot1, "km/h")
 
-    def test_native_settings_ui_is_optional_and_lenient(self):
-        self.lua.execute("""_G.__nativeSettings = {
-            addTab = function() end,
-            addSubcategory = function() end,
-            addToggle = function() end,
-            addSelectorString = function(path, label, desc, values, default, cb)
-                _G.__selectorCb = cb
-            end,
-        }""")
+    def boot_with_native_settings(self):
+        self.lua.execute(NS_STUB)
         mod = self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
-        mod.start()
-        mod.setSlot("slot1", 3)                              # index form, as a guard
-        self.assertEqual(mod.config().slot1, "mph")
+        self.lua.eval("_G.__events['onInit']")()             # the tab is registered here
+        return mod
+
+    def test_the_mods_tab_is_complete(self):
+        self.boot_with_native_settings()
+        self.assertEqual(self.lua.eval("_G.__ns.tab"), "/phoenix_speedometer")
+        self.assertEqual(len(self.lua.eval("_G.__ns.switches")), 3)
+        self.assertEqual(len(self.lua.eval("_G.__ns.selectors")), 2)
+        self.assertEqual(len(self.lua.eval("_G.__ns.ranges")), 9)
+        self.assertEqual(self.lua.eval("_G.__ns.buttons"), 1)
+        self.assertIsNotNone(self.lua.eval("_G.__ns.restore"))
+
+    def test_the_mods_tab_selectors_offer_off(self):
+        self.boot_with_native_settings()
+        selector = self.lua.eval("_G.__ns.selectors")[1]
+        self.assertEqual(list(selector["elements"].values()),
+                         ["m/s", "km/h", "mph", "knots", "ft/s", "Mach", "custom", "off"])
+        self.assertEqual(selector["selected"], 2)            # km/h sits at index 2
+
+    def test_off_from_the_mods_tab_blanks_the_slot(self):
+        mod = self.boot_with_native_settings()
+        self.lua.eval("_G.__ns.selectors")[2]["cb"](8)       # slot 2 -> off
+        self.assertEqual(mod.config().slot2, "")
+        self.assertEqual(mod.render(58.8, mod.config()), "212 km/h")
+
+    def test_a_range_from_the_mods_tab_writes_and_saves(self):
+        mod = self.boot_with_native_settings()
+        ranges = {r["label"]: r for r in self.lua.eval("_G.__ns.ranges").values()}
+        ranges["Text size"]["cb"](3.4)
+        self.assertAlmostEqual(mod.config().scale, 3.4, places=3)
+        self.assertIn("scale=3.400000", self.ini())
+
+    def test_reset_from_the_mods_tab_restores_defaults_and_syncs_widgets(self):
+        mod = self.boot_with_native_settings()
+        mod.config().scale = 5.0
+        mod.config().slot1 = "knots"
+        self.lua.eval("_G.__ns.buttonCb")()
+        self.assertAlmostEqual(mod.config().scale, 2.2, places=3)
+        self.assertEqual(mod.config().slot1, "km/h")
+        self.assertEqual(self.lua.eval("_G.__ns.setOption"), 14, "every widget re-synced")
+        mod.config().scale = 4.0
+        self.lua.eval("_G.__ns.restore")()                   # Native Settings' own restore
+        self.assertAlmostEqual(mod.config().scale, 2.2, places=3)
+
+    def test_the_overlay_reset_also_syncs_the_mods_tab(self):
+        mod = self.boot_with_native_settings()
+        mod.config().posX = 0.9
+        before = self.lua.eval("_G.__ns.setOption")
+        mod.resetToDefaults()
+        self.assertAlmostEqual(mod.config().posX, 0.6, places=3)
+        self.assertGreater(self.lua.eval("_G.__ns.setOption"), before,
+                           "overlay reset must not leave Mods widgets stale")
 
     # -- persistence -------------------------------------------------------
     def test_settings_round_trip(self):
@@ -485,6 +571,17 @@ class HudStaticTests(unittest.TestCase):
                         r"\bpackage\s*\.", r"\bcoroutine\s*\.", r"\butf8\s*\.",
                         r"\bcollectgarbage\b"):
             self.assertIsNone(re.search(pattern, code), pattern)
+
+    def test_no_local_function_is_used_before_it_is_defined(self):
+        """A local declared after its use becomes a nil global in Lua - silently, at runtime."""
+        code = self.code
+        offenders = []
+        for match in re.finditer(r"local function (\w+)\s*\(", code):
+            name, at = match.group(1), match.start()
+            early = list(re.finditer(r"\b" + re.escape(name) + r"\s*\(", code[:at]))
+            if early:
+                offenders.append((name, code[:early[0].start()].count("\n") + 1))
+        self.assertEqual(offenders, [], f"used before defined: {offenders}")
 
     def test_the_overlay_can_blank_a_slot(self):
         self.assertIn('"off"', self.code.replace(" ", ""), "the selector needs an off entry")
