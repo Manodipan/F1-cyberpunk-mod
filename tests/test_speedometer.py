@@ -10,14 +10,12 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REDS = ROOT / "Phoenix_true_speedometer/r6/scripts/phoenix_true_speedometer/phoenix_true_speedometer.reds"
-# The full feature set, parked while the boot failure is bisected. `.pending` is never installed.
-SETTINGS = ROOT / "Phoenix_true_speedometer/settings/PhoenixTS_Settings.reds.pending"
+
 
 
 class SpeedometerModTests(unittest.TestCase):
     def setUp(self):
         self.text = REDS.read_text(encoding="utf-8")
-        self.pending = SETTINGS.read_text(encoding="utf-8")
 
     def test_the_mod_exists_and_is_self_contained(self):
         self.assertTrue(REDS.is_file())
@@ -50,7 +48,7 @@ class SpeedometerModTests(unittest.TestCase):
         Nothing in ADE or the car mod continues an expression on the next line, so neither does
         this file. A line starting with an operator is the signature of that mistake.
         """
-        for source, label in ((self.text, "shipped"), (self.pending, "parked")):
+        for source, label in ((self.text, "shipped"), (self.text, "parked")):
             for line in source.splitlines():
                 stripped = line.strip()
                 if stripped and stripped[0] in "+*/" and not stripped.startswith("//"):
@@ -109,12 +107,13 @@ class SpeedometerModTests(unittest.TestCase):
         for label in ('"m/s"', '"km/h"', '"mph"', '"kn"', '"ft/s"'):
             self.assertIn(label, self.text, label)
         # a custom slot cannot be named, so it shows the multiplier it is using
-        self.assertIn('return "x" + ToString(', self.text)
+        self.assertIn('return "x" + PhoenixTS_Format(c, PhoenixTS_SigDigits(c));', self.text)
 
     def test_each_slot_tooltip_carries_the_factor_table(self):
-        self.assertEqual(self.text.count("x2.23694"), 2)   # one per slot dropdown tooltip
+        # one factor table per custom-multiplier tooltip
+        self.assertEqual(self.text.count("mph 2.23694"), 2)
         self.assertIn("3600 divided by the unit's length in metres", self.text)
-        self.assertIn("Example HUD: 59|212", self.text)
+        self.assertIn("at 58.8 m/s the HUD reads 58.8 for m/s and 212 for km/h", self.text)
 
     def test_no_newline_escapes(self):
         # Mod Settings tooltips are plain text; a literal \n would show up as characters
@@ -134,7 +133,6 @@ class CompileSafetyTests(unittest.TestCase):
         "IsPlayerDriven": "no such method on VehicleObject",
         "AbsI(": "no AbsI in redscript",
         "this.GetGame()": "not available on hudCarController",
-        "Cast<": "avoided in favour of paired Int32/Float locals",
         "var ": "not a local declaration keyword in redscript - `let` is, and it is reassignable",
     }
 
@@ -186,9 +184,8 @@ class CompileSafetyTests(unittest.TestCase):
                        "inkTextRef.SetText(this.m_SpeedValue,", "wrappedMethod(speedValue)"):
             self.assertIn(proven, text, proven)
         self.assertIn("this.m_activeVehicle", text)
-        # step B still ships no formatter of mine - that is step C
-        for mine in ("PhoenixTS_Format", "PhoenixTS_SigDigits"):
-            self.assertNotIn(mine, text, mine)
+        # the formatter ships in this build; it is audited separately
+        self.assertIn("PhoenixTS_Format(", text)
 
 
 class SelfAuditTests(unittest.TestCase):
@@ -211,9 +208,10 @@ class SelfAuditTests(unittest.TestCase):
         "GetWorldForward": "car mod",
         "IntToString": "car mod x5",
         "IsDefined": "ADE x66, car mod x52",
-        "RoundMath": "car mod x4",
+        "RoundMath": "car mod x4, returns Int32",
         "SetText": "inkTextRef.SetText, car mod",
-        "ToString": "proven by step B, which booted with it",
+        "FloorF": "ADE driving_ai.reds:427, returns Int32",
+        "Cast": "ADE Cast<Float>(FloorF(...)) and Cast<Int32>(...)",
         "wrappedMethod": "ADE x62, car mod x7",
         "NameOf": "ADE x8",
         "ModuleExists": "ADE @if(ModuleExists(\"ModSettingsModule\")) guard",
@@ -248,6 +246,41 @@ class SelfAuditTests(unittest.TestCase):
         for target in re.findall(r'ModSettings\.dependency", "(\w+)"', self.text):
             self.assertIn(target, bools, f"dependency on non-Bool {target}")
 
+    def test_no_function_calls_one_defined_later(self):
+        """Order is a cheap thing to get wrong and costs a whole restart to discover."""
+        text = REDS.read_text(encoding="utf-8")
+
+        def span(pos):
+            i = text.index("{", pos)
+            depth, j = 0, i
+            while True:
+                if text[j] == "{":
+                    depth += 1
+                elif text[j] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        return i, j + 1
+                j += 1
+
+        starts = {m.group(1): m.start() for m in
+                  re.finditer(r"public static func (PhoenixTS_\w+)\(", text)}
+        for name, pos in starts.items():
+            a, b = span(pos)
+            for called in set(re.findall(r"\b(PhoenixTS_\w+)\(", text[a:b])) - {name}:
+                if called in starts:
+                    self.assertLess(starts[called], pos, f"{name} calls {called} before its definition")
+
+    def test_the_mod_name_matches_the_attribute_value(self):
+        """The string the tab is registered under must be the string the lookups use."""
+        names = set(re.findall(r'@runtimeProperty\("ModSettings\.mod", "([^"]+)"\)', self.text))
+        self.assertEqual(names, {"Phoenix True Speedometer"})
+        self.assertIn('ModSettings.GetCategories(n"Phoenix True Speedometer")', self.text)
+        self.assertIn('ModSettings.GetVars(n"Phoenix True Speedometer", cate)', self.text)
+
+    def test_the_module_matches_the_folder_like_ade(self):
+        self.assertTrue(self.code.startswith("module PhoenixTrueSpeedometer"))
+        self.assertEqual(REDS.parent.name, "phoenix_true_speedometer")
+
     def test_the_scriptable_system_class_is_kept_only_for_the_ui(self):
         """The tab is built from script data, so the class needs no instance and no lookup."""
         self.assertIn("public class PhoenixTS_Settings extends ScriptableSystem", self.code)
@@ -262,7 +295,7 @@ class SignificantDigitTests(unittest.TestCase):
     """
 
     def setUp(self):
-        self.text = SETTINGS.read_text(encoding="utf-8")
+        self.text = REDS.read_text(encoding="utf-8")
 
     THRESHOLDS = [(100.0, 0), (10.0, 1), (1.0, 2), (0.1, 3), (0.01, 4), (0.0, 5)]
 
@@ -302,29 +335,65 @@ class SignificantDigitTests(unittest.TestCase):
             self.assertIn(ladder, text)
         self.assertIn('return IntToString(whole) + "." + pad + IntToString(frac);', text)
 
-    def test_the_fixed_point_formatter_matches_its_python_port(self):
-        """The redscript cannot be run here, so its integer math is mirrored and checked."""
+    def test_the_formatter_matches_its_python_port(self):
+        """Mirror of PhoenixTS_Format: FloorF for the whole part, round for the fraction, no
+        Int32 division anywhere (that is what v3 used, and v3 did not boot)."""
 
-        def render(value, decimals):
+        def floor_int(x):
+            return int(x // 1)
+
+        def round_math(x):          # RoundMath: halves away from zero, values here are positive
+            return int(x + 0.5)
+
+        def sig(value):
+            v = abs(value)
+            if v < 0.0001:
+                return 0
+            for floor, places in ((100.0, 0), (10.0, 1), (1.0, 2), (0.1, 3), (0.01, 4)):
+                if v >= floor:
+                    return places
+            return 5
+
+        def fmt(value, decimals):
             if decimals <= 0:
-                return str(int(round(value)))
-            scale = {1: 10, 2: 100, 3: 1000, 4: 10000}.get(decimals, 100000)
-            scaled = int(round(value * scale))
-            whole = int(scaled / scale)
-            frac = scaled - whole * scale
-            if frac < 0:
-                return str(whole)
-            width = {1: 1, 2: 2, 3: 3, 4: 4}.get(decimals, 5)
-            return f"{whole}.{frac:0{width}d}"
+                return str(round_math(value))
+            scale = 10 ** decimals
+            whole = floor_int(value)
+            frac = round_math((value - whole) * scale)
+            if frac >= scale:
+                whole += 1
+                frac -= scale
+            return f"{whole}.{str(frac).rjust(decimals, '0')}"
 
-        self.assertEqual(render(212.4, 0), "212")
-        self.assertEqual(render(58.83, 1), "58.8")
-        self.assertEqual(render(9.876, 2), "9.88")
-        self.assertEqual(render(0.1714, 3), "0.171")
-        self.assertEqual(render(0.01714, 4), "0.0171")
-        self.assertEqual(render(0.005, 5), "0.00500")   # never "0.5"
-        self.assertEqual(render(58.83, 3), "58.830")    # whole number above 100 stays whole
-        self.assertEqual(render(0.0, 3), "0.000")
+        def render(value):
+            return fmt(value, sig(value))
+
+        self.assertEqual(render(212.4), "212")
+        self.assertEqual(render(100.0), "100")
+        self.assertEqual(render(58.83), "58.8")
+        self.assertEqual(render(9.876), "9.88")
+        self.assertEqual(render(0.1714), "0.171")
+        self.assertEqual(render(0.01714), "0.0171")
+        self.assertEqual(render(0.0), "0")            # standing still
+        self.assertEqual(fmt(0.005, 5), "0.00500")    # never "0.5"
+        self.assertEqual(fmt(99.99, 1), "100.0")      # carry across the decimal
+        self.assertEqual(fmt(58.83, 3), "58.830")
+
+    def test_the_redscript_matches_the_port(self):
+        """The redscript must use the primitives the port assumes."""
+        text = REDS.read_text(encoding="utf-8")
+        self.assertIn("let whole: Int32 = FloorF(value);", text)
+        self.assertIn("let frac: Int32 = RoundMath((value - Cast<Float>(whole)) * scale);", text)
+        self.assertIn("if frac >= scaleI {", text)
+        self.assertIn("if v < 0.0001 {", text)
+
+    def test_no_integer_division_anywhere(self):
+        """No script that compiles on this install divides two Int32s; v3 did and did not boot."""
+        code = "\n".join(l for l in REDS.read_text(encoding="utf-8").splitlines()
+                          if not l.lstrip().startswith("//"))
+        code = re.sub(r'"(?:\\.|[^"\\])*"', '""', code)
+        divisions = set(re.findall(r"[\w.]+\s*/\s*[\w.]+", code))
+        self.assertEqual(divisions, {"1.0 / 343.0"}, divisions)
 
 
 class ConversionMathTests(unittest.TestCase):

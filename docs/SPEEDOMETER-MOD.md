@@ -146,84 +146,86 @@ delta ÷ time delta. Two uses:
 Cost: a sampled timer, and an odometer that only counts some vehicles. Parked until there is a
 reason — the body read is exact and cheap.
 
-## Status: boots, settings tab exists, readout too wide
+## Final build
 
-**Confirmed on the target install:** the game boots, the "Phoenix True Speedometer" tab exists, and
-a number appears. Two faults were reported and both have a cause.
+One file, `r6/scripts/phoenix_true_speedometer/phoenix_true_speedometer.reds`. It reads the body's
+velocity, converts it in the unit you pick, and prints it where the game's speed number goes.
 
-### 1. Text spilling into the sidebar (confirmed from a screenshot)
+### What the HUD shows
 
-The HUD speed widget holds about **four characters** - the car mod writes `113` into it and that is
-the width it is built for. `58.8 m/s | 212 km/h` is eighteen. It cannot fit; ink text does not wrap
-inside that widget.
-
-**Confirmed on screen:** the readout is right-anchored, so a long string grows *leftwards* through
-the sidebar wall. Owner's observation: "the m/s is pushed so far left its inside the wall, only /s
-is visible" - and the big `KM/H` over the HUD was the tail of the same string, not the game's
-label. So the default is now a three-character readout with no unit text at all.
-
-| setting | readout | width |
+| Slot 1 | readout at 58.8 m/s | why |
 | --- | --- | --- |
-| units off, slot 2 off (default) | `212` | 3 characters - what the widget wants |
-| units on | `212 km/h` | 8 - may reach the sidebar |
-| slot 2 on | `212\|58` | 6 |
+| m/s (default) | `58.8` | three significant digits, four characters - the widget holds about four |
+| km/h | `212` | whole numbers above 100 |
+| knots | `114` | 58.8 x 1.94384 |
+| mph | `132` | 58.8 x 2.23694 = 131.5, rounds to 132 |
+| Mach | `0.171` | 58.8 / 343 |
+| custom 0.06 (km/min) | `3.53` | 58.8 x 0.06 |
+| standing still | `0` | never `0.00000` |
+| slot 2 on | `58.8\|212` | opt-in; two numbers exceed the widget |
+| unit labels on | `58.8 m/s` | opt-in; may clip on the left |
 
-Defaults are now `showUnits = on`, `showSlot2 = **off**` so the default readout is `59 m/s` and the
-second number is opt-in. Turn units off if it still spills.
+### Why the settings work now
 
-### 2. Settings that exist but do nothing - solved
-
-Reported twice: "the settings dont actually work, merely exist". Correct, and the cause is in the
-framework, not in this mod:
+Mod Settings writes the chosen value into the **class default in script data**:
 
 ```cpp
-modClass->SetDefaultValue(variable->name, variable->runtimeVar->GetAcceptedValue());   // ModSettings.cpp:133
+ModSettings.cpp:133   modClass->SetDefaultValue(variable->name, runtimeVar->GetAcceptedValue())
 ```
 
-Mod Settings writes the chosen value into the class's **default value in script data**. A live
-instance - which is what the HUD was reading - keeps whatever it was created with. The tab and the
-mod were reading two different copies, and nothing but a listener bridges them. That is why the
-dropdowns looked alive and the number never moved.
-
-**The fix:** read the ConfigVars the UI actually edits, instead of an instance.
+A live instance never sees that write, so reading an instance - which is what every earlier build
+did - cannot work. The tab and the mod were reading two different copies. The authoritative store is
+the ConfigVars the UI edits, and they are readable:
 
 ```redscript
-ModSettings.GetCategories(n"Phoenix True Speedometer")
-ModSettings.GetVars(n"Phoenix True Speedometer", cate)     // the authoritative store
-(v as ModConfigVarEnum).GetIndex()                          // dropdown
-(v as ModConfigVarFloat).GetValue()                         // multiplier
-(v as ModConfigVarBool).GetValue()                          // toggles
+ModSettings.GetCategories(n"Phoenix True Speedometer")     // ModSettings.reds:4
+ModSettings.GetVars(n"Phoenix True Speedometer", cate)     // ModSettings.reds:5
+(v as ModConfigVarEnum).GetIndex()                         // ModSettings.reds:81
+(v as ModConfigVarFloat).GetValue()                        // ModSettings.reds:61
+(v as ModConfigVarBool).GetValue()                         // ModSettings.reds:28
 ```
 
-Every one of those calls is wrapped in `@if(ModuleExists("ModSettingsModule"))` with a no-op twin,
-exactly as ADE does - `ModSettings.*` does not exist when the framework is not installed, and an
-unguarded call fails to compile.
+Each call sits behind `@if(ModuleExists("ModSettingsModule"))` with a no-op twin, because
+`ModSettings.*` does not exist without the framework and an unguarded call fails to compile
+(ADE's pattern, settings.reds:610-666).
 
-The `ScriptableSystem` class is now purely declarative: it exists so the tab has fields to render.
-No instance is fetched, and `GetScriptableSystemsContainer` is gone from the file entirely.
+The `ScriptableSystem` class is now declarative only: it exists so the tab has fields to render.
+No instance is fetched anywhere in the file.
 
-### How to tell whether the settings are actually live
+If Mod Settings is installed but none of this mod's variables can be found, the readout ends in
+`*` (`58.8*`) - that means the mod name or a field name does not match, and the defaults are in use.
 
-The number itself is the test, and it needs no log:
+### The digits rule, without integer division
 
-1. Set **Slot 1** to `km/h`. 2. Leave the tab (Mod Settings commits on close). 3. Drive 200 m.
+`221.4 -> 212`, `58.83 -> 58.8`, `9.876 -> 9.88`, `0.1714 -> 0.171`, `0.01714 -> 0.0171`.
 
-| what you see | meaning |
-| --- | --- |
-| `212` | ConfigVars read correctly, conversion correct |
-| `59*` | Mod Settings is installed but none of this mod's variables were found - the mod name or a field name does not match, so defaults are in use |
+```redscript
+let whole: Int32 = FloorF(value);                                  // ADE: FloorF returns Int32
+let frac: Int32 = RoundMath((value - Cast<Float>(whole)) * scale);  // ADE: Cast<Float>(FloorF(...))
+if frac >= scaleI { whole = whole + 1; frac = frac - scaleI; }      // carry, no division
+```
 
-There is no longer a "found the system but it isn't being written to" case: the mod never reads an
-instance.
+No Int32 `/`, no `%`. Neither appears in any script that compiles on this install, and the earlier
+formatter that used `/` is what broke the build. A test now fails if a division other than
+`1.0 / 343.0` appears in the file.
 
-If it is `59*`, the draft in `settings/PhoenixTS_ReadModSettings.reds.pending` reads the values
-straight out of Mod Settings' own ConfigVars instead (the store its UI edits), copying ADE's
-`GetModConfigVar`. One call in it - reading an enum back - is **unconfirmed**, because ADE only ever
-writes enums, never reads them; it is marked UNCONFIRMED in the file and must be shipped alone.
+### Verified mechanically (177 tests)
 
-And it says so on screen: a readout ending in **`*`** (`59*`) means all three failed - the tab is
-decorative and the number is hardcoded. A clean `59` means the instance was found and the settings
-are live. That one character is the whole diagnostic.
+every call is on a hand-checked whitelist · no forward references between functions · braces and
+parens balance · no `var`, no `IsPlayerDriven`, no `AbsI`, no `this.GetGame()`, no bare `ToString` ·
+every `ModSettings` function has both `ModuleExists` twins · the `ModSettings.mod` string matches the
+one used in the lookups · the module name matches the folder · no line continues an expression ·
+dependencies point at Bool fields only · the formatter is mirrored in Python and checked value by
+value.
+
+### Known limits, stated rather than discovered later
+
+* The game's small `km/h` label beside the number is not ours and cannot be changed: it is wrong
+  whenever slot 1 is anything but km/h.
+* The readout replaces the HUD number; the vanilla tick bar next to it still uses the game's own
+  speed, which is why the bar and the number can disagree.
+* Mod Settings commits when the tab is closed; the HUD only repaints while the speed value changes,
+  so a change becomes visible once you drive.
 
 ## v1: "REDScript compilation has failed. - phoenix_true_speedometer"
 
