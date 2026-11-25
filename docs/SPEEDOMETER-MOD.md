@@ -146,7 +146,34 @@ delta ÷ time delta. Two uses:
 Cost: a sampled timer, and an odometer that only counts some vehicles. Parked until there is a
 reason — the body read is exact and cheap.
 
-## Fixed: "REDScript compilation has failed. - phoenix_true_speedometer"
+## Status: bisecting a boot failure (v3)
+
+**Shipped now:** `58.8 m/s | 212 km/h`, three significant digits. That is the whole mod.
+
+**Parked:** everything else — two independent unit slots, mph/knots/ft/s/Mach/custom, unit labels,
+tooltips, the Mod Settings tab. It is in `Phoenix_true_speedometer/settings/`, as
+`PhoenixTS_Settings.reds.pending`, and it is **not installed and not compiled**.
+
+### Why
+
+v1 did not compile (three nonexistent APIs, see the table below). v2 fixed those and still did not
+boot, which shifted suspicion to v2's *structure*:
+
+| | car mod (boots today) | v2 | v3 |
+| --- | --- | --- | --- |
+| `module` declaration | no | **yes** | no |
+| `public enum` | no | **yes** | no |
+| `extends ScriptableSystem` | no | **yes** | no |
+| `@runtimeProperty` | no | yes | no |
+| `@wrapMethod(hudCarController)` | **yes** | yes | yes |
+| speed source | `AbsF(Vector4.Dot(...))` | same | same |
+
+v3 is the car mod's shape with only the arithmetic changed, and that arithmetic (`AbsF`,
+`RoundMath`, `IntToString`) is what the car mod already calls in the same file. If v3 boots, the
+HUD is done and the settings layer comes back one variable at a time (`settings/README.md` has the
+order). If v3 does **not** boot, the file is not the cause and the log is mandatory.
+
+## v1: "REDScript compilation has failed. - phoenix_true_speedometer"
 
 The first build used three things that do not exist in redscript, so the file failed to compile and
 **the game disabled every script** (its all-or-nothing behaviour). The HUD-speed source, the units
