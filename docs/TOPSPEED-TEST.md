@@ -705,6 +705,25 @@ Two of the biggest levers at 95 m/s are settings, not fields:
 - ADE weaves but holds speed → lateral, not longitudinal; that is the 80 m/s weave problem, and
   §2d's lane-change arithmetic is where to start.
 
+## 2q. ADE read from source (build 900033 + settings)
+
+The owner uploaded ADE 0.0.0.22 to the repo, so §2d's inference can be replaced with its code.
+Full spec: [ADE-INTERFACE.md](ADE-INTERFACE.md). The three findings that change the tuning:
+
+1. **ADE does not drive.** It builds `AIVehicleDriveToPointAutonomousCommand{maxSpeed, minSpeed,
+   clearTrafficOnPath, ...}` and hands it to the native AI. The "lagging controller" is vanilla, and
+   the speed it is asked to hold is `max(gear.maxSpeed) × Max Speed Ratio`. For 95 m/s with our 98
+   ceiling: **ratio 0.97 = 95.06 m/s**. ADE's own default is **0.7**, which would ask for 68.6.
+2. **The target must be reachable.** If ADE asks for a speed the car cannot reach, it pins at full
+   throttle and the car sits at its balance point — which is what every "ADE stops at 80" in this
+   log actually was. 900033 has 1.84 m/s of headroom at the 95.06 target.
+3. **ADE's stopping radius is linear in speed; braking distance is quadratic.** At 95 m/s it plans
+   119 m where the car needs 451 m, so it brakes far too late for the destination. Formula is in the
+   mod; no car setting fixes it. Engage with the destination beyond where you want to stop.
+
+Settings for the measurement: Auto Speed Control **ON**, Max Speed Ratio **0.97**, Clear Traffic On
+Path **OFF** (its default; it was ON, and it is why a lane change skids the car — see ADE-INTERFACE).
+
 ## 3. What to record
 
 | Reading | Pass | Notes |

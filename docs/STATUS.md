@@ -3,6 +3,12 @@
 pending measurements, and the mistakes not to repeat.
 
 
+**ADE is now a read interface, not a mystery.** Its source is in the repo. It does not drive: it
+hands `maxSpeed = max(gear.maxSpeed) × ratio` to the native AI. With our 98 ceiling, **Max Speed
+Ratio 0.97 = 95.06 m/s exactly**, and the car has 1.84 m/s of headroom so the AI can hold it. Its
+stopping radius is linear in speed where braking is quadratic, so it will brake too late at 95 —
+[ADE-INTERFACE.md](ADE-INTERFACE.md).
+
 **Build 900033 — 95 m/s reached on a slope, not a rev limiter.** The gear ceiling is 98 (never
 reached), torque 1650, so drag stops the car at ~96.9 m/s and 95 sits on a gentle part of the curve
 (+0.19 m/s² in hand). That is the plant Auto Drive Enhanced needs; a ceiling exactly on the target

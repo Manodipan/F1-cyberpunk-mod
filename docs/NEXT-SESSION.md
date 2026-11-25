@@ -41,9 +41,10 @@ above it — the first reading past 100 m/s is a measurement, not a confirmation
    leg on Route B, then work the three outcomes. The two cheapest levers are ADE settings, not car
    fields — `Clear Traffic On Path` OFF (its lane changes are its own violent decision) and
    `Max Speed Ratio` down to 0.95 if it still cycles.
-   **To go deeper I need ADE's own files:** it is a redscript mod (nobo, Nexus 23157, 0.0.0.22) with
-   no public source. Ask for the folder — `<game>\r6\scripts\` containing "autodrive"/"ADE", plus
-   its `.yaml` in `r6\tweaks` — and read the control law instead of inferring it.
+   **ADE is read — its source is in the repo, spec in [ADE-INTERFACE.md](ADE-INTERFACE.md).** It
+   hands `max(gear.maxSpeed) × Max Speed Ratio` to the *native* AI, so the controller is vanilla.
+   With 98 as our ceiling: **ratio 0.97 = 95.06 m/s**, plus **Clear Traffic On Path OFF** (its own
+   default) to remove the lane changes. Check the slider is not at ADE's default **0.7**.
 3. **The 80 m/s weave.** This is now the main open physics problem — stability outranks everything. Gearing
    is a dead end for it; steering gain, AWD, damping and downforce have all been falsified. The live
    thread is the hysteresis limit cycle (reach, wobble, brake, slow, repeat) — a lagging controller
