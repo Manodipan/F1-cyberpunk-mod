@@ -170,3 +170,7 @@ in particular **not** `r6\scripts\auto_drive_enhanced\`, which this repo only ca
 copy of. The tweak YAML overrides fields rather than replacing the record, so removing it is a full
 return to stock physics. Add `-Purge` to skip the backup.
 
+## Related reading
+
+`docs/MODS-LIST.md` — other vehicle mods worth installing, with their real performance and the
+360 km/h engine ceiling that bounds all of them.
