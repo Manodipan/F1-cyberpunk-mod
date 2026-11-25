@@ -185,3 +185,8 @@ Installs only the four `.reds` — gear, rev lights and the true physics-speed r
 tweak YAML out, so the car stays stock. (`.\tools\uninstall.ps1 -KeepScripts` is the other half:
 removes the physics and keeps scripts that are already there.)
 `docs/CAR-MODLIST.md` — the same, cars only, filtered to mods last updated on or after 22 Oct 2026.
+
+## The speedometer is now its own mod
+
+`Phoenix_true_speedometer` — no car, no tweak file, own Mod Settings tab, two configurable unit
+slots. `docs/SPEEDOMETER-MOD.md`. Installed by `tools/update.ps1` alongside the car, or on its own.

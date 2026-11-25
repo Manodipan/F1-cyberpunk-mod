@@ -151,6 +151,18 @@ try {
         Write-Ok "phoenix_aston_valkyrie.yaml -> r6\tweaks\phoenix\"
         Write-Ok "4 x .reds              -> r6\scripts\phoenix_aston_valkyrie\"
 
+        # standalone speedometer: its own folder, own Mod Settings tab, no car required
+        $speedo = Join-Path $Repo 'Phoenix_true_speedometer\r6\scripts\phoenix_true_speedometer'
+        if (Test-Path $speedo) {
+            $destSpeedo = Join-Path $GameRoot 'r6\scripts\phoenix_true_speedometer'
+            New-Item -ItemType Directory -Force -Path $destSpeedo | Out-Null
+            Copy-Item (Join-Path $speedo '*.reds') $destSpeedo -Force
+            Write-Ok "phoenix_true_speedometer.reds -> r6\scripts\phoenix_true_speedometer\"
+            foreach ($f in Get-ChildItem $speedo -Filter *.reds) {
+                $pairs += ,@($f.FullName, (Join-Path $destSpeedo $f.Name))
+            }
+        }
+
         $pairs += ,@($yaml, (Join-Path $destYamlDir 'phoenix_aston_valkyrie.yaml'))
         foreach ($f in Get-ChildItem $reds -Filter *.reds) {
             $pairs += ,@($f.FullName, (Join-Path $destRedsDir $f.Name))
