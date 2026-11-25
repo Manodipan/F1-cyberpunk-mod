@@ -152,6 +152,9 @@ records, so most still load, but nothing on the page promises 2.5. The 2026 uplo
 Huracán EVO, Sesto Elemento, 992 GT3 R) are current-patch by construction. Test one 2023 car before
 installing five.
 
+See also: **[CAR-MODLIST.md](CAR-MODLIST.md)** — cars only, filtered to mods updated on or after
+22 Oct 2026 (i.e. under 2.5), with the same wall applied to their claimed speeds.
+
 ## 7. What none of them fix
 
 - **The 360 km/h wall.** No mod on Nexus can lift it without native code (`docs/BYPASS-PLAN.md` has
