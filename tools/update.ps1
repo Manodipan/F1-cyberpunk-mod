@@ -151,16 +151,27 @@ try {
         Write-Ok "phoenix_aston_valkyrie.yaml -> r6\tweaks\phoenix\"
         Write-Ok "4 x .reds              -> r6\scripts\phoenix_aston_valkyrie\"
 
-        # standalone speedometer: its own folder, own Mod Settings tab, no car required
-        $speedo = Join-Path $Repo 'Phoenix_true_speedometer\r6\scripts\phoenix_true_speedometer'
-        if (Test-Path $speedo) {
-            $destSpeedo = Join-Path $GameRoot 'r6\scripts\phoenix_true_speedometer'
-            New-Item -ItemType Directory -Force -Path $destSpeedo | Out-Null
-            Copy-Item (Join-Path $speedo '*.reds') $destSpeedo -Force
-            Write-Ok "phoenix_true_speedometer.reds -> r6\scripts\phoenix_true_speedometer\"
-            foreach ($f in Get-ChildItem $speedo -Filter *.reds) {
-                $pairs += ,@($f.FullName, (Join-Path $destSpeedo $f.Name))
+        # standalone speedometer: a CET Lua HUD. No redscript - it draws its own readout, so the
+        # vanilla HUD is left completely alone and nothing can fail to compile.
+        $speedoLua = Join-Path $Repo 'Phoenix_true_speedometer\mods\phoenix_true_speedometer\init.lua'
+        if (Test-Path $speedoLua) {
+            $cetMods    = Join-Path $GameRoot 'bin\x64\plugins\cyber_engine_tweaks\mods'
+            $destSpeedo = Join-Path $cetMods 'phoenix_true_speedometer'
+            if (Test-Path $cetMods) {
+                New-Item -ItemType Directory -Force -Path $destSpeedo | Out-Null
+                Copy-Item $speedoLua $destSpeedo -Force
+                Write-Ok "init.lua -> bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\"
+                $pairs += ,@($speedoLua, (Join-Path $destSpeedo 'init.lua'))
+            } else {
+                Write-Warn2 "cyber_engine_tweaks\mods not found - is Cyber Engine Tweaks installed?"
             }
+        }
+
+        # the earlier redscript build is retired; remove it so the game's own HUD comes back
+        $oldSpeedo = Join-Path $GameRoot 'r6\scripts\phoenix_true_speedometer'
+        if (Test-Path $oldSpeedo) {
+            Remove-Item $oldSpeedo -Recurse -Force
+            Write-Ok "removed the retired redscript speedometer - vanilla HUD restored"
         }
 
         $pairs += ,@($yaml, (Join-Path $destYamlDir 'phoenix_aston_valkyrie.yaml'))

@@ -57,12 +57,14 @@ if (-not (Test-Path (Join-Path $GameRoot 'r6'))) {
 
 $yaml      = Join-Path $GameRoot 'r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml'
 $redsDir   = Join-Path $GameRoot 'r6\scripts\phoenix_aston_valkyrie'
-$speedoDir = Join-Path $GameRoot 'r6\scripts\phoenix_true_speedometer'
+$speedoDir = Join-Path $GameRoot 'r6\scripts\phoenix_true_speedometer'          # retired redscript build
+$speedoLuaDir = Join-Path $GameRoot 'bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer'
 
 $found = @()
 if (Test-Path $yaml)    { $found += Get-Item $yaml }
 if ((Test-Path $redsDir) -and -not $KeepScripts) { $found += Get-ChildItem $redsDir -Filter '*.reds' -File }
 if ((Test-Path $speedoDir) -and -not $KeepScripts) { $found += Get-ChildItem $speedoDir -Filter '*.reds' -File }
+if (Test-Path $speedoLuaDir) { $found += Get-ChildItem $speedoLuaDir -Filter '*.lua' -File }
 
 if ($found.Count -eq 0) {
     Write-Step "nothing to remove"
@@ -81,6 +83,10 @@ if (-not $Purge) {
     if (Test-Path $yaml)    { Copy-Item $yaml (Join-Path $backup 'tweaks') -Force }
     if (Test-Path $redsDir) { Copy-Item (Join-Path $redsDir '*') (Join-Path $backup 'scripts') -Force }
     if (Test-Path $speedoDir) { Copy-Item (Join-Path $speedoDir '*') (Join-Path $backup 'scripts') -Force }
+    if (Test-Path $speedoLuaDir) {
+        New-Item -ItemType Directory -Path (Join-Path $backup 'cet') -Force | Out-Null
+        Copy-Item (Join-Path $speedoLuaDir '*') (Join-Path $backup 'cet') -Force
+    }
     Write-Step "backed up to $backup"
 }
 
@@ -89,6 +95,10 @@ Write-Step "removing"
 if (Test-Path $yaml) {
     Remove-Item $yaml -Force
     Write-Ok "deleted r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml"
+}
+if (Test-Path $speedoLuaDir) {
+    Remove-Item $speedoLuaDir -Recurse -Force
+    Write-Ok "deleted cyber_engine_tweaks\mods\phoenix_true_speedometer\"
 }
 if (Test-Path $speedoDir) {
     if ($KeepScripts) {

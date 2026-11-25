@@ -51,7 +51,7 @@ all four wheels drive, drag and torque are sized from measurement, and the top g
 155 m/s. The base measured **80 m/s under ADE / 86 by hand** on this pipeline —
 the reference car's own numbers. AWD is a handling override we keep on purpose; see below. Only two
 things differ, and neither is a handling number: the scanner's `horsepower` field carries the build
-stamp, and the speedometer is ours (true km/h for every car). Everything the car does — gearbox
+stamp, and the speedometer is a HUD of ours (true km/h for every car). Everything the car does — gearbox
 91.7 m/s top gear, drag 1.35, mass 1750, torque 1300, steering 94, grip, springs, swaybars — is
 the car that was measured at **~80 m/s under ADE and ~85 m/s by hand**, the best result on record.
 
@@ -67,7 +67,7 @@ the car that was measured at **~80 m/s under ADE and ~85 m/s by hand**, the best
 | Steering (add / threshold / mul) | 94 / 26 / 0.33 | **85** / 26 / **0.21** (step 15: −10 % rate, −36 % authority at speed) |
 | Springs · damping · swaybar | 23/22 · 2000 · 11/16 | **identical** |
 | Scanner hp | 680 | **900020** — build stamp, not a power claim |
-| Speedometer | the game's 2.07× curve | **true km/h, all vehicles** |
+| Speedometer | the game's 2.07× curve | **true km/h HUD, all vehicles** |
 
 The earlier "Phoenix" column — the Jesko Attack's physics copied verbatim, plus a five-field
 stability overlay — is **reverted**. It measured **63 m/s ADE / 77 manual** against the stock car's
@@ -186,7 +186,10 @@ tweak YAML out, so the car stays stock. (`.\tools\uninstall.ps1 -KeepScripts` is
 removes the physics and keeps scripts that are already there.)
 `docs/CAR-MODLIST.md` — the same, cars only, filtered to mods last updated on or after 22 Oct 2026.
 
-## The speedometer is now its own mod
+## The speedometer is now a HUD of its own
 
-`Phoenix_true_speedometer` — no car, no tweak file, own Mod Settings tab, two configurable unit
-slots. `docs/SPEEDOMETER-MOD.md`. Installed by `tools/update.ps1` alongside the car, or on its own.
+`Phoenix_true_speedometer` — a CET Lua overlay that draws its own readout, so the game's speedometer
+is never touched and nothing has to compile. On by default, toggled with a CET hotkey
+(`PhoenixSpeedometer_ToggleHud`); two unit slots, six units plus a custom multiplier, position, size
+and colour all adjustable. `docs/SPEEDOMETER-MOD.md`. Installed by `tools/update.ps1` alongside the
+car, or on its own.
