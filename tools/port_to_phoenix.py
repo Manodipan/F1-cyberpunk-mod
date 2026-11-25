@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 34
+BUILD = 35
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -1544,6 +1544,8 @@ def port_text(text: str, suffix: str, physics: bool,
         code, comment = split_comment(body, suffix)
         out.append(_rename_code(code) + comment + newline)
     text = explicit_gears("".join(out))
+    if suffix == ".reds":
+        text = apply_hud_body_speed(text)
     # the hoist needs the *renamed* record name, so it runs after the rename pass
     if physics and suffix in (".yaml", ".yml"):
         if not RESTORE_STOCK_PHYSICS:
@@ -1553,6 +1555,22 @@ def port_text(text: str, suffix: str, physics: bool,
                 apply_jesko_control(hoist_subrecords(text))))
         text = apply_build_stamp(text)
     return text
+
+
+def apply_hud_body_speed(text: str) -> str:
+    """Make the HUD speed writer read the vehicle body instead of the callback argument.
+
+    OnSpeedValueChanged hands us the dial's value, which has already been through the game's
+    speed_to_multiplier curve - measured at 1.92x on a car doing 58.8 m/s (17 s per km) that
+    displayed 113, and 2.06x on the 277 -> 572 case. Writing that number as if it were m/s
+    invents a speed. The body velocity is the only figure that is not derived, and
+    PhoenixAMV_FwdSpeed already reads it for the wheel screen, so the HUD uses the same source
+    and the two readouts can no longer disagree.
+    """
+    return text.replace(
+        "let mps: Float = AbsF(speedValue);",
+        "let mps: Float = AbsF(PhoenixAMV_FwdSpeed(this.m_activeVehicle));",
+    )
 
 
 FILE_RENAME = [

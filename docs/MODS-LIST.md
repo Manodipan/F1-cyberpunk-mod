@@ -62,6 +62,14 @@ figure instead, and it does so for **every** vehicle: `PhoenixAMV_TrueSpeedo()` 
 Aston-only. So with the scripts installed, the HUD reads physics speed in any car; without them,
 the curve is back.
 
+**Correction, measured in a 599 XX (build 900035).** The first version of that wrapper wrote
+`AbsF(speedValue)` - the value the callback is handed. On a car timed at **17 s/km (58.8 m/s)** the
+dial read **110-117**, i.e. **1.92x**. The callback argument has already been through
+`speed_to_multiplier`, so writing it as m/s reprints the curve in the wrong unit; 1.8x-2.1x
+depending on speed. The wrapper now reads `PhoenixAMV_FwdSpeed(this.m_activeVehicle)` - the same body
+velocity the wheel screen has always used - so it cannot be handed a derived number.
+`apply_hud_body_speed()` in `tools/port_to_phoenix.py` performs the substitution at port time.
+
 ## 3. Real cars, from the authors who are actually consistent
 
 Content mods set their own `maxSpeed`, so their top speed is whatever the author typed — and then

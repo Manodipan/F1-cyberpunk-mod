@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900034
+  horsepower: 900035
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 

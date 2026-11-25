@@ -629,7 +629,7 @@ class TrueSpeedometerTests(unittest.TestCase):
         self.assertIn("return IsDefined(vehicle);", self.out)
 
     def test_kmh_mode_is_real_kmh(self):
-        self.assertIn("let mps: Float = AbsF(speedValue);", self.out)
+        self.assertIn("let mps: Float = AbsF(PhoenixAMV_FwdSpeed(this.m_activeVehicle));", self.out)
         self.assertIn("this.m_kmOn ? mps * 3.6 : mps", self.out)
 
     def test_mph_mode_shows_raw_m_s_instead_of_miles(self):
@@ -681,7 +681,8 @@ class PhysicsSpeedReadoutTests(unittest.TestCase):
     Every speed reading the driver has given came from one value: the argument of
     `OnSpeedValueChanged`. If something upstream caps that value, every reading is the cap and no
     gearing or torque change can move it. The dash therefore reads `GetLinearVelocity` - the
-    physics - while the HUD keeps the game's number. Two numbers, same instant.
+    physics. The HUD originally kept the game's number as a control; that was reversed in build
+    900035, when a car timed at 17 s/km showed 1.92x on the dial. Both now read the body.
     """
 
     def setUp(self):
@@ -700,9 +701,22 @@ class PhysicsSpeedReadoutTests(unittest.TestCase):
         self.assertIn("let mv = GetMountedVehicle(pv);", self.out)
         self.assertIn("AbsF(PhoenixAMV_FwdSpeed(mv)) * 3.6", self.out)
 
-    def test_the_hud_keeps_the_game_value_as_the_control(self):
+    def test_the_stock_hud_reads_the_callback_and_the_port_stops_that(self):
+        # the stock mod trusts the dial's value; the port deliberately does not
         hud = port_reds(stock("aston_valkyrie.reds"))
-        self.assertIn("let mps: Float = AbsF(speedValue);", hud)
+        self.assertIn("PhoenixAMV_FwdSpeed(this.m_activeVehicle)", hud)
+        self.assertNotIn("AbsF(speedValue)", hud)
+
+    def test_the_speed_comes_from_the_body_not_the_callback(self):
+        """OnSpeedValueChanged gets a value that already went through speed_to_multiplier.
+
+        Measured 2026-11-23 in a 599 XX: 17 s/km is 58.8 m/s and the dial read 110-117, i.e.
+        1.92x (the 277 -> 572 case is 2.06x). The callback argument is therefore not m/s, and
+        the body velocity is the only figure the game does not derive.
+        """
+        hud = port_reds(stock("aston_valkyrie.reds"))
+        self.assertNotIn("AbsF(speedValue)", hud)
+        self.assertIn("AbsF(PhoenixAMV_FwdSpeed(this.m_activeVehicle))", hud)
 
     def test_idempotent(self):
         again = port.port_text(self.out, ".reds", True, [])

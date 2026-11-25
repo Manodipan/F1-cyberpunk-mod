@@ -24,7 +24,7 @@ public static func PhoenixAMV_IsTarget(vehicle: wref<VehicleObject>) -> Bool {
 protected cb func OnSpeedValueChanged(speedValue: Float) -> Bool {
   let result: Bool = wrappedMethod(speedValue);
   if PhoenixAMV_TrueSpeedo(this.m_activeVehicle) {
-    let mps: Float = AbsF(speedValue);
+    let mps: Float = AbsF(PhoenixAMV_FwdSpeed(this.m_activeVehicle));
     // mph modu kullanilmiyor: orada ham m/s yazilir (motorun kendi birimi), km/h modu gercek km/h
     let shown: Float = this.m_kmOn ? mps * 3.6 : mps;
     inkTextRef.SetText(this.m_SpeedValue, IntToString(RoundMath(shown)));
