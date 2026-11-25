@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900033
+  horsepower: 900034
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 
@@ -218,7 +218,7 @@ Vehicle.phoenix_aston_valkyrie:
   vehEngineData:
     $base: Vehicle.VehicleEngineData_4_SuperSport
     # 2026-11-13 tester: hizlanma zayif -> tork 960 (SuperSport) -> 1300
-    engineMaxTorque: 1650
+    engineMaxTorque: 2600
     maxRPM: 10100
     minRPM: 1000
     gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]

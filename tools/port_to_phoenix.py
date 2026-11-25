@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 33
+BUILD = 34
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -1047,10 +1047,20 @@ STOCK_LADDER_PAIRS = (
     # wall (SPEED-CAP.md), so that evidence is gone.  With it gone, the field names decide:
     # `torqueMultiplier` IS the ratio, so thrust follows it, and `maxSpeed` is just where the gear
     # redlines.  Dividing by maxSpeed again double-counts the gear length.  Model B is used here,
-    # and 900033's own top speed is now a free check: B predicts ~97, C predicts ~92.
+    # and 900033's own top speed was the check.  It came back 77 m/s.
+    #
+    # Step 22 (build 900034): 900033 was MEASURED at 77 m/s where every model said 90-97, and the
+    # stock car does 86 on 1300 Nm.  So the stretched 7th (mult 0.285 on a 98 ceiling) makes only
+    # ~63% of the thrust its torque and multiplier imply - the gear is not the free variable the
+    # arithmetic assumed.  Rather than invent a fourth law, size on the measurement: thrust scales
+    # with engineMaxTorque, and 1650 Nm balanced at 77, so 1650 * (96.7/77)^2 = 2600 Nm puts the
+    # balance point at ~96.7 - under the 98 ceiling, ~1.6 m/s above ADE's 95.06 target.
+    # Open question this build answers: 77 was reported without a gear.  If the dash showed 6th,
+    # the car never completed the 6->7 shift and the shift point is the problem; 7th means the
+    # engine is lugging at the bottom of its window.
     ("maxSpeed", "91.7", "98"),          # headroom under the 100 m/s engine wall, never reached
     ("torqueMultiplier", "0.306", "0.285"),  # gear 7: the car's own 27.9 / 98
-    ("engineMaxTorque", "1300", "1650"),     # drag-limited terminal ~97 m/s, under the 98 ceiling
+    ("engineMaxTorque", "1300", "2600"),     # sized on the MEASURED 77 m/s, not on a model
 )
 
 

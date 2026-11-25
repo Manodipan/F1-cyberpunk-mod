@@ -724,6 +724,52 @@ Full spec: [ADE-INTERFACE.md](ADE-INTERFACE.md). The three findings that change 
 Settings for the measurement: Auto Speed Control **ON**, Max Speed Ratio **0.97**, Clear Traffic On
 Path **OFF** (its default; it was ON, and it is why a lane change skids the car — see ADE-INTERFACE).
 
+## 2r. MEASURED 77 m/s — the stretched gear is not free (build 900034)
+
+900033 was driven: **77 m/s.** Predicted 96.9 (model B), 90.4 (model C). The stock car does 86 m/s
+on **1 300 Nm**; 900033 has **1 650 Nm** and does 77. So the miss is not a small calibration error:
+
+| build | torque | gear 7 (mult / ceiling) | measured | thrust implied |
+|---|---|---|---|---|
+| stock | 1300 | 0.306 / 91.7 | 86 m/s | 6 870 N |
+| 900028 | 3100 | 0.155 / 215 | 100 (engine wall) | — |
+| **900033** | **1650** | **0.285 / 98** | **77 m/s** | **5 508 N** |
+
+Per newton-metre of torque the top gear delivers **3.34 N** in 900033 against **5.28 N** in stock — it
+keeps only **63 %** of what 1.27x the torque should buy. Every law tried so far (B, C, A, and
+mult/max²) predicts 87–97. **Stretching a gear costs more thrust than any of them**, and rather than
+invent a fifth law from one number, build 900034 is sized on the measurement itself:
+
+> thrust scales with `engineMaxTorque`, and 1650 Nm balanced at 77 m/s, so
+> 1650 × (96.7/77)² = **2 600 Nm** puts the balance point at ~96.7 m/s.
+
+| torque | balance point | ceiling 98 |
+|---|---|---|
+| 2100 | 86.9 | clear |
+| 2400 | 92.9 | clear |
+| **2600** | **96.7** | **clear** |
+| 2800 | 100.3 | clips |
+
+900034 is 900033 with one field changed: `engineMaxTorque` 1650 → **2600**. Everything else identical
+(ceiling 98, mult 0.285, drag 1.35, gears 1–6 stock). ADE settings unchanged: ratio 0.97, Clear
+Traffic On Path off.
+
+### The measurement that is missing
+
+77 was reported without a gear. **The Aston dash shows the gear.** Which one is it at 77?
+
+- **6th** → the car never completed the 6→7 shift. 6th's ceiling is 80.6 and its window ends at
+  `maxEngineRPM` 9900; the shift is refused, so the rev floor and the torque curve at 9 300 rpm are
+  the limit, not drag. Fix is the shift point, not torque.
+- **7th** → it shifted and then lugged at the *bottom* of 7th's window (77 m/s = 7 800 rpm, the
+  gear's `minEngineRPM`), where a high-revving curve makes least torque. Fix is a taller floor
+  speed (overlap permitting) or more torque.
+- **hunting 6↔7 at 77–80** → the shift lands the engine below its own floor and it falls back. Same
+  fix as the first case.
+
+900034 answers it either way (more torque, same gearing), but the gear number is what tells us
+*why*, and it costs nothing to read on the way.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |

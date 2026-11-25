@@ -3,7 +3,7 @@
 **Written 2026-11-24, at the owner's bedtime after a ~12 h session.** Nothing is half-applied:
 the repo is committed, pushed and clean.
 
-- **Shipped HEAD:** **build 900033** — 95 m/s, reached on a drag-limited slope (ceiling 98, torque
+- **Shipped HEAD:** **build 900034** — 95 m/s, reached on a drag-limited slope (ceiling 98, torque
   1650) rather than on a rev limiter, because ADE cannot hold a step. Top speed is also the free
   test of which force model is right: B predicts ~97 m/s, C predicts ~90.
 - **Installed in the owner's game:** **900028**. 900029–900031 were never installed; 900032 is the

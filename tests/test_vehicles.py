@@ -47,7 +47,7 @@ class TestProfile(unittest.TestCase):
     def test_the_deciding_fields(self):
         # stock mod's own numbers: the best car measured so far
         self.assertEqual(self.row["airResistanceFactor"], "1.35")   # step 20: back to stock drag
-        self.assertEqual(self.row["engineMaxTorque"], "1650")       # step 21: drag-limited top, no limiter
+        self.assertEqual(self.row["engineMaxTorque"], "2600")       # step 22: sized on the measured 77 m/s
         self.assertEqual(self.row["total_mass"], "1750")
         self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "85")   # step 15: 10 % below stock
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")   # step 15: the reference's, damps
