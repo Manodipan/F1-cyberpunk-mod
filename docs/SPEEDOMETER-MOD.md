@@ -146,33 +146,44 @@ delta ÷ time delta. Two uses:
 Cost: a sampled timer, and an odometer that only counts some vehicles. Parked until there is a
 reason — the body read is exact and cheap.
 
-## Status: step B - settings restored, three significant digits still out
+## Status: boots, settings tab exists, readout too wide
 
-**Shipped now:** the Mod Settings tab is back - two unit slots, seven units including Mach,
-custom multipliers, unit labels, tooltips. **Numbers are whole** (`59 m/s | 212 km/h`) until step C.
+**Confirmed on the target install:** the game boots, the "Phoenix True Speedometer" tab exists, and
+a number appears. Two faults were reported and both have a cause.
 
-| build | settings | my formatter | result |
-| --- | --- | --- | --- |
-| v1 | yes | yes | popup |
-| v2 | yes | yes | popup |
-| v3 | no | yes | popup |
-| A | no | no | **boots** |
-| B | yes | no | this build |
+### 1. Text spilling into the sidebar
 
-Step A booting while v3 did not proves the formatter was at fault: v3 had no settings at all, so
-the only difference between it and the file that boots was my own integer formatting and one
-statement split across two lines (`return ... " m/s | "` / `+ ...` on the next line). Nothing in
-ADE or the car mod continues an expression on the next line, so step B has no line like that, and a
-test now fails the build if one appears.
+The HUD speed widget holds about **four characters** - the car mod writes `113` into it and that is
+the width it is built for. `58.8 m/s | 212 km/h` is eighteen. It cannot fit; ink text does not wrap
+inside that widget.
 
-Step B also fixes the one construct v2 got wrong that ADE proves: ADE declares `enum DrivingAIType`
-and then `public let drivingAI: DrivingAIType`, where v2 declared `public enum`. Step B copies ADE.
+| setting | readout | width |
+| --- | --- | --- |
+| units off, slot 2 off (default) | `212` | 3 characters - what the widget wants |
+| units on | `212 km/h` | 8 - may reach the sidebar |
+| slot 2 on | `212\|58` | 6 |
 
-### Step C, if B boots
+Defaults are now `showUnits = on`, `showSlot2 = **off**` so the default readout is `59 m/s` and the
+second number is opt-in. Turn units off if it still spills.
 
-`settings/PhoenixTS_Settings.reds.pending` holds the three-significant-digit formatter
-(`212` / `58.8` / `5.88` / `0.171`), tested in Python against the redscript integer math. It goes
-back into the shipped file only after B is confirmed, and only as single-line statements.
+### 2. Settings that exist but do nothing
+
+The tab is built by reflecting over the class's `@runtimeProperty` fields - it appears whether or
+not the game ever hands that class an instance. The HUD found no instance and fell back to
+hardcoded m/s + km/h, so every dropdown looked dead.
+
+The registered name of a modded `ScriptableSystem` is not knowable without the game's registry, so
+the mod now tries all three legal spellings in order:
+
+```redscript
+Get(NameOf<PhoenixTS_Settings>())                  // <Module>.<Class>
+Get(n"PhoenixTrueSpeedometer.PhoenixTS_Settings")
+Get(n"PhoenixTS_Settings")
+```
+
+And it says so on screen: a readout ending in **`*`** (`59*`) means all three failed - the tab is
+decorative and the number is hardcoded. A clean `59` means the instance was found and the settings
+are live. That one character is the whole diagnostic.
 
 ## v1: "REDScript compilation has failed. - phoenix_true_speedometer"
 

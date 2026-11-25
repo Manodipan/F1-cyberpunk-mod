@@ -83,8 +83,10 @@ class SpeedometerModTests(unittest.TestCase):
         self.assertNotIn("AbsF(speedValue)", self.text)
 
     def test_hud_writes_both_slots_joined(self):
-        self.assertIn('return first + " | " + PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.showUnits);',
+        self.assertIn('return first + "|" + PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.showUnits);',
                       self.text)
+        # the second number is off by default: the field is ~4 characters wide
+        self.assertIn("public let showSlot2: Bool = false;", self.text)
 
     def test_the_hud_names_the_unit_it_is_printing(self):
         # the point of the labels: nobody should have to remember which slot is which
@@ -133,11 +135,23 @@ class CompileSafetyTests(unittest.TestCase):
         # NameOf<T>() resolves the registered name at compile time - proven by ADE debug.reds:56 on
         # 2.5. A hand-written name string would return null if wrong, leaving the tab dead.
         text = REDS.read_text(encoding="utf-8")
+        # NameOf first, then the two literal spellings: a wrong name returns null, which would
+        # leave the Mod Settings tab decorative while the HUD silently used hardcoded units
         self.assertIn("Get(NameOf<PhoenixTS_Settings>())", text)
-        self.assertNotIn('Get(n"', text)
+        self.assertIn('Get(n"PhoenixTrueSpeedometer.PhoenixTS_Settings")', text)
+        self.assertIn('Get(n"PhoenixTS_Settings")', text)
 
     def test_a_missing_settings_system_still_shows_a_speed(self):
-        self.assertIn("if !IsDefined(s) {", REDS.read_text(encoding="utf-8"))
+        text = REDS.read_text(encoding="utf-8")
+        self.assertIn("if !IsDefined(s) {", text)
+        # and says so, instead of looking like a working readout in the wrong unit
+        self.assertIn('IntToString(RoundMath(mps)) + "*"', text)
+
+    def test_the_readout_stays_short_enough_for_the_widget(self):
+        """The HUD speed widget holds about four characters (the car mod writes '113')."""
+        text = REDS.read_text(encoding="utf-8")
+        self.assertNotIn('" | "', text)          # no spaced pipe
+        self.assertIn('first + "|"', text)
 
     def test_game_instance_comes_from_the_proven_global(self):
         self.assertIn("GetGameInstance()", REDS.read_text(encoding="utf-8"))

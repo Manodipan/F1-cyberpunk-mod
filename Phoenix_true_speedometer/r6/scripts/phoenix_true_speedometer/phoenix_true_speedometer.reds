@@ -61,10 +61,10 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 2 - show a second unit")
-    @runtimeProperty("ModSettings.description", "Appends a second number after slot 1, e.g. '58.8 m/s | 212 km/h'. Turn off for one number only.")
+    @runtimeProperty("ModSettings.description", "Appends a second number after slot 1, e.g. '59|212'. OFF by default because the HUD speed field is built for about four characters - the Aston mod writes '113' into it. A second number makes the readout longer than the widget and it spills over the sidebar. Turn it on only if your HUD scale is small.")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "20")
-    public let showSlot2: Bool = true;
+    public let showSlot2: Bool = false;
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 2 - unit")
@@ -94,7 +94,7 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Print the unit next to the number")
-    @runtimeProperty("ModSettings.description", "On: 58.8 m/s | 212 km/h - the HUD names the unit, so nothing has to be remembered. Off: 58.8 | 212 - shorter, if the label overflows your HUD scale. Custom slots are labelled x<multiplier>.")
+    @runtimeProperty("ModSettings.description", "On: '59 m/s' - the HUD names the unit, which matters because the game's own small unit label always reads km/h and would otherwise contradict the number. Off: '59' - three characters, the only form that certainly fits, but then nothing on screen says which unit you are reading. If the text spills over the sidebar, turn this off first.")
     @runtimeProperty("ModSettings.category", "Format")
     @runtimeProperty("ModSettings.category.order", "30")
     public let showUnits: Bool = true;
@@ -154,21 +154,34 @@ public static func PhoenixTS_Number(mps: Float, unit: PhoenixTS_Unit, custom: Fl
     return number + " " + PhoenixTS_Label(unit, custom);
 }
 
+// The system's registered name depends on how the game registers modded ScriptableSystems, and a
+// wrong name returns null - which would leave the Mod Settings tab decorative while the HUD falls
+// back to hardcoded units. All three legal spellings are tried, in order.
 public static func PhoenixTS_SettingsOf() -> ref<PhoenixTS_Settings> {
-    return GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(NameOf<PhoenixTS_Settings>()) as PhoenixTS_Settings;
+    var s: ref<PhoenixTS_Settings> = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(NameOf<PhoenixTS_Settings>()) as PhoenixTS_Settings;
+    if IsDefined(s) {
+        return s;
+    }
+    s = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"PhoenixTrueSpeedometer.PhoenixTS_Settings") as PhoenixTS_Settings;
+    if IsDefined(s) {
+        return s;
+    }
+    return GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"PhoenixTS_Settings") as PhoenixTS_Settings;
 }
 
 public static func PhoenixTS_HudText(vehicle: wref<VehicleObject>) -> String {
     let mps: Float = AbsF(Vector4.Dot(vehicle.GetLinearVelocity(), vehicle.GetWorldForward()));
     let s: ref<PhoenixTS_Settings> = PhoenixTS_SettingsOf();
     if !IsDefined(s) {
-        return IntToString(RoundMath(mps * 3.6)) + " km/h | " + IntToString(RoundMath(mps)) + " m/s";
+        // the asterisk is deliberate: it means the settings system could not be reached at all, so
+        // the tab is decorative and the number is hardcoded. A clean readout means it was found.
+        return IntToString(RoundMath(mps)) + "*";
     }
     let first: String = PhoenixTS_Number(mps, s.slot1, s.slot1Custom, s.showUnits);
     if !s.showSlot2 {
         return first;
     }
-    return first + " | " + PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.showUnits);
+    return first + "|" + PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.showUnits);
 }
 
 @wrapMethod(hudCarController)
