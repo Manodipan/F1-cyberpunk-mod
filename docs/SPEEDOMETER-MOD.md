@@ -151,11 +151,16 @@ reason — the body read is exact and cheap.
 **Confirmed on the target install:** the game boots, the "Phoenix True Speedometer" tab exists, and
 a number appears. Two faults were reported and both have a cause.
 
-### 1. Text spilling into the sidebar
+### 1. Text spilling into the sidebar (confirmed from a screenshot)
 
 The HUD speed widget holds about **four characters** - the car mod writes `113` into it and that is
 the width it is built for. `58.8 m/s | 212 km/h` is eighteen. It cannot fit; ink text does not wrap
 inside that widget.
+
+**Confirmed on screen:** the readout is right-anchored, so a long string grows *leftwards* through
+the sidebar wall. Owner's observation: "the m/s is pushed so far left its inside the wall, only /s
+is visible" - and the big `KM/H` over the HUD was the tail of the same string, not the game's
+label. So the default is now a three-character readout with no unit text at all.
 
 | setting | readout | width |
 | --- | --- | --- |
