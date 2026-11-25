@@ -98,34 +98,71 @@ Three significant figures, whole numbers once the value reaches 100:
 ## Verified
 
 This is the first part of the project that could be tested instead of inspected. The Lua is executed
-against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`), so these are measured, not
-assumed:
+against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`): **44 tests**, all passing. The
+stubs deliberately copy the return shapes of shipping CET mods, so the conventions themselves are
+under test.
 
-- digits at 0, 0.01714, 0.171, 9.876, 58.83, 100, 212.4, 999.6
-- unit factors and labels for all six units, and the custom-multiplier clamps
-- the default readout is exactly `212 km/h   58.8 m/s` at 58.8 m/s
-- speed from body velocity, and reverse travel reading positive
-- the position-difference fallback: 5.88 m in 0.1 s → 58.8 m/s
-- first-person detection
-- the HUD draws while driving, draws nothing with no vehicle, and draws nothing when toggled off
-- the hotkey toggle persists to `settings.ini`
-- position and scale land where the settings say (1920×1080 → 1152, 842)
-- settings round-trip, and a corrupt/missing key falls back to the default
-- missing Native Settings UI is not fatal
-- static: no `//`, `<<`, `>>` or `goto` (CET runs LuaJIT), every risky CET call behind `pcall`,
-  no redscript symbols left
+Digits, conversion, readout:
 
-Run them with `pip install lupa && python -m unittest tests.test_hud`. Without `lupa` they skip.
+- digits at 0, 0.01714, 0.171, 9.876, 58.83, 100, 212.4, 999.6 — plus `NaN` and a non-number
+- every unit factor and label, the custom-multiplier clamps, an unknown unit falling back to m/s
+- the default readout is exactly `212 km/h   58.8 m/s` at 58.8 m/s; labels off and slot 2 empty work
+
+Speed:
+
+- speed from the body velocity; reverse travel reads positive
+- position-difference fallback: 5.88 m in 0.1 s → 58.8 m/s, with no speed on the first frame and
+  no speed from a nonsense frame delta
+- missing velocity methods fall through to the fallback rather than throwing
+- first-person detection, and an unavailable camera query *shows* the HUD instead of hiding it
+
+Drawing:
+
+- the HUD draws while driving; draws nothing with no vehicle, as a passenger, or when toggled off
+- first-person-only really hides in third person
+- it positions and scales from `GetDisplayResolution()` (1920×1080 → 1152, 842, scale 2.2)
+- it still draws when the resolution query is unavailable — no position beats no readout
+- colour pushes and pops stay balanced, and a colour API that throws leaves the stack untouched
+- a widget that throws still closes both windows (an ImGui window left open corrupts later frames)
+- a throwing `ImGui.Begin` does not escape `onDraw`
+
+Settings:
+
+- a checkbox click writes the **value**, not the "changed" flag — the CET return order, tested
+- a binding that returns `nil` can never nil out a setting; drag floats are clamped to their range
+- the unit setter accepts a name or a 1-based index, and rejects nonsense
+- the settings window only draws while the overlay is open
+- settings round-trip through `settings.ini`; a corrupt line keeps the default
+- a hand-edited file cannot hide the HUD (`scale=99`, `posX=5.5`, `posY=-3`, unknown units → clamped)
+- an unresolvable settings path is reported, not fatal
+
+Static:
+
+- no `//`, `<<`, `>>`, `goto` or `%d` (CET runs LuaJIT), no `table.unpack`/`math.type`/`utf8`
+- no redscript symbols; `init.lua` sits in `mods\phoenix_true_speedometer\`
+- a regression guard on the widget order: `local value, changed = ImGui.Checkbox(`
 
 ## Honest limits
 
-- **CET's ImGui binding** is the one thing that cannot be tested here. If a name is missing the
-  call is skipped rather than thrown, so a mismatch costs an option, not the HUD. The CET console
-  (`~`) names the file and line if anything does raise.
+- **Only the game can prove the HUD appears.** The API shapes are copied from three shipping CET
+  mods (BetterVehicleFirstPerson, psiberx's GameUI-WhereAmI, CyberpunkVRPort_WristHud) rather than
+  guessed, but the picture itself is unverifiable here. If something is missing, the call is
+  skipped and the CET console (`~`) names the file and line — that is the first place to look.
 - **The velocity methods** `GetLinearVelocity` / `GetWorldForward` are the same ones the redscript
   build used. They are called through `pcall`; if this CET version does not expose them to Lua the
   mod falls back to differentiating `GetWorldPosition`, which is smoothed and less exact.
 - **First person only** uses `veh:GetCameraManager():IsTPPActive()`. If that method is missing the
-  option is inert (the HUD then shows in all views).
+  option is inert (the HUD then shows in every view) — it fails visible, not invisible.
 - The HUD is drawn every frame from `onDraw`, independently of the game's own HUD widgets, so it
   cannot disappear when the game decides to hide or re-scale its speedometer.
+
+## Uninstalling
+
+```
+.\tools\uninstall.ps1                    # removes the car, keeps the HUD
+.\tools\uninstall.ps1 -WithSpeedometer   # removes the HUD as well
+```
+
+The HUD folder is
+`bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\` and nothing else in the
+game touches it. Deleting that folder removes the HUD; `settings.ini` lives inside it.

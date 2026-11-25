@@ -7,6 +7,13 @@
 -- Requires: Cyber Engine Tweaks only. If Native Settings UI is installed the same options appear in
 -- the game's Mods menu; the CET overlay always has them.
 --
+-- CET API shapes here are copied from shipping CET mods, not guessed:
+--   ImGui.Checkbox / ImGui.DragFloat  return  value, changed   (BetterVehicleFirstPerson,
+--                                     CyberpunkVRPort_WristHud - both assign the FIRST return)
+--   GetDisplayResolution()            returns screen width, height   (psiberx GameUI-WhereAmI)
+--   registerForEvent("onUpdate", fn)  fn receives the frame delta    (BetterVehicleFirstPerson)
+--   ImGuiWindowFlags.<Name> / ImGuiCol.<Name>   table-style enums    (BetterVehicleFirstPerson)
+--
 -- Exposed as the global PhoenixSpeedometer for inspection from the CET console.
 
 local M = {}
@@ -61,16 +68,41 @@ for k, v in pairs(DEFAULTS) do
   cfg[k] = v
 end
 
+local function reported(message)
+  print("[Phoenix True Speedometer] " .. message)
+end
+
+local lastError = nil
+
+-- runs fn, reports a distinct failure once: the CET console names it without spamming every frame
+local function guard(what, fn)
+  local ok, err = xpcall(fn, debug.traceback)
+  if not ok then
+    if err ~= lastError then
+      lastError = err
+      reported(what .. " failed: " .. tostring(err))
+    end
+    return false
+  end
+  lastError = nil
+  return true
+end
+
 local function settingsPath()
-  local ok, src = pcall(function()
-    return debug.getinfo(1, "S").source
+  -- level 1 must be a Lua function, not debug.getinfo itself: pcall(debug.getinfo, 1, ...) reports
+  -- the C function ([C]) and loses the file name. Hence the closure.
+  local ok, info = pcall(function()
+    return debug.getinfo(1, "S")
   end)
-  if not ok or type(src) ~= "string" then
+  if not ok or type(info) ~= "table" or type(info.source) ~= "string" then
     return nil
   end
-  src = src:gsub("^@", "")
-  local dir = src:match("^(.*[/\\])")
-  return dir and (dir .. "settings.ini") or nil
+  local source = info.source:gsub("^@", "")
+  local dir = source:match("^(.*[/\\])")
+  if not dir then
+    return nil
+  end
+  return dir .. "settings.ini"
 end
 
 local function encodeValue(v)
@@ -99,6 +131,40 @@ function M.saveSettings()
   return true
 end
 
+local NUMERIC_LIMITS = {
+  scale = { 0.5, 6.0 },
+  posX = { 0.0, 1.0 },
+  posY = { 0.0, 1.0 },
+  colorR = { 0.0, 1.0 },
+  colorG = { 0.0, 1.0 },
+  colorB = { 0.0, 1.0 },
+  smooth = { 0.02, 1.0 },
+  custom1 = { 0.0001, 1000.0 },
+  custom2 = { 0.0001, 1000.0 },
+}
+
+-- a typo in settings.ini should cost a colour, not an invisible HUD in the wrong place
+local function clampSettings()
+  for key, limits in pairs(NUMERIC_LIMITS) do
+    local value = cfg[key]
+    if type(value) ~= "number" or value ~= value then
+      cfg[key] = DEFAULTS[key]
+    else
+      if value < limits[1] then
+        cfg[key] = limits[1]
+      elseif value > limits[2] then
+        cfg[key] = limits[2]
+      end
+    end
+  end
+  if cfg.slot1 ~= "custom" and FACTORS[cfg.slot1] == nil then
+    cfg.slot1 = DEFAULTS.slot1
+  end
+  if cfg.slot2 ~= "" and cfg.slot2 ~= "custom" and FACTORS[cfg.slot2] == nil then
+    cfg.slot2 = DEFAULTS.slot2
+  end
+end
+
 function M.loadSettings()
   local path = settingsPath()
   if not path then
@@ -125,6 +191,7 @@ function M.loadSettings()
     end
   end
   file:close()
+  clampSettings()
   return true
 end
 
@@ -142,6 +209,12 @@ end
 -- ---------------------------------------------------------------------------
 function M.format(value)
   local v = value
+  if type(v) ~= "number" then
+    return "0"
+  end
+  if v ~= v then                    -- NaN: never let "nan" reach the screen
+    return "0"
+  end
   if v < 0 then
     v = -v
   end
@@ -239,7 +312,7 @@ end
 local lastPos, smoothed = nil, nil
 
 function M.mpsFromPosition(veh, dt)
-  if not veh or not dt or dt <= 0 or dt > 0.5 then
+  if not veh or type(dt) ~= "number" or dt <= 0 or dt > 0.5 then
     lastPos = nil
     return nil
   end
@@ -258,6 +331,9 @@ function M.mpsFromPosition(veh, dt)
   lastPos = { x = pos.x, y = pos.y, z = pos.z }
   if mps then
     local a = cfg.smooth
+    if type(a) ~= "number" then
+      a = DEFAULTS.smooth
+    end
     if a < 0.02 then
       a = 0.02
     end
@@ -273,21 +349,22 @@ function M.mpsFromPosition(veh, dt)
   return smoothed
 end
 
+-- true = first person, false = third person, nil = cannot tell (callers treat nil as "show")
 function M.isFirstPerson(veh)
   if not veh then
-    return false
+    return nil
   end
   local ok, cam = pcall(function()
     return veh:GetCameraManager()
   end)
   if not ok or not cam then
-    return false
+    return nil
   end
   local okTpp, tpp = pcall(function()
     return cam:IsTPPActive()
   end)
   if not okTpp then
-    return false
+    return nil
   end
   return not tpp
 end
@@ -296,17 +373,8 @@ end
 -- CET glue
 -- ---------------------------------------------------------------------------
 local overlayOpen = false
-local lastMps = 0
-
-local function stub(name)
-  -- the file must be loadable outside the game (tests load it with stubs already in place)
-  if _G["registerForEvent"] == nil then
-    _G["registerForEvent"] = function() end
-  end
-  if _G["registerHotkey"] == nil then
-    _G["registerHotkey"] = function() end
-  end
-end
+local lastMps = nil
+local frameDt = 1.0 / 60.0
 
 local function getVehicle()
   local ok, player = pcall(function()
@@ -353,15 +421,19 @@ function M.currentMps(dt)
 end
 
 function M.hudText(dt)
-  if not cfg.enabled then
+  if cfg.enabled ~= true then
     return nil
   end
-  local mps, veh = M.currentMps(dt)
+  local mps, veh = M.currentMps(dt or frameDt)
   if mps == nil then
     return nil
   end
-  if cfg.fppOnly and not M.isFirstPerson(veh) then
-    return nil
+  if cfg.fppOnly then
+    local firstPerson = M.isFirstPerson(veh)
+    -- nil means the camera query is unavailable: show the HUD rather than silently hiding it
+    if firstPerson == false then
+      return nil
+    end
   end
   lastMps = mps
   return M.render(mps, cfg)
@@ -370,83 +442,189 @@ end
 -- ---------------------------------------------------------------------------
 -- ImGui
 -- ---------------------------------------------------------------------------
-local function flag(name)
+local function enum(tableName, globalPrefix, name)
   local ok, value = pcall(function()
-    return ImGuiWindowFlags[name]
+    return _G[tableName][name]
   end)
-  if ok then
-    return value or 0
+  if ok and value ~= nil then
+    return value
   end
-  return 0
+  return _G[globalPrefix .. name]
+end
+
+local windowFlags = {}                    -- cached once: 0 for anything the binding lacks
+local function flag(name)
+  if windowFlags[name] == nil then
+    local value = enum("ImGuiWindowFlags", "ImGuiWindowFlags_", name)
+    windowFlags[name] = (type(value) == "number") and value or 0
+  end
+  return windowFlags[name]
 end
 
 local function hudFlags()
-  return flag("NoTitleBar") + flag("NoResize") + flag("NoMove") + flag("NoScrollbar")
-    + flag("NoCollapse") + flag("AlwaysAutoResize") + flag("NoSavedSettings")
-    + flag("NoFocusOnAppearing") + flag("NoNav")
+  return flag("NoDecoration") + flag("NoTitleBar") + flag("NoResize") + flag("NoMove")
+    + flag("NoScrollbar") + flag("NoCollapse") + flag("AlwaysAutoResize")
+    + flag("NoSavedSettings") + flag("NoFocusOnAppearing") + flag("NoNav")
 end
 
-local function displaySize()
-  local ok, io = pcall(function()
+local function screenSize()
+  local ok, w, h = pcall(GetDisplayResolution)          -- CET global, used by shipping HUD mods
+  if ok and type(w) == "number" and type(h) == "number" and w > 0 and h > 0 then
+    return w, h
+  end
+  local okIo, io = pcall(function()
     return ImGui.GetIO()
   end)
-  if ok and io and io.DisplaySize then
-    return io.DisplaySize.x, io.DisplaySize.y
+  if okIo and io and io.DisplaySize then
+    local size = io.DisplaySize
+    if type(size.x) == "number" and type(size.y) == "number" then
+      return size.x, size.y
+    end
   end
   return nil, nil
 end
 
+local cachedTextIndex = nil
+local textIndexResolved = false
+local function textIndex()
+  if not textIndexResolved then
+    cachedTextIndex = enum("ImGuiCol", "ImGuiCol_", "Text")
+    textIndexResolved = true
+  end
+  return cachedTextIndex
+end
+
+-- CET takes either 4 floats (BetterVehicleFirstPerson) or one packed 0xAABBGGRR (GameUI-WhereAmI).
+local function pushTextColour()
+  local index = textIndex()
+  if index == nil then
+    return false
+  end
+  local r, g, b = cfg.colorR, cfg.colorG, cfg.colorB
+  if type(r) ~= "number" or type(g) ~= "number" or type(b) ~= "number" then
+    r, g, b = DEFAULTS.colorR, DEFAULTS.colorG, DEFAULTS.colorB
+  end
+  if pcall(function()
+    ImGui.PushStyleColor(index, r, g, b, 1.0)
+  end) then
+    return true
+  end
+  local packed = math.floor(r * 255) + math.floor(g * 255) * 256 + math.floor(b * 255) * 65536
+    + 0xFF000000
+  return (pcall(function()
+    ImGui.PushStyleColor(index, packed)
+  end))
+end
+
+local function popTextColour()
+  pcall(function()
+    ImGui.PopStyleColor(1)
+  end)
+end
+
 function M.drawHud(dt)
-  local text = M.hudText(dt)
+  local text = M.hudText(dt or frameDt)
   if text == nil then
     return false
   end
-  local x, y = displaySize()
-  if x and y then
+  local w, h = screenSize()
+  if w and h then
     pcall(function()
-      ImGui.SetNextWindowPos(x * cfg.posX, y * cfg.posY)
+      ImGui.SetNextWindowPos(w * cfg.posX, h * cfg.posY)
     end)
   end
-  local visible = true
-  local okBegin, result = pcall(function()
+  local okBegin, visible = pcall(function()
     return ImGui.Begin("##phoenix_speedometer_hud", hudFlags())
   end)
   if not okBegin then
     return false
   end
-  if result == false then
-    visible = false
-  end
-  if visible then
-    pcall(function()
-      ImGui.PushStyleColor(ImGuiCol.Text, cfg.colorR, cfg.colorG, cfg.colorB, 1.0)
-    end)
-    pcall(function()
-      ImGui.SetWindowFontScale(cfg.scale)
-    end)
-    pcall(function()
-      ImGui.Text(text)
-    end)
-    pcall(function()
-      ImGui.PopStyleColor(1)
-    end)
+  if visible == false then
     pcall(function()
       ImGui.End()
     end)
+    return false
   end
+  local coloured = pushTextColour()
+  pcall(function()
+    ImGui.SetWindowFontScale(cfg.scale)
+  end)
+  pcall(function()
+    ImGui.Text(text)
+  end)
+  if coloured then
+    popTextColour()
+  end
+  pcall(function()
+    ImGui.End()
+  end)
   return true
 end
 
-local function selector(label, current, onPick)
-  if ImGui.BeginCombo then
+-- widgets. CET returns (value, changed) - the first value is the setting, the second a flag.
+local function uiCheckbox(key, label)
+  local before = cfg[key] and true or false
+  local value, changed = ImGui.Checkbox(label, before)
+  if type(value) ~= "boolean" then
+    value = before                       -- never let an odd binding nil a setting out
+  end
+  cfg[key] = value
+  if changed or value ~= before then
+    M.saveSettings()
+  end
+end
+
+local function uiDragFloat(key, label, step, low, high)
+  local before = cfg[key]
+  if type(before) ~= "number" then
+    before = DEFAULTS[key]
+  end
+  local value, changed = ImGui.DragFloat(label, before, step, low, high)
+  if type(value) ~= "number" then
+    value = before
+  end
+  if low and value < low then
+    value = low
+  end
+  if high and value > high then
+    value = high
+  end
+  cfg[key] = value
+  if changed or value ~= before then
+    M.saveSettings()
+  end
+end
+
+-- accepts a unit name or a 1-based index, so either Native Settings UI callback shape works
+local function setSlot(key, unit)
+  if type(unit) == "number" then
+    unit = UNIT_ORDER[unit]
+  end
+  if type(unit) ~= "string" then
+    return false
+  end
+  if unit ~= "custom" and FACTORS[unit] == nil then
+    return false
+  end
+  cfg[key] = unit
+  M.saveSettings()
+  return true
+end
+
+function M.setSlot(key, unit)
+  return setSlot(key, unit)
+end
+
+local function uiUnitSelector(label, key)
+  local current = cfg[key]
+  if type(ImGui.BeginCombo) == "function" and type(ImGui.Selectable) == "function" then
     if ImGui.BeginCombo(label, current) then
       for i = 1, #UNIT_ORDER do
         local unit = UNIT_ORDER[i]
-        local selected = (unit == current)
-        if ImGui.Selectable(unit, selected) then
-          onPick(unit)
+        if ImGui.Selectable(unit, unit == current) then
+          setSlot(key, unit)
         end
-        if selected then
+        if unit == current and type(ImGui.SetItemDefaultFocus) == "function" then
           ImGui.SetItemDefaultFocus()
         end
       end
@@ -454,83 +632,38 @@ local function selector(label, current, onPick)
     end
     return
   end
-  -- older ImGui bindings: cycle with a button
-  if ImGui.Button(label .. ": " .. current) then
+  -- binding without combo boxes: cycle with a button
+  if ImGui.Button(label .. ": " .. tostring(current)) then
     local index = 1
     for i = 1, #UNIT_ORDER do
       if UNIT_ORDER[i] == current then
         index = i
       end
     end
-    index = index % #UNIT_ORDER + 1
-    onPick(UNIT_ORDER[index])
+    setSlot(key, UNIT_ORDER[index % #UNIT_ORDER + 1])
   end
 end
 
-function M.drawSettings()
-  ImGui.Begin("Phoenix True Speedometer")
+local function settingsBody()
   ImGui.Text("CET HUD - nothing of the game's own HUD is touched.")
-  local changed
-  changed, cfg.enabled = ImGui.Checkbox("Show the HUD", cfg.enabled)
-  if changed then
-    M.saveSettings()
-  end
-  changed, cfg.showLabels = ImGui.Checkbox("Print the units", cfg.showLabels)
-  if changed then
-    M.saveSettings()
-  end
-  changed, cfg.fppOnly = ImGui.Checkbox("First person only", cfg.fppOnly)
-  if changed then
-    M.saveSettings()
-  end
+  uiCheckbox("enabled", "Show the HUD")
+  uiCheckbox("showLabels", "Print the units")
+  uiCheckbox("fppOnly", "First person only")
 
   ImGui.Separator()
-  selector("Slot 1 unit", cfg.slot1, function(unit)
-    cfg.slot1 = unit
-    M.saveSettings()
-  end)
-  changed, cfg.custom1 = ImGui.DragFloat("Slot 1 custom multiplier", cfg.custom1, 0.001, 0.0001, 1000.0)
-  if changed then
-    M.saveSettings()
-  end
-  selector("Slot 2 unit (off = empty)", cfg.slot2, function(unit)
-    cfg.slot2 = unit
-    M.saveSettings()
-  end)
-  changed, cfg.custom2 = ImGui.DragFloat("Slot 2 custom multiplier", cfg.custom2, 0.001, 0.0001, 1000.0)
-  if changed then
-    M.saveSettings()
-  end
+  uiUnitSelector("Slot 1 unit", "slot1")
+  uiDragFloat("custom1", "Slot 1 custom multiplier", 0.001, 0.0001, 1000.0)
+  uiUnitSelector("Slot 2 unit", "slot2")
+  uiDragFloat("custom2", "Slot 2 custom multiplier", 0.001, 0.0001, 1000.0)
 
   ImGui.Separator()
-  changed, cfg.scale = ImGui.DragFloat("Text size", cfg.scale, 0.05, 0.5, 6.0)
-  if changed then
-    M.saveSettings()
-  end
-  changed, cfg.posX = ImGui.DragFloat("Horizontal position (0-1 of screen)", cfg.posX, 0.002, 0.0, 1.0)
-  if changed then
-    M.saveSettings()
-  end
-  changed, cfg.posY = ImGui.DragFloat("Vertical position (0-1 of screen)", cfg.posY, 0.002, 0.0, 1.0)
-  if changed then
-    M.saveSettings()
-  end
-  changed, cfg.colorR = ImGui.DragFloat("Colour red", cfg.colorR, 0.01, 0.0, 1.0)
-  if changed then
-    M.saveSettings()
-  end
-  changed, cfg.colorG = ImGui.DragFloat("Colour green", cfg.colorG, 0.01, 0.0, 1.0)
-  if changed then
-    M.saveSettings()
-  end
-  changed, cfg.colorB = ImGui.DragFloat("Colour blue", cfg.colorB, 0.01, 0.0, 1.0)
-  if changed then
-    M.saveSettings()
-  end
-  changed, cfg.smooth = ImGui.DragFloat("Position-fallback smoothing", cfg.smooth, 0.01, 0.02, 1.0)
-  if changed then
-    M.saveSettings()
-  end
+  uiDragFloat("scale", "Text size", 0.05, 0.5, 6.0)
+  uiDragFloat("posX", "Horizontal position (0-1 of the screen)", 0.002, 0.0, 1.0)
+  uiDragFloat("posY", "Vertical position (0-1 of the screen)", 0.002, 0.0, 1.0)
+  uiDragFloat("colorR", "Colour red", 0.01, 0.0, 1.0)
+  uiDragFloat("colorG", "Colour green", 0.01, 0.0, 1.0)
+  uiDragFloat("colorB", "Colour blue", 0.01, 0.0, 1.0)
+  uiDragFloat("smooth", "Position-fallback smoothing", 0.01, 0.02, 1.0)
 
   ImGui.Separator()
   local veh = getVehicle()
@@ -545,7 +678,25 @@ function M.drawSettings()
     end
     M.saveSettings()
   end
-  ImGui.End()
+end
+
+-- Begin and End are deliberately outside the guarded body: a widget that throws must not leave a
+-- window open on ImGui's stack, which would corrupt every later frame.
+function M.drawSettings()
+  local okBegin, visible = pcall(function()
+    return ImGui.Begin("Phoenix True Speedometer")
+  end)
+  if not okBegin then
+    return false
+  end
+  local okBody = true
+  if visible ~= false then
+    okBody = guard("settings window", settingsBody)
+  end
+  pcall(function()
+    ImGui.End()
+  end)
+  return okBody
 end
 
 -- ---------------------------------------------------------------------------
@@ -555,7 +706,7 @@ local function addNativeSettings()
   local ok, nativeSettings = pcall(function()
     return GetMod("nativeSettings")
   end)
-  if not ok or type(nativeSettings) ~= "table" or not nativeSettings.addTab then
+  if not ok or type(nativeSettings) ~= "table" or type(nativeSettings.addTab) ~= "function" then
     return false
   end
   local path = "/phoenix_speedometer"
@@ -565,55 +716,64 @@ local function addNativeSettings()
   pcall(function()
     nativeSettings.addSubcategory(path .. "/hud", "HUD")
   end)
-  pcall(function()
-    nativeSettings.addToggle(path .. "/hud", "Show the HUD", "Draws its own speed readout; the game's HUD is untouched.", cfg.enabled, function(state)
-      cfg.enabled = state
-      M.saveSettings()
+  local toggles = {
+    { "Show the HUD", "Draws its own readout; the game's HUD is untouched.", "enabled" },
+    { "Print the units", "Append the unit to each number.", "showLabels" },
+    { "First person only", "Hide in third person and photo mode.", "fppOnly" },
+  }
+  for _, row in ipairs(toggles) do
+    local label, description, key = row[1], row[2], row[3]
+    pcall(function()
+      nativeSettings.addToggle(path .. "/hud", label, description, cfg[key], function(state)
+        if type(state) == "boolean" then
+          cfg[key] = state
+          M.saveSettings()
+        end
+      end)
     end)
-  end)
-  pcall(function()
-    nativeSettings.addToggle(path .. "/hud", "Print the units", "Append the unit to each number.", cfg.showLabels, function(state)
-      cfg.showLabels = state
-      M.saveSettings()
-    end)
-  end)
-  pcall(function()
-    nativeSettings.addToggle(path .. "/hud", "First person only", "Hide in third person and photo mode.", cfg.fppOnly, function(state)
-      cfg.fppOnly = state
-      M.saveSettings()
-    end)
-  end)
+  end
   pcall(function()
     nativeSettings.addSubcategory(path .. "/units", "Units")
   end)
-  pcall(function()
-    nativeSettings.addSelectorString(path .. "/units", "Slot 1 unit", "The main number.", UNIT_ORDER, cfg.slot1, function(unit)
-      cfg.slot1 = unit
-      M.saveSettings()
+  for _, row in ipairs({ { "Slot 1 unit", "slot1" }, { "Slot 2 unit", "slot2" } }) do
+    local label, key = row[1], row[2]
+    pcall(function()
+      nativeSettings.addSelectorString(path .. "/units", label, "The numbers on the HUD.",
+        UNIT_ORDER, cfg[key], function(unit)
+          setSlot(key, unit)
+        end)
     end)
-  end)
-  pcall(function()
-    nativeSettings.addSelectorString(path .. "/units", "Slot 2 unit", "Second number; pick custom for your own multiplier.", UNIT_ORDER, cfg.slot2, function(unit)
-      cfg.slot2 = unit
-      M.saveSettings()
-    end)
-  end)
+  end
   return true
 end
 
--- ---------------------------------------------------------------------------
--- registration
--- ---------------------------------------------------------------------------
-local listeners = {}
+local function installStubs()
+  -- the file must also load outside the game (the tests load it with stubs in place)
+  if type(registerForEvent) ~= "function" then
+    registerForEvent = function() end
+  end
+  if type(registerHotkey) ~= "function" then
+    registerHotkey = function() end
+  end
+end
 
 function M.start()
-  stub(name)
+  installStubs()
   M.loadSettings()
-  M.saveSettings()          -- first run: put the defaults on disk so they can be edited by hand
+  local wrote = M.saveSettings()          -- first run: put the defaults on disk to edit by hand
+  if not wrote then
+    reported("settings.ini is not writable - options work but will not persist")
+  end
   addNativeSettings()
 
   registerForEvent("onInit", function()
     M.saveSettings()
+  end)
+
+  registerForEvent("onUpdate", function(delta)
+    if type(delta) == "number" and delta > 0 and delta < 1 then
+      frameDt = delta
+    end
   end)
 
   registerForEvent("onOverlayOpen", function()
@@ -624,32 +784,28 @@ function M.start()
     overlayOpen = false
   end)
 
-  registerForEvent("onDraw", function(dt)
+  registerForEvent("onDraw", function()
     if overlayOpen then
-      local ok = pcall(M.drawSettings)
-      if not ok then
-        overlayOpen = false
-      end
+      guard("settings window", M.drawSettings)
     end
-    pcall(M.drawHud, dt or 0.016)
+    guard("HUD", function()
+      M.drawHud(frameDt)
+    end)
   end)
 
   registerHotkey("PhoenixSpeedometer_ToggleHud", "Toggle speedometer HUD", function()
-    cfg.enabled = not cfg.enabled
+    cfg.enabled = not (cfg.enabled == true)
     M.saveSettings()
   end)
 
   registerHotkey("PhoenixSpeedometer_ToggleLabels", "Toggle speedometer unit labels", function()
-    cfg.showLabels = not cfg.showLabels
+    cfg.showLabels = not (cfg.showLabels == true)
     M.saveSettings()
   end)
 
-  print("[Phoenix True Speedometer] HUD ready - bind the toggle in CET > Bindings")
+  reported("HUD ready - bind the toggle in CET > Bindings")
   return true
 end
-
-listeners.cfg = cfg
-M.listeners = listeners
 
 _G.PhoenixSpeedometer = M
 return M

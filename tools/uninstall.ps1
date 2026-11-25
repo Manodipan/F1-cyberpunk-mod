@@ -4,7 +4,7 @@
     Remove this mod from Cyberpunk 2077 (a reversible uninstall: it backs the files up first).
 
 .DESCRIPTION
-    Deletes exactly the two things update.ps1 installs, and nothing else:
+    Deletes exactly the things update.ps1 installs, and nothing else:
 
         r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml
         r6\scripts\phoenix_aston_valkyrie\  (4 x .reds)
@@ -26,6 +26,11 @@
     dashboard working - gear, rev lights and the true physics-speed readout - on a stock car.
     The scripts do not read the YAML, so this is a valid mix.
 
+.PARAMETER WithSpeedometer
+    Also remove the Phoenix True Speedometer HUD (bin\x64\plugins\cyber_engine_tweaks\mods\
+    phoenix_true_speedometer\). Off by default: uninstalling the car must not take the speedometer
+    with it.
+
 .PARAMETER Purge
     Do not keep a backup. Cannot be undone.
 
@@ -39,6 +44,7 @@
 param(
     [string]$GameRoot = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty",
     [switch]$KeepScripts,
+    [switch]$WithSpeedometer,
     [switch]$Purge
 )
 
@@ -64,11 +70,14 @@ $found = @()
 if (Test-Path $yaml)    { $found += Get-Item $yaml }
 if ((Test-Path $redsDir) -and -not $KeepScripts) { $found += Get-ChildItem $redsDir -Filter '*.reds' -File }
 if ((Test-Path $speedoDir) -and -not $KeepScripts) { $found += Get-ChildItem $speedoDir -Filter '*.reds' -File }
-if (Test-Path $speedoLuaDir) { $found += Get-ChildItem $speedoLuaDir -Filter '*.lua' -File }
+if ((Test-Path $speedoLuaDir) -and $WithSpeedometer) { $found += Get-ChildItem $speedoLuaDir -Filter '*.lua' -File }
 
 if ($found.Count -eq 0) {
     Write-Step "nothing to remove"
-    Write-Ok "neither file is installed in $GameRoot"
+    Write-Ok "the car is not installed in $GameRoot"
+    if ((Test-Path $speedoLuaDir) -and -not $WithSpeedometer) {
+        Write-Ok "the speedometer HUD is installed and stays  (add -WithSpeedometer to remove it)"
+    }
     exit 0
 }
 
@@ -83,7 +92,7 @@ if (-not $Purge) {
     if (Test-Path $yaml)    { Copy-Item $yaml (Join-Path $backup 'tweaks') -Force }
     if (Test-Path $redsDir) { Copy-Item (Join-Path $redsDir '*') (Join-Path $backup 'scripts') -Force }
     if (Test-Path $speedoDir) { Copy-Item (Join-Path $speedoDir '*') (Join-Path $backup 'scripts') -Force }
-    if (Test-Path $speedoLuaDir) {
+    if ((Test-Path $speedoLuaDir) -and $WithSpeedometer) {
         New-Item -ItemType Directory -Path (Join-Path $backup 'cet') -Force | Out-Null
         Copy-Item (Join-Path $speedoLuaDir '*') (Join-Path $backup 'cet') -Force
     }
@@ -97,8 +106,12 @@ if (Test-Path $yaml) {
     Write-Ok "deleted r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml"
 }
 if (Test-Path $speedoLuaDir) {
-    Remove-Item $speedoLuaDir -Recurse -Force
-    Write-Ok "deleted cyber_engine_tweaks\mods\phoenix_true_speedometer\"
+    if ($WithSpeedometer) {
+        Remove-Item $speedoLuaDir -Recurse -Force
+        Write-Ok "deleted cyber_engine_tweaks\mods\phoenix_true_speedometer\"
+    } else {
+        Write-Ok "kept the speedometer HUD  (add -WithSpeedometer to remove it too)"
+    }
 }
 if (Test-Path $speedoDir) {
     if ($KeepScripts) {
