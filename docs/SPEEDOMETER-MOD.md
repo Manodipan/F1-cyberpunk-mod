@@ -45,13 +45,13 @@ you get `58.8 | 212` back.
 
 | setting | what it does |
 |---|---|
-| **Slot 1 – unit** | m/s · km/h · mph · knots · ft/s · custom |
+| **Slot 1 – unit** | m/s · km/h · mph · knots · ft/s · **Mach** · custom |
 | **Slot 1 – custom multiplier** | how many of *your* unit per m/s, used when slot 1 is custom |
 | **Slot 2 – show a second unit** | off = one number only |
-| **Slot 2 – unit** | same six options |
+| **Slot 2 – unit** | same seven options |
 | **Slot 2 – custom multiplier** | free multiplier for slot 2 |
 | **Print the unit next to the number** | `58.8 m/s \| 212 km/h` on, `58.8 \| 212` off |
-| **Decimal places** | 0, 1 or 2 |
+| **Decimal places** | 0, 1, 2 or 3 (Mach forces 3) |
 | **Only in player vehicles** | leaves passenger seats, cutscenes and AVs alone |
 
 ### In the tooltips
@@ -74,12 +74,20 @@ The multiplier is simply `your unit per metre per second`:
 | mph | 2.23694 |
 | knots | 1.94384 |
 | ft/s | 3.28084 |
+| **Mach** | **1/343** (Mach 1 = 343 m/s) |
 | km/min | 0.06 |
 | yards/s | 1.09361 |
 | furlongs/fortnight | 6012.9 |
+| Mach | 0.00291545 (= 1/343) |
 
 Anything else: take **3600 ÷ (your unit's length in metres)** and you have it. Range is 0.0001 to
-1000, so a Mach-style multiplier (≈0.0029 at sea level) fits too.
+1000.
+
+**Mach** is the sixth preset: `1/343`, i.e. Mach 1 = **343 m/s** at sea level and 15 °C. Because the
+numbers are small — 58.8 m/s is Mach 0.171 — a Mach slot always prints at least three decimals,
+whatever the decimals setting says. `0.2 Mach` would be a lie about a measurement; `0.171` is not.
+Sound speed scales with temperature (343 at 20 °C, 340 at 15 °C in dry air, 295 at -50 °C), so this
+is a fixed sea-level reference, not a local one.
 
 ## Install
 

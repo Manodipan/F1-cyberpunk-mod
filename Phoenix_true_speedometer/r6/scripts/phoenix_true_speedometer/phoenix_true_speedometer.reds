@@ -20,7 +20,8 @@ public enum PhoenixTS_Unit {
     MPH = 2,
     KNOTS = 3,
     FPS = 4,
-    CUSTOM = 5
+    MACH = 5,
+    CUSTOM = 6
 }
 
 public class PhoenixTS_Settings extends ScriptableSystem {
@@ -28,7 +29,7 @@ public class PhoenixTS_Settings extends ScriptableSystem {
     // ------------------------------------------------------------------ slot 1
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 1 - unit (main number)")
-    @runtimeProperty("ModSettings.description", "The unit of the main HUD number. m/s = x1.0  |  km/h = x3.6  |  mph = x2.23694  |  knots = x1.94384  |  ft/s = x3.28084. Pick CUSTOM to type your own multiplier. The HUD prints the unit next to the number, so what you pick is what you see.")
+    @runtimeProperty("ModSettings.description", "The unit of the main HUD number. m/s = x1.0  |  km/h = x3.6  |  mph = x2.23694  |  knots = x1.94384  |  ft/s = x3.28084  |  Mach = 1/343 (Mach 1 = 343 m/s). Pick CUSTOM to type your own multiplier. The HUD prints the unit next to the number, so what you pick is what you see.")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "10")
     @runtimeProperty("ModSettings.displayValues.MPS", "m/s")
@@ -36,12 +37,13 @@ public class PhoenixTS_Settings extends ScriptableSystem {
     @runtimeProperty("ModSettings.displayValues.MPH", "mph")
     @runtimeProperty("ModSettings.displayValues.KNOTS", "knots")
     @runtimeProperty("ModSettings.displayValues.FPS", "ft/s")
+    @runtimeProperty("ModSettings.displayValues.MACH", "Mach")
     @runtimeProperty("ModSettings.displayValues.CUSTOM", "custom")
     public let slot1: PhoenixTS_Unit = PhoenixTS_Unit.MPS;
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 1 - custom multiplier")
-    @runtimeProperty("ModSettings.description", "How many of your unit per metre per second - only used when slot 1 is CUSTOM. m/s 1.0  |  km/h 3.6  |  mph 2.23694  |  knots 1.94384  |  ft/s 3.28084  |  km/min 0.06  |  yards/s 1.09361  |  furlongs/fortnight 6012.9  |  Mach 0.0029. Rule: 3600 divided by the unit's length in metres. A custom slot is labelled x<multiplier> on the HUD.",
+    @runtimeProperty("ModSettings.description", "How many of your unit per metre per second - only used when slot 1 is CUSTOM. m/s 1.0  |  km/h 3.6  |  mph 2.23694  |  knots 1.94384  |  ft/s 3.28084  |  km/min 0.06  |  yards/s 1.09361  |  furlongs/fortnight 6012.9  |  Mach 0.00291545 (= 1/343). Rule: 3600 divided by the unit's length in metres. A custom slot is labelled x<multiplier> on the HUD.",
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "11")
     @runtimeProperty("ModSettings.step", "0.0001")
@@ -60,7 +62,7 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 2 - unit")
-    @runtimeProperty("ModSettings.description", "The unit of the second number. m/s = x1.0  |  km/h = x3.6  |  mph = x2.23694  |  knots = x1.94384  |  ft/s = x3.28084. Example HUD: 58.8 m/s | 212 km/h")
+    @runtimeProperty("ModSettings.description", "The unit of the second number. m/s = x1.0  |  km/h = x3.6  |  mph = x2.23694  |  knots = x1.94384  |  ft/s = x3.28084  |  Mach = 1/343 (Mach 1 = 343 m/s). Example HUD: 58.8 m/s | 212 km/h")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "21")
     @runtimeProperty("ModSettings.displayValues.MPS", "m/s")
@@ -68,13 +70,14 @@ public class PhoenixTS_Settings extends ScriptableSystem {
     @runtimeProperty("ModSettings.displayValues.MPH", "mph")
     @runtimeProperty("ModSettings.displayValues.KNOTS", "knots")
     @runtimeProperty("ModSettings.displayValues.FPS", "ft/s")
+    @runtimeProperty("ModSettings.displayValues.MACH", "Mach")
     @runtimeProperty("ModSettings.displayValues.CUSTOM", "custom")
     @runtimeProperty("ModSettings.dependency", "showSlot2")
     public let slot2: PhoenixTS_Unit = PhoenixTS_Unit.KMH;
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 2 - custom multiplier")
-    @runtimeProperty("ModSettings.description", "How many of your unit per metre per second - only used when slot 2 is CUSTOM. m/s 1.0  |  km/h 3.6  |  mph 2.23694  |  knots 1.94384  |  ft/s 3.28084  |  km/min 0.06  |  yards/s 1.09361  |  furlongs/fortnight 6012.9  |  Mach 0.0029. Rule: 3600 divided by the unit's length in metres.")
+    @runtimeProperty("ModSettings.description", "How many of your unit per metre per second - only used when slot 2 is CUSTOM. m/s 1.0  |  km/h 3.6  |  mph 2.23694  |  knots 1.94384  |  ft/s 3.28084  |  km/min 0.06  |  yards/s 1.09361  |  furlongs/fortnight 6012.9  |  Mach 0.00291545 (= 1/343). Rule: 3600 divided by the unit's length in metres.")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "22")
     @runtimeProperty("ModSettings.step", "0.0001")
@@ -93,12 +96,12 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Decimal places")
-    @runtimeProperty("ModSettings.description", "0 = whole numbers, 1 = one decimal (58.8), 2 = two (58.75).")
+    @runtimeProperty("ModSettings.description", "0 = whole numbers, 1 = one decimal (58.8), 2 = two (58.75), 3 = three (0.171). Mach always uses at least three, whatever this says.")
     @runtimeProperty("ModSettings.category", "Format")
     @runtimeProperty("ModSettings.category.order", "30")
     @runtimeProperty("ModSettings.step", "1")
     @runtimeProperty("ModSettings.min", "0")
-    @runtimeProperty("ModSettings.max", "2")
+    @runtimeProperty("ModSettings.max", "3")
     public let decimals: Int32 = 1;
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
@@ -125,6 +128,10 @@ public static func PhoenixTS_Factor(unit: PhoenixTS_Unit, custom: Float) -> Floa
     if Equals(unit, PhoenixTS_Unit.FPS) {
         return 3.28084;
     }
+    if Equals(unit, PhoenixTS_Unit.MACH) {
+        // Mach 1 = 343 m/s at sea level, 15 C
+        return 1.0 / 343.0;
+    }
     if Equals(unit, PhoenixTS_Unit.CUSTOM) {
         return ClampF(custom, 0.0001, 1000.0);
     }
@@ -145,6 +152,9 @@ public static func PhoenixTS_Label(unit: PhoenixTS_Unit, custom: Float) -> Strin
     if Equals(unit, PhoenixTS_Unit.FPS) {
         return "ft/s";
     }
+    if Equals(unit, PhoenixTS_Unit.MACH) {
+        return "Mach";
+    }
     if Equals(unit, PhoenixTS_Unit.CUSTOM) {
         return "x" + PhoenixTS_Format(ClampF(custom, 0.0001, 1000.0), 2);
     }
@@ -156,15 +166,23 @@ public static func PhoenixTS_Format(value: Float, decimals: Int32) -> String {
         return IntToString(RoundMath(value));
     }
     let scale: Int32 = 10;
-    if decimals >= 2 {
+    if decimals == 2 {
         scale = 100;
+    } else if decimals >= 3 {
+        scale = 1000;
     }
     let scaled: Int32 = RoundMath(value * Cast<Float>(scale));
     let whole: Int32 = scaled / scale;
     let frac: Int32 = AbsI(scaled % scale);
     let pad: String = "";
-    if (decimals >= 2) && (frac < 10) {
+    if (scale == 100) && (frac < 10) {
         pad = "0";
+    } else if scale == 1000 {
+        if frac < 10 {
+            pad = "00";
+        } else if frac < 100 {
+            pad = "0";
+        }
     }
     return IntToString(whole) + "." + pad + IntToString(frac);
 }
@@ -176,7 +194,13 @@ public static func PhoenixTS_BodyMps(vehicle: wref<VehicleObject>) -> Float {
 
 // one slot rendered: the number, then the unit it is actually in
 public static func PhoenixTS_Number(mps: Float, unit: PhoenixTS_Unit, custom: Float, decimals: Int32, withUnit: Bool) -> String {
-    let number: String = PhoenixTS_Format(mps * PhoenixTS_Factor(unit, custom), decimals);
+    let value: Float = mps * PhoenixTS_Factor(unit, custom);
+    // Mach numbers are small: 0.2 says nothing, 0.171 does. Never fewer than three decimals.
+    let places: Int32 = decimals;
+    if Equals(unit, PhoenixTS_Unit.MACH) && (places < 3) {
+        places = 3;
+    }
+    let number: String = PhoenixTS_Format(value, places);
     if !withUnit {
         return number;
     }

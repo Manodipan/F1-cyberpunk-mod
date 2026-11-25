@@ -26,8 +26,8 @@ class SpeedometerModTests(unittest.TestCase):
         for field in ("slot1:", "slot1Custom:", "slot2:", "slot2Custom:", "showSlot2:", "decimals:"):
             self.assertIn(field, self.text, field)
 
-    def test_six_units_are_offered_in_both_slots(self):
-        for unit in ("MPS", "KMH", "MPH", "KNOTS", "FPS", "CUSTOM"):
+    def test_seven_units_are_offered_in_both_slots(self):
+        for unit in ("MPS", "KMH", "MPH", "KNOTS", "FPS", "MACH", "CUSTOM"):
             self.assertEqual(self.text.count(f'"ModSettings.displayValues.{unit}"'), 2,
                              f"{unit} should be offered for both slots")
 
@@ -36,6 +36,15 @@ class SpeedometerModTests(unittest.TestCase):
         for unit, factor in expected.items():
             block = re.search(rf"PhoenixTS_Unit\.{unit}\) \{{\s*return ({factor});", self.text)
             self.assertIsNotNone(block, f"{unit} should convert by {factor}")
+
+    def test_mach_is_one_over_343(self):
+        # Mach 1 = 343 m/s, so the multiplier is 1/343 - expressed as arithmetic, not a magic number
+        self.assertIn("return 1.0 / 343.0;", self.text)
+        self.assertIn('@runtimeProperty("ModSettings.displayValues.MACH", "Mach")', self.text)
+        self.assertIn('return "Mach";', self.text)
+        # 58.8 m/s is Mach 0.17, so it must not be rounded to nothing
+        self.assertIn("if Equals(unit, PhoenixTS_Unit.MACH) && (places < 3) {", self.text)
+        self.assertAlmostEqual(58.8 / 343.0 * 1000, 171.4, places=1)
 
     def test_custom_slot_is_a_free_multiplier_and_is_clamped(self):
         self.assertIn("ClampF(custom, 0.0001, 1000.0)", self.text)
