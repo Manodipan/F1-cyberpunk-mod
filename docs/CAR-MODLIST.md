@@ -172,3 +172,59 @@ The first list leaned on hypercars, which the wall makes identical. This one lea
 296 GT3, 992 GT3 R, Mission R, Bolide, Apollo IE. They are the only cars in either list whose gearing
 is designed for a circuit rather than a top-speed number, and all six come from one author whose
 files this repo has already read. If the goal is "a car that behaves at 300 km/h", that is the set.
+
+---
+
+# The xa1res catalogue
+
+All 15 cars from one author, in two upload waves: **04–05 Nov** (circuit cars and hypercars) and
+**14–17 Nov** (the LMH/LMDh prototypes). Links are canonical.
+
+## LMH / LMDh prototypes — uploaded 14–17 Nov 2026
+
+The matched set. Seven cars, one author, one week, 12–53 MB each. This is the grid the project has
+been tuning against since the beginning, and until now it existed only as reference data.
+
+| car | class | end. / DL | uploaded | link |
+|---|---|---|---|---|
+| **Aston Martin Valkyrie LMH** | LMH, V12 | 5 / 1.4 k | 14 Nov | https://www.nexusmods.com/cyberpunk2077/mods/38493 |
+| **Ferrari 499P** | LMH | 6 / 1.1 k | 14 Nov | https://www.nexusmods.com/cyberpunk2077/mods/38496 |
+| **Peugeot 9X8** | LMH | 7 / 1.3 k | 14 Nov | https://www.nexusmods.com/cyberpunk2077/mods/38492 |
+| **BMW M Hybrid V8** | LMDh | 10 / 1.3 k | 14 Nov | https://www.nexusmods.com/cyberpunk2077/mods/38497 |
+| **Alpine A424** | LMDh | 7 / 1.1 k | 14 Nov | https://www.nexusmods.com/cyberpunk2077/mods/38498 |
+| **Cadillac V-Series.R** | LMDh, V8 | 5 / 1 k | 14 Nov | https://www.nexusmods.com/cyberpunk2077/mods/38495 |
+| **Lamborghini SC63** | LMDh | 9 / 1.1 k | 17 Nov | https://www.nexusmods.com/cyberpunk2077/mods/38548 |
+
+**Two of these are not strangers.** The Valkyrie is the same nameplate this repository's entire build
+is ported onto, and the Peugeot 9X8 is where the true-speed HUD in
+`phoenix_aston_valkyrie.reds` comes from — the header of our own file says so: *"Peugeot 9X8
+(xaires): the game's HUD speed indicator shows true speed"*. So the fix we wrote for the Aston is
+xa1res' fix, taken from the 9X8.
+
+**Expect a wrapper chain.** Our scripts wrap `hudCarController.OnSpeedValueChanged`, and theirs
+almost certainly wrap the same function, gated on their own record. Redscript chains wrappers, so the
+outer one wins. If the HUD number looks wrong in an LMH car specifically, that is the cause — not the
+car, and not the integrator.
+
+## Circuit cars and hypercars — 04–05 Nov 2026
+
+| car | end. / DL | size | link |
+|---|---|---|---|
+| **Lamborghini Sesto Elemento** | 32 / 17.4 k | 70.5 MB | https://www.nexusmods.com/cyberpunk2077/mods/37349 |
+| **Apollo Intensa Emozione** | 30 / 12.2 k | 18.9 MB | https://www.nexusmods.com/cyberpunk2077/mods/37233 |
+| **Bugatti Bolide** | 40 / 7.7 k | 42.7 MB | https://www.nexusmods.com/cyberpunk2077/mods/37232 |
+| **Porsche 992 GT3 R** | 31 / 6.2 k | 34.0 MB | https://www.nexusmods.com/cyberpunk2077/mods/37229 |
+| **Ferrari 296 GT3** | 20 / 3.4 k | 27.5 MB | https://www.nexusmods.com/cyberpunk2077/mods/37227 |
+| **Lamborghini Countach Liberty Walk** | 22 / 3.3 k | 11.6 MB | https://www.nexusmods.com/cyberpunk2077/mods/37235 |
+| **Lamborghini Countach LPI 800-4** | 13 / 2.7 k | 4.8 MB | https://www.nexusmods.com/cyberpunk2077/mods/37234 |
+| **Porsche Mission R** | 9 / 1.5 k | 8.5 MB | https://www.nexusmods.com/cyberpunk2077/mods/37224 |
+
+## Why this catalogue and not the hypercar list
+
+Every car here is geared for a circuit, so none of them park on the 360 km/h integrator cap — the
+failure this project spent weeks chasing in the Valkyrie. The LMH set goes further: those cars are
+built around downforce and a 3.5-litre-class hybrid, which is exactly the shape of car this repo's
+`TUNING-FROM-REAL-RACING.md` says to tune from.
+
+Order to install: **Valkyrie LMH** first (same nameplate, so the comparison against our build is
+direct), then **499P** or **SC63** (both hypercars with real downforce), then the LMDh cars.
