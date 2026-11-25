@@ -186,6 +186,26 @@ Get(n"PhoenixTrueSpeedometer.PhoenixTS_Settings")
 Get(n"PhoenixTS_Settings")
 ```
 
+### How to tell whether the settings are actually live
+
+The number itself is the test, and it needs no log:
+
+1. Set **Slot 1** to `km/h`. 2. Leave the tab (Mod Settings commits on close). 3. Drive 200 m.
+
+| what you see | meaning |
+| --- | --- |
+| `212` | settings live, conversion correct |
+| `59` | tab is decorative: values never reach the mod |
+| `59*` | the settings *system* could not be found at all |
+
+`59` versus `59*` is the difference between "found the system, it isn't being written to" and
+"never found it" - and they need different fixes, which is why the asterisk exists.
+
+If it is `59*`, the draft in `settings/PhoenixTS_ReadModSettings.reds.pending` reads the values
+straight out of Mod Settings' own ConfigVars instead (the store its UI edits), copying ADE's
+`GetModConfigVar`. One call in it - reading an enum back - is **unconfirmed**, because ADE only ever
+writes enums, never reads them; it is marked UNCONFIRMED in the file and must be shipped alone.
+
 And it says so on screen: a readout ending in **`*`** (`59*`) means all three failed - the tab is
 decorative and the number is hardcoded. A clean `59` means the instance was found and the settings
 are live. That one character is the whole diagnostic.

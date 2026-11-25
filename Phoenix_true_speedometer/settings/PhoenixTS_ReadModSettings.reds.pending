@@ -1,0 +1,46 @@
+// DRAFT - not installed, not compiled. Only ship this if the HUD prints '<number>*'.
+//
+// If the settings instance cannot be reached, the values still exist somewhere: Mod Settings keeps
+// them as ConfigVars, which is what its UI actually edits. ADE reads them like this (settings.reds:
+// 650-663) and every call below is copied from there:
+//
+//   ModSettings.GetCategories(n"Auto Drive Enhanced")          -> array<CName>
+//   ModSettings.GetVars(n"Auto Drive Enhanced", cate)          -> array<ref<ConfigVar>>
+//   var.GetName()                                              -> CName
+//   (var as ModConfigVarBool).GetValue()                       -> Bool
+//   (var as ModConfigVarEnum).SetIndex(index)                  -> Void   (write only!)
+//
+// CONFIRMED BY ADE: everything above except reading an enum. ADE only ever *writes* an enum
+// (SetIndex); it never reads one back. So a getter for the enum index is a guess, and a guess is
+// exactly what has cost four restarts. Try this file ALONE, with everything else untouched:
+//
+//   @if(ModuleExists("ModSettingsModule"))      required - ModSettings.* does not exist without
+//                                               the framework installed, and an unguarded call
+//                                               fails to compile (ADE wraps all of them)
+//
+// If `GetIndex()` is the wrong name the popup comes back; the alternative spellings to try, in
+// order, are `GetEnumValue()`, `GetValue()` (inherited from ModConfigVar), and reading the bool
+// `ModConfigVarBool.GetValue()` only, keeping the enum on the instance path.
+
+module PhoenixTrueSpeedometer
+
+@if(ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_EnumFromModSettings(name: CName, fallback: PhoenixTS_Unit) -> PhoenixTS_Unit {
+    for cate in ModSettings.GetCategories(n"Phoenix True Speedometer") {
+        for v in ModSettings.GetVars(n"Phoenix True Speedometer", cate) {
+            if Equals(name, v.GetName()) {
+                let e = v as ModConfigVarEnum;
+                if IsDefined(e) {
+                    // UNCONFIRMED: ADE never reads an enum back
+                    return IntEnum<PhoenixTS_Unit>(e.GetIndex());
+                }
+            }
+        }
+    }
+    return fallback;
+}
+
+@if(!ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_EnumFromModSettings(name: CName, fallback: PhoenixTS_Unit) -> PhoenixTS_Unit {
+    return fallback;
+}

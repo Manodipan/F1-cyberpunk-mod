@@ -184,6 +184,26 @@ class CompileSafetyTests(unittest.TestCase):
             self.assertNotIn(mine, text, mine)
 
 
+class ParkedDraftTests(unittest.TestCase):
+    """The Mod Settings ConfigVar reader is a draft, and must stay out of the install."""
+
+    DRAFT = ROOT / "Phoenix_true_speedometer/settings/PhoenixTS_ReadModSettings.reds.pending"
+
+    def test_the_draft_is_not_installed(self):
+        self.assertTrue(self.DRAFT.is_file())
+        self.assertFalse(self.DRAFT.with_suffix(".reds").exists(), "draft must not be a .reds")
+
+    def test_the_draft_guards_every_modsettings_call(self):
+        """ModSettings.* does not exist without the framework - ADE guards all of them."""
+        text = self.DRAFT.read_text(encoding="utf-8")
+        self.assertIn('@if(ModuleExists("ModSettingsModule"))', text)
+        self.assertIn('@if(!ModuleExists("ModSettingsModule"))', text)
+
+    def test_the_draft_is_honest_about_what_is_unconfirmed(self):
+        text = self.DRAFT.read_text(encoding="utf-8")
+        self.assertIn("UNCONFIRMED", text)
+
+
 class SelfAuditTests(unittest.TestCase):
     """Mechanical checks over the shipped file, written because the sandbox has no compiler.
 
