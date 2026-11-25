@@ -5,7 +5,9 @@
 
 .DESCRIPTION
     One command, every update:
-      1. drops local edits to the two GENERATED files (they are rebuilt, so they would
+      0. clears a rebase/merge that a previous conflicting pull left half-done, and falls back to
+         a clean sync when the pull still fails (only if there are no local commits),
+      1. drops local edits to the GENERATED files (they are rebuilt, so they would
          otherwise conflict on every pull and cost you a rebase),
       2. pulls this branch,
       3. copies the tweak YAML and the four redscript files into the game,
@@ -56,17 +58,30 @@ if (-not (Test-Path $Repo)) {
 
 Push-Location $Repo
 try {
-    # ---------------------------------------------------------------- sanity: mid-rebase?
-    if ((Test-Path (Join-Path $Repo '.git\rebase-merge')) -or
-        (Test-Path (Join-Path $Repo '.git\rebase-apply'))) {
-        Write-Bad "a rebase is in progress (it stopped on a conflict last time)."
-        Write-Warn2 "run:  git rebase --abort    then run this script again"
-        exit 1
+    # ------------------------------------------- clear any half-finished git operation
+    # A pull that stopped on a conflict leaves the repo unable to pull again ("you have
+    # unmerged files"). That is not a state worth preserving here: this branch is written by
+    # the agent, and the only tracked files that ever change locally are the generated ones.
+    $gitDir = Join-Path $Repo '.git'
+    if ((Test-Path (Join-Path $gitDir 'rebase-merge')) -or
+        (Test-Path (Join-Path $gitDir 'rebase-apply'))) {
+        Write-Warn2 "a rebase was left half-done; aborting it"
+        git rebase --abort 2>$null | Out-Null
+    }
+    if (Test-Path (Join-Path $gitDir 'MERGE_HEAD')) {
+        Write-Warn2 "a merge was left half-done; aborting it"
+        git merge --abort 2>$null | Out-Null
+    }
+    $unmerged = git diff --name-only --diff-filter=U 2>$null
+    if ($unmerged) {
+        Write-Warn2 "unmerged files still present; resetting the work tree to HEAD"
+        git reset --hard HEAD | Out-Null
     }
 
     # ------------------------------------------------- generated files: never merge them
     Write-Step "clearing generated files (they are rebuilt, not merged)"
-    foreach ($generated in @('reference/vehicles/INDEX.md', 'docs/VEHICLE-COMPARISON.md')) {
+    foreach ($generated in @('reference/vehicles/INDEX.md', 'docs/VEHICLE-COMPARISON.md',
+                             'docs/TOPSPEED-DESIGN.md')) {
         if (git ls-files --error-unmatch $generated 2>$null) {
             git checkout -- $generated 2>$null | Out-Null
             Write-Ok $generated
@@ -76,13 +91,33 @@ try {
     # ------------------------------------------------------------------------- pull
     if (-not $NoPull) {
         Write-Step "git pull --rebase"
-        git pull --rebase
+        git pull --rebase 2>&1 | ForEach-Object { Write-Host "   $_" }
         if ($LASTEXITCODE -ne 0) {
-            Write-Bad "pull failed. Your local commits are still intact."
-            Write-Warn2 "usual cause: you committed to this branch locally. Fix with:"
-            Write-Warn2 "  git branch backup-local-corpus HEAD"
-            Write-Warn2 "  git reset --hard origin/arena/fd35b985-f1-cyberpunk-mod"
-            exit 1
+            # Second attempt: sync straight to the remote, but only if there is nothing of the
+            # user's own to lose (no local commits). Local commits are never discarded here.
+            $branch = (git rev-parse --abbrev-ref HEAD).Trim()
+            Write-Warn2 "pull failed; checking whether a clean sync is safe"
+            git fetch origin 2>$null | Out-Null
+            $localCommits = 0
+            if ($branch) {
+                $localCommits = [int](git rev-list --count "origin/$branch..HEAD" 2>$null)
+            }
+            if ($branch -and $localCommits -eq 0) {
+                Write-Warn2 "no local commits to lose - syncing to origin/$branch"
+                git reset --hard "origin/$branch" 2>&1 | ForEach-Object { Write-Host "   $_" }
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Bad "could not sync. Run these two lines and re-run the script:"
+                    Write-Warn2 "  git rebase --abort"
+                    Write-Warn2 "  git reset --hard origin/$branch"
+                    exit 1
+                }
+                Write-Ok "synced to $branch"
+            } else {
+                Write-Bad "pull failed and you have $localCommits local commit(s) - not discarding them."
+                Write-Warn2 "to keep them:   git branch backup-local-corpus HEAD"
+                Write-Warn2 "to discard them: git reset --hard origin/$branch"
+                exit 1
+            }
         }
     } else {
         Write-Step "skipping pull (-NoPull)"
