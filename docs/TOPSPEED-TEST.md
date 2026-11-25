@@ -611,6 +611,34 @@ from redscript/CET — both of which I would want to name honestly before starti
 One external cause I cannot see from here: **any other vehicle mod installed** (a speed-limit,
 traffic-realism or vehicle-overhaul mod can clamp globally).
 
+## 2o. Step 20: design inside the wall (build 900032)
+
+The owner's decision, 2026-11-24: *"keep the solution simple and just design our car for 95 m/s, no
+more no less, stays in its limits ... doesn't give headache of tryna bypass the game engine
+limits."* The 2025 *Vehicle Speed Unlimiter* does not let the game load on 2.5, so the bypass is a
+research project, not a fix.
+
+**95 m/s = 342 km/h.** 5 m/s clear of the engine wall, and still faster than anything the game ships
+(~55 m/s). The game expresses a car's top speed as its top gear's `maxSpeed`, so that field is the
+design — and because the ceiling is a gear, it cannot drift.
+
+### What changed from stock — all of it
+
+| field | stock Aston | 900032 |
+|---|---|---|
+| gear 7 `maxSpeed` | 91.7 (330 km/h) | **95 (342 km/h)** |
+| gear 7 `torqueMultiplier` | 0.306 | **0.294** (the car's own 27.9) |
+| `engineMaxTorque` | 1300 | **2100** |
+
+Everything else is stock: gears 1–6 and every window, drag 1.35, mass 1750, the steering overlay,
+AWD. Gears 1–6 and the 6→7 overlap are untouched stock values, so the stalling defect cannot exist
+in this build.
+
+Thrust at 95 m/s is 11 098 N (model B) against the 8 383 N the stock drag law needs there — **1.32x
+margin**, so the ceiling is reached rather than approached.
+
+The dash still reports `GetLinearVelocity` in km/h, so the reading is physics, not the HUD value.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |

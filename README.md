@@ -44,7 +44,10 @@ docs/                            install + test matrix, packaging, rename map, f
 
 ## Physics (stock → Phoenix)
 
-**As of build 900026 the shipped car is the stock Aston mod's physics plus the 500 km/h build:**
+**IMPORTANT — read [docs/SPEED-CAP.md](docs/SPEED-CAP.md) before planning any top speed above
+360 km/h.** The game has a hard engine-level vehicle limit at exactly 100 m/s, and it is bypassable
+only with a native plugin. **As of build 900032 the car is designed for 95 m/s = 342 km/h, inside
+that wall**: the game is the stock Aston mod's physics plus one gear field, one ratio and torque:**
 all four wheels drive, drag and torque are sized from measurement, and the top gear is stretched to
 155 m/s. The base measured **80 m/s under ADE / 86 by hand** on this pipeline —
 the reference car's own numbers. AWD is a handling override we keep on purpose; see below. Only two
@@ -55,9 +58,9 @@ the car that was measured at **~80 m/s under ADE and ~85 m/s by hand**, the best
 
 | | Stock (the mod) | Phoenix (shipped, 900020) |
 |---|---|---|
-| Gearbox | 7 gears, top window 77→91.7 m/s (330 km/h) | **6th to 110, 7th 100→160** (step 18, 576 km/h declared) |
+| Gearbox | 7 gears, top window 77→91.7 m/s (330 km/h) | **7th 77→95 m/s (342 km/h), everything below stock** (step 20) |
 | Mass · Drag | 1750 · 1.35 | 1750 · **0.55** (step 16) |
-| Torque · Redline | 1300 · 10 100 | **4900** · 10 100 (step 18, sized to the engine's force law) |
+| Torque · Redline | 1300 · 10 100 | **2100** · 10 100 (step 20, 1.6x stock, just enough to reach the ceiling) |
 | Drivetrain | RWD (front `isDrive: false`) | **AWD** — all four wheels drive, handbrake still rear only |
 | Grip F/R | 1.29/1.15 · 1.33/1.20 | **identical** |
 | Yaw inertia | 3050 / 900 / 3530 | **3355 / 990 / 3883** (step 15, +10 %) |

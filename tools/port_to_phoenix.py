@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 31
+BUILD = 32
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -1024,17 +1024,19 @@ STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 # gearing or aero number can move it. The dash now reads the physics velocity, so the wall is also
 # measured at 1 km/h resolution: 360 km/h = exactly 100.0 m/s, and a drag wall cannot land on that
 # twice from two different configurations.
-STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 69.4, 110.0, 160.0]
+STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 69.4, 80.6, 95.0]
 STOCK_LADDER_PAIRS = (
-    ("maxSpeed", "80.6", "110"),        # gear 6 ceiling 290 -> 396 km/h (7th floor 100: 10 m/s overlap)
-    ("minSpeed", "77", "100"),          # gear 7 floor
-    ("maxSpeed", "91.7", "160"),        # gear 7 ceiling 330 -> 576 km/h
-    ("torqueMultiplier", "0.348", "0.254"),   # gear 6: 27.9 / 110, the car's own invariant
-    ("torqueMultiplier", "0.306", "0.174"),   # gear 7: 27.9 / 160
-    ("minEngineRPM", "7600", "5940"),         # gear 6: 9900 x 66/110
-    ("minEngineRPM", "7800", "6219"),         # gear 7: 9950 x 100/160
-    ("airResistanceFactor", "1.35", "0.10"),
-    ("engineMaxTorque", "1300", "4900"),
+    # Step 20 (build 900032): the owner's call - stop fighting the engine's 100 m/s wall and design
+    # INSIDE it.  A 2025 "Vehicle Speed Unlimiter" plugin will not even let the game load on 2.5,
+    # and the cap is native physics (see SPEED-CAP.md), so the honest target is 95 m/s = 342 km/h:
+    # 5 m/s clear of the wall, and still faster than anything the game ships (~55 m/s).
+    #
+    # The game expresses a car's top speed as its top gear's maxSpeed, so that one field IS the
+    # design.  Everything else stays stock: same ladder below, same windows, same drag, same
+    # steering overlay.  Thrust is the only other change, and only so the ceiling can be reached.
+    ("maxSpeed", "91.7", "95"),          # gear 7 ceiling 330 -> 342 km/h, the design point
+    ("torqueMultiplier", "0.306", "0.294"),  # gear 7: the car's own 27.9 / 95
+    ("engineMaxTorque", "1300", "2100"),     # 1.6x: reaches the 95 ceiling with margin
 )
 
 

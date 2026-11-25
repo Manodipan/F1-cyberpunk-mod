@@ -10,7 +10,7 @@
 Vehicle.phoenix_aston_valkyrie_data:
   $type: VehicleUIData
   productionYear: 2023
-  horsepower: 900031
+  horsepower: 900032
   mass: 1750
   info: LocKey#phoenix_aston_valkyrie_info
 
@@ -27,7 +27,7 @@ Vehicle.phoenix_amv_wheel_back:
   isHandBrake: true
   isMainBrake: true
 
-# 7 ileri sirali (hizlar m/s); azami hiz = son vitesin maxSpeed'i (160 m/s = 576 km/h)
+# 7 ileri sirali (hizlar m/s); azami hiz = son vitesin maxSpeed'i (95 m/s = 342 km/h)
 Vehicle.phoenix_amv_gear_r:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline10
   torqueMultiplier: 0.765
@@ -78,18 +78,18 @@ Vehicle.phoenix_amv_gear_5:
 
 Vehicle.phoenix_amv_gear_6:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline14
-  torqueMultiplier: 0.254
+  torqueMultiplier: 0.348
   minSpeed: 66
-  maxSpeed: 110
-  minEngineRPM: 5940
+  maxSpeed: 80.6
+  minEngineRPM: 7600
   maxEngineRPM: 9900
 
 Vehicle.phoenix_amv_gear_7:
   $base: Vehicle.v_sport1_quadra_turbo_r_inline14
-  torqueMultiplier: 0.174
-  minSpeed: 100
-  maxSpeed: 160
-  minEngineRPM: 6219
+  torqueMultiplier: 0.294
+  minSpeed: 77
+  maxSpeed: 95
+  minEngineRPM: 7800
   maxEngineRPM: 9950
 
 Vehicle.phoenix_aston_valkyrie:
@@ -131,7 +131,7 @@ Vehicle.phoenix_aston_valkyrie:
     total_mass: 1750
     chassis_mass: 1750
     # 2026-11-13 tester: 260 km/h ustune cikmiyordu -> hava direnci 911 1.93 -> 1.35; el freni hafif 1000 -> 2600
-    airResistanceFactor: 0.10
+    airResistanceFactor: 1.35
     handbrakeBrakingTorque: 2600
     momentOfInertiaScale: { x: 1, y: 1, z: 1 }
     # Caliburn atalet (2026-10-29; onceki Apollo x kutle 4030/1200/4410 fazlaydi)
@@ -218,7 +218,7 @@ Vehicle.phoenix_aston_valkyrie:
   vehEngineData:
     $base: Vehicle.VehicleEngineData_4_SuperSport
     # 2026-11-13 tester: hizlanma zayif -> tork 960 (SuperSport) -> 1300
-    engineMaxTorque: 4900
+    engineMaxTorque: 2100
     maxRPM: 10100
     minRPM: 1000
     gears: [ Vehicle.phoenix_amv_gear_r, Vehicle.phoenix_amv_gear_1, Vehicle.phoenix_amv_gear_2, Vehicle.phoenix_amv_gear_3, Vehicle.phoenix_amv_gear_4, Vehicle.phoenix_amv_gear_5, Vehicle.phoenix_amv_gear_6, Vehicle.phoenix_amv_gear_7 ]

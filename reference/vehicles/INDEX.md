@@ -1,6 +1,6 @@
 # Vehicle reference index
 
-Generated 2026-11-24 by `tools/collect_vehicles.py` — do not hand-edit.
+Generated 2026-11-25 by `tools/collect_vehicles.py` — do not hand-edit.
 2 vehicle tweak(s), sorted by top gear.
 
 `km/h` and `m/s` come from the **last gear's `maxSpeed`**, which is what the game

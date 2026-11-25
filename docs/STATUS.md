@@ -3,6 +3,12 @@
 pending measurements, and the mistakes not to repeat.
 
 
+**Build 900032 — the car is designed INSIDE the wall: 95 m/s = 342 km/h.** A 2025 "Vehicle Speed
+Unlimiter" plugin does not let the game load on 2.5, so the bypass is off the table. The target is
+now 95 m/s: 5 m/s clear of the engine limit, faster than anything the game ships (~55 m/s), and
+built from the stock Aston mod with **one gear field, one ratio and the torque** changed.
+See [TOPSPEED-TEST.md](TOPSPEED-TEST.md) §2o.
+
 **The 100 m/s wall is the game, not the car.** Engine-level vehicle speed limit at exactly 100 m/s
 (360 km/h); the native `vehicle::RigidBody::Recalculate` returns a non-finite result at the limit and
 the frame's velocity is discarded. It is not tunable from TweakXL or redscript. Bypass with a RED4ext
@@ -45,7 +51,7 @@ Updated 2026-11-24 · branch `arena/fd35b985-f1-cyberpunk-mod` · bases on `main
 | 2 | Decide dealer price for the cheat | currently inherits 900 000 / 0 cred from stock | one line in the YAML (edit the *reference*, re-run `make port`) |
 | 3 | Reference corpus | every racing car mod's YAML is a worked example of drag/steering at speed, and comparing beats guessing | `make vehicles` (local corpus) + `reference/vehicles/INDEX.md` (committed facts) — see `reference/vehicles/README.md` |
 | 4 | **Wobble / ADE stability** | **v14: BACK ON THE STOCK MOD** — every Jesko-derived build was worse (best 72 ADE against the stock car's 80), so the shipped car is the stock Aston mod's own physics again, unchanged (`RESTORE_STOCK_PHYSICS = True`). Baseline confirmed at **80 ADE / 86 hand** (build 900020). 900022 (AWD only) measured: **onset unchanged at 80 on the 11.3 km straight, but no more spin-outs** - so onset (loop gain) and divergence (plant authority) are separate axes. 900024 (whole gain axis) measured: **onset did not move**, recovery slowed, manual top speed up. Four levers have failed on the onset, 900025 moved the 6->7 shift to 100 m/s and **the weave moved to 100 m/s** - third confirmation that the car weaves when it shifts into its top gear. **partly retracted**: 900025 still weaves at 80 (no gear boundary there) and stalls its engine at 100 because 6th ended exactly where 7th began - zero overlap, a bug. 900026 restores overlaps, puts the terminal at 535 km/h inside a 6th that ends at 180, and leaves the 80 m/s weave as the open problem | `docs/STABILITY.md` step 12; the reverted ladder is the record of what does not work |
-| 5 | **Scanner build stamp** | the scanner's `horsepower` shows **900000 + BUILD** (currently `900031`) instead of a horsepower claim: it is the one number the game shows on demand, so it proves in one glance whether TweakXL/CET reloaded the installed YAML | bump `BUILD` in `tools/port_to_phoenix.py` with every generated-YAML change |
+| 5 | **Scanner build stamp** | the scanner's `horsepower` shows **900000 + BUILD** (currently `900032`) instead of a horsepower claim: it is the one number the game shows on demand, so it proves in one glance whether TweakXL/CET reloaded the installed YAML | bump `BUILD` in `tools/port_to_phoenix.py` with every generated-YAML change |
 | 6 | Optional housekeeping | `phoenix_strings.archive` (8 KB, built on the PC) is not committed; F1 livery artwork is deferred and now unnecessary | commit the archive, or leave the local name in place |
 
 ## Risks worth knowing before the first launch

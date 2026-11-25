@@ -32,19 +32,21 @@ class TestProfile(unittest.TestCase):
     def test_finds_the_car(self):
         self.assertIsNotNone(self.row)
 
-    def test_top_gear_clears_the_plateau(self):
-        """Step 16: 155 m/s = 558 km/h declared, so a 542 km/h terminal sits INSIDE the top gear
-        instead of on top of the 6->7 transition the way the stock car's 86 m/s/80.6 did."""
-        self.assertAlmostEqual(self.row["top"], 160.0, places=2)
-        self.assertEqual(round(self.row["top"] * 3.6), 576)
+    def test_top_gear_is_the_design_point(self):
+        """Step 20: 95 m/s = 342 km/h, chosen to sit 5 m/s clear of the engine's 100 m/s wall
+        (SPEED-CAP.md). The game expresses a car's top speed as its top gear's maxSpeed, so that
+        one field is the whole design."""
+        self.assertAlmostEqual(self.row["top"], 95.0, places=2)
+        self.assertEqual(round(self.row["top"] * 3.6), 342)
+        self.assertLess(self.row["top"], 100.0, "must stay under the engine wall")
 
     def test_gear_count(self):
         self.assertEqual(self.row["gears"], 8, "7 forward + reverse")
 
     def test_the_deciding_fields(self):
         # stock mod's own numbers: the best car measured so far
-        self.assertEqual(self.row["airResistanceFactor"], "0.10")   # step 16: the 500 km/h drag
-        self.assertEqual(self.row["engineMaxTorque"], "4900")       # step 18: sized to model C
+        self.assertEqual(self.row["airResistanceFactor"], "1.35")   # step 20: back to stock drag
+        self.assertEqual(self.row["engineMaxTorque"], "2100")       # step 20: 1.6x, to reach 95
         self.assertEqual(self.row["total_mass"], "1750")
         self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "85")   # step 15: 10 % below stock
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")   # step 15: the reference's, damps
@@ -78,7 +80,7 @@ class TestIndex(unittest.TestCase):
             cv.write_index(cv.collect(ROOT / "Phoenix_aston_cheats" / "r6" / "tweaks", True, tmp), tmp)
             again = cv.index_from_corpus(tmp)
             self.assertEqual(len(again), 1)
-            self.assertAlmostEqual(again[0]["top"], 160.0, places=2)   # step 18 ladder
+            self.assertAlmostEqual(again[0]["top"], 95.0, places=2)    # step 20 ladder
 
 
 class TestCommittedCorpus(unittest.TestCase):
