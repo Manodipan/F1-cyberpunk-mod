@@ -758,7 +758,7 @@ def ensure_steering_return(text: str) -> str:
 # Bump BUILD in the same commit as any change to the generated YAML. The number is deliberately
 # out of range for any real car: nobody mistakes 900015 for horsepower.
 BUILD_STAMP_BASE = 900000
-BUILD = 32
+BUILD = 33
 
 HORSEPOWER_LINE = re.compile(r"(?m)^(?P<i>[ \t]*horsepower:[ \t]*)\d+(?P<t>[ \t]*\r?)$")
 
@@ -1024,19 +1024,33 @@ STOCK_TARGETS = {(k, new) for k, _old, new in STOCK_OVERLAY}
 # gearing or aero number can move it. The dash now reads the physics velocity, so the wall is also
 # measured at 1 km/h resolution: 360 km/h = exactly 100.0 m/s, and a drag wall cannot land on that
 # twice from two different configurations.
-STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 69.4, 80.6, 95.0]
+STOCK_LADDER_TOPS = [25.0, 36.1, 47.2, 58.3, 69.4, 80.6, 98.0]
 STOCK_LADDER_PAIRS = (
     # Step 20 (build 900032): the owner's call - stop fighting the engine's 100 m/s wall and design
     # INSIDE it.  A 2025 "Vehicle Speed Unlimiter" plugin will not even let the game load on 2.5,
     # and the cap is native physics (see SPEED-CAP.md), so the honest target is 95 m/s = 342 km/h:
     # 5 m/s clear of the wall, and still faster than anything the game ships (~55 m/s).
     #
-    # The game expresses a car's top speed as its top gear's maxSpeed, so that one field IS the
-    # design.  Everything else stays stock: same ladder below, same windows, same drag, same
-    # steering overlay.  Thrust is the only other change, and only so the ceiling can be reached.
-    ("maxSpeed", "91.7", "95"),          # gear 7 ceiling 330 -> 342 km/h, the design point
-    ("torqueMultiplier", "0.306", "0.294"),  # gear 7: the car's own 27.9 / 95
-    ("engineMaxTorque", "1300", "2100"),     # 1.6x: reaches the 95 ceiling with margin
+    # Step 21 (build 900033): the same 95 m/s, but reached on a SLOPE instead of a CLIFF.
+    # 900032 put the gear ceiling exactly on the target and made 2 100 Nm, so the car arrived at
+    # 95 and sat on the rev limiter.  A rev limiter is a hard nonlinearity: throttle above the
+    # clamp does nothing, the car falls back, throttle again - precisely the "reaches, wobbles,
+    # brakes, slows, repeats" cycle Auto Drive Enhanced cannot damp.  A drag-limited top speed is
+    # a soft ceiling: thrust falls away as v^2, so the controller has gradient to work with.
+    #
+    # So: the ceiling moves 3 m/s ABOVE the target and the torque comes down until DRAG is what
+    # stops the car at ~96-97.  The car still tops out around 95 m/s - the number is not the
+    # ceiling any more, it is the balance point - and the limiter is never touched.
+    #
+    # Step 21 also retires MODEL C.  It existed to explain 900028 stopping at ~100 m/s, and its
+    # only evidence was that number.  We now know every car stops at 100 m/s because of the engine
+    # wall (SPEED-CAP.md), so that evidence is gone.  With it gone, the field names decide:
+    # `torqueMultiplier` IS the ratio, so thrust follows it, and `maxSpeed` is just where the gear
+    # redlines.  Dividing by maxSpeed again double-counts the gear length.  Model B is used here,
+    # and 900033's own top speed is now a free check: B predicts ~97, C predicts ~92.
+    ("maxSpeed", "91.7", "98"),          # headroom under the 100 m/s engine wall, never reached
+    ("torqueMultiplier", "0.306", "0.285"),  # gear 7: the car's own 27.9 / 98
+    ("engineMaxTorque", "1300", "1650"),     # drag-limited terminal ~97 m/s, under the 98 ceiling
 )
 
 

@@ -32,12 +32,13 @@ class TestProfile(unittest.TestCase):
     def test_finds_the_car(self):
         self.assertIsNotNone(self.row)
 
-    def test_top_gear_is_the_design_point(self):
-        """Step 20: 95 m/s = 342 km/h, chosen to sit 5 m/s clear of the engine's 100 m/s wall
-        (SPEED-CAP.md). The game expresses a car's top speed as its top gear's maxSpeed, so that
-        one field is the whole design."""
-        self.assertAlmostEqual(self.row["top"], 95.0, places=2)
-        self.assertEqual(round(self.row["top"] * 3.6), 342)
+    def test_top_gear_leaves_headroom_above_the_target(self):
+        """Step 21: the design speed is 95 m/s, but the gear ceiling is 98 so the rev limiter never
+        engages at the target. A limiter is a cliff for a controller; drag is a slope. The car
+        balances at ~96-97 on thrust (8 720 N) against drag, 5 m/s clear of the 100 m/s engine wall."""
+        self.assertAlmostEqual(self.row["top"], 98.0, places=2)
+        self.assertEqual(round(self.row["top"] * 3.6), 353)
+        self.assertGreater(self.row["top"], 95.0, "ceiling must sit ABOVE the target speed")
         self.assertLess(self.row["top"], 100.0, "must stay under the engine wall")
 
     def test_gear_count(self):
@@ -46,7 +47,7 @@ class TestProfile(unittest.TestCase):
     def test_the_deciding_fields(self):
         # stock mod's own numbers: the best car measured so far
         self.assertEqual(self.row["airResistanceFactor"], "1.35")   # step 20: back to stock drag
-        self.assertEqual(self.row["engineMaxTorque"], "2100")       # step 20: 1.6x, to reach 95
+        self.assertEqual(self.row["engineMaxTorque"], "1650")       # step 21: drag-limited top, no limiter
         self.assertEqual(self.row["total_mass"], "1750")
         self.assertEqual(self.row["wheelTurnMaxAddPerSecond"], "85")   # step 15: 10 % below stock
         self.assertEqual(self.row["turnUpdateMaxSpeedTurnMul"], "0.21")   # step 15: the reference's, damps
@@ -80,7 +81,7 @@ class TestIndex(unittest.TestCase):
             cv.write_index(cv.collect(ROOT / "Phoenix_aston_cheats" / "r6" / "tweaks", True, tmp), tmp)
             again = cv.index_from_corpus(tmp)
             self.assertEqual(len(again), 1)
-            self.assertAlmostEqual(again[0]["top"], 95.0, places=2)    # step 20 ladder
+            self.assertAlmostEqual(again[0]["top"], 98.0, places=2)    # step 21 ladder
 
 
 class TestCommittedCorpus(unittest.TestCase):

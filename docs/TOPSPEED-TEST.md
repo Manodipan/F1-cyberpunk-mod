@@ -639,6 +639,72 @@ margin**, so the ceiling is reached rather than approached.
 
 The dash still reports `GetLinearVelocity` in km/h, so the reading is physics, not the HUD value.
 
+## 2p. Step 21: the ceiling a controller can hold (build 900033)
+
+Owner's brief, 2026-11-24: *"sticking to the 95 m/s build, lets focus on ADE stability, ADE must be
+able to drive at 95 m/s."*
+
+### The plant problem: 900032 ended on a cliff
+
+900032 put the gear ceiling **on** the target (95) with 2 100 Nm behind it, so the car arrived at 95
+and sat on the rev limiter. A rev limiter is a step nonlinearity: throttle above the clamp produces
+nothing, the car loses a little speed, the throttle opens again. That is `reaches -> wobbles ->
+brakes -> slows -> repeats` — the exact cycle recorded for ADE. No controller damps a cliff.
+
+### The fix: put the top speed on a slope
+
+| | 900032 | **900033** |
+|---|---|---|
+| gear 7 ceiling | 95 (the target) | **98** (headroom, never reached) |
+| gear 7 multiplier | 0.294 | **0.285** (product 27.9, the car's own) |
+| `engineMaxTorque` | 2100 | **1650** |
+| top speed comes from | the rev limiter | **drag** |
+
+Thrust at the top is 8 720 N against drag that reaches 8 720 N at **96.9 m/s**. So the car tops out
+just under the 98 ceiling, on the thrust/drag balance, and 95 sits **below** that balance point
+where the remaining net force is small:
+
+| speed | net force | acceleration |
+|---|---|---|
+| 90 m/s | +1 195 N | +0.68 m/s² |
+| 93 m/s | +685 N | +0.39 m/s² |
+| **95 m/s** | **+335 N** | **+0.19 m/s²** |
+| 97 m/s | −21 N | ~0 |
+
+That is a plant with gradient: a controller holding 95 has throttle to give and throttle to take
+away, and there is no step anywhere near the operating point.
+
+### Model C is retired (again, and for good this time)
+
+Model C — thrust ∝ `torqueMultiplier / maxSpeed` — existed to explain 900028 stopping at ~100 m/s,
+and its only evidence was that number. **Every car stops at 100 m/s because of the engine wall**
+(SPEED-CAP.md), so the evidence is gone. With it gone the field names decide: `torqueMultiplier` is
+the ratio, so thrust follows it; `maxSpeed` is where the gear redlines; dividing by `maxSpeed` again
+double-counts the gear length.
+
+900033 is therefore sized with model B, and its own top speed is a free test of that: **B predicts
+~97 m/s (349 km/h), C predicts ~90 m/s (326 km/h).** One run separates them.
+
+### What is still ADE-side, not car-side
+
+Two of the biggest levers at 95 m/s are settings, not fields:
+
+1. **`Clear Traffic On Path` = ON makes lane changes ADE's own violent decision.** The owner has
+   said it plainly: *"I skid off route B because of a lane change, which I would have done gently."*
+   A one-lane change at 95 m/s asks for peak lateral acceleration far beyond what any tyre model in
+   this game will give at that speed. Turning it off removes the excitation entirely.
+2. **`Max Speed Ratio` = 1.0 aims ADE at the car's own maximum.** With the balance point just above
+   95 and the ceiling at 98, that target is reachable and holdable — which is the whole point of the
+   slope.
+
+### Reading the result (Route B, per §2c)
+
+- ADE holds ~95 ±1 with no dips on clear road → done, the plant was the problem.
+- ADE dips rhythmically → still the limit cycle; next lever is `Max Speed Ratio` down to 0.95 (its
+  target inside the gentle part of the curve), not another car field.
+- ADE weaves but holds speed → lateral, not longitudinal; that is the 80 m/s weave problem, and
+  §2d's lane-change arithmetic is where to start.
+
 ## 3. What to record
 
 | Reading | Pass | Notes |

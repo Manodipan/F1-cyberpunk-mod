@@ -3,8 +3,9 @@
 **Written 2026-11-24, at the owner's bedtime after a ~12 h session.** Nothing is half-applied:
 the repo is committed, pushed and clean.
 
-- **Shipped HEAD:** **build 900032** — the car is designed inside the 100 m/s wall at
-  **95 m/s = 342 km/h**.
+- **Shipped HEAD:** **build 900033** — 95 m/s, reached on a drag-limited slope (ceiling 98, torque
+  1650) rather than on a rev limiter, because ADE cannot hold a step. Top speed is also the free
+  test of which force model is right: B predicts ~97 m/s, C predicts ~90.
 - **Installed in the owner's game:** **900028**. 900029–900031 were never installed; 900032 is the
   one to try.
 - **The bypass is closed for now.** The 2025 *Vehicle Speed Unlimiter* prevents the game from
@@ -36,12 +37,19 @@ above it — the first reading past 100 m/s is a measurement, not a confirmation
    - Reads ~95 and holds → top speed is done, move to step 2.
    - Won't get past ~90 → thrust is short; raise `engineMaxTorque` (the only lever needed).
    - Anything at 100+ → tell me; that would mean the wall is not where SPEED-CAP.md says.
-2. **The 80 m/s weave.** This is now the main open problem — stability outranks everything. Gearing
+2. **ADE at 95 m/s (current focus).** `docs/TOPSPEED-TEST.md` §2p: read the ADE leg and the manual
+   leg on Route B, then work the three outcomes. The two cheapest levers are ADE settings, not car
+   fields — `Clear Traffic On Path` OFF (its lane changes are its own violent decision) and
+   `Max Speed Ratio` down to 0.95 if it still cycles.
+   **To go deeper I need ADE's own files:** it is a redscript mod (nobo, Nexus 23157, 0.0.0.22) with
+   no public source. Ask for the folder — `<game>\r6\scripts\` containing "autodrive"/"ADE", plus
+   its `.yaml` in `r6\tweaks` — and read the control law instead of inferring it.
+3. **The 80 m/s weave.** This is now the main open physics problem — stability outranks everything. Gearing
    is a dead end for it; steering gain, AWD, damping and downforce have all been falsified. The live
    thread is the hysteresis limit cycle (reach, wobble, brake, slow, repeat) — a lagging controller
    on an underdamped plant. Read `docs/STABILITY.md` before touching a field; it has 679 lines of
    what has already failed.
-3. **Optional:** the bypass is researched and staged — [BYPASS-PLAN.md](BYPASS-PLAN.md) plus a
+4. **Optional:** the bypass is researched and staged — [BYPASS-PLAN.md](BYPASS-PLAN.md) plus a
    complete, untested plugin in [`native/speedcap/`](../native/speedcap/). Two minutes of diagnosis
    decides it:
 

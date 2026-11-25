@@ -188,9 +188,9 @@ public static func PhoenixAMV_GearSpeed(g: Int32) -> Float {
     case 6:
       return 80.6;
     case 7:
-      return 95;
+      return 98;
     default:
-      return 95;
+      return 98;
   }
 }
 
