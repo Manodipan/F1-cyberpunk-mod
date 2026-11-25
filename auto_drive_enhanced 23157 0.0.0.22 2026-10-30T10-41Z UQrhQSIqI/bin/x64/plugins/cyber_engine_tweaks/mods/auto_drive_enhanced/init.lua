@@ -1,0 +1,1 @@
+return require("debug"):setup("AutoDriveEnhanced.Debug.DebugDrawerSystem"):registerEvents()
