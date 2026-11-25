@@ -109,7 +109,7 @@ class SpeedometerModTests(unittest.TestCase):
     def test_each_slot_tooltip_carries_the_factor_table(self):
         self.assertEqual(self.text.count("x2.23694"), 2)   # one per slot dropdown tooltip
         self.assertIn("3600 divided by the unit's length in metres", self.text)
-        self.assertIn("58.8 m/s | 212 km/h", self.text)
+        self.assertIn("Example HUD: 59|212", self.text)
 
     def test_no_newline_escapes(self):
         # Mod Settings tooltips are plain text; a literal \n would show up as characters
@@ -175,6 +175,60 @@ class CompileSafetyTests(unittest.TestCase):
         # step B still ships no formatter of mine - that is step C
         for mine in ("PhoenixTS_Format", "PhoenixTS_SigDigits"):
             self.assertNotIn(mine, text, mine)
+
+
+class SelfAuditTests(unittest.TestCase):
+    """Mechanical checks over the shipped file, written because the sandbox has no compiler.
+
+    Every entry below was verified by hand against a script that compiles on the target install.
+    If the redscript grows a call that is not here, this test fails and forces the provenance
+    question to be answered before the file ships.
+    """
+
+    PROVEN_CALLS = {
+        "AbsF": "car mod x5",
+        "ClampF": "car mod x9, ADE x6",
+        "Dot": "Vector4.Dot, car mod",
+        "Equals": "ADE x44",
+        "Get": "ScriptableSystemsContainer.Get, ADE",
+        "GetGameInstance": "AVDE x38, car mod x10",
+        "GetLinearVelocity": "car mod",
+        "GetScriptableSystemsContainer": "ADE, exactly as GetInstance() uses it",
+        "GetWorldForward": "car mod",
+        "IntToString": "car mod x5",
+        "IsDefined": "ADE x66, car mod x52",
+        "RoundMath": "car mod x4",
+        "SetText": "inkTextRef.SetText, car mod",
+        "ToString": "proven by step B, which booted with it",
+        "wrappedMethod": "ADE x62, car mod x7",
+        "NameOf": "ADE x8, incl. the working GetInstance()",
+    }
+
+    def setUp(self):
+        self.text = REDS.read_text(encoding="utf-8")
+        self.code = "\n".join(line for line in self.text.splitlines()
+                              if not line.lstrip().startswith("//"))
+
+    def test_every_call_is_proven_to_compile(self):
+        calls = set(re.findall(r"\b([A-Za-z_]\w*)\s*\(", self.code))
+        calls -= {c for c in calls if c.startswith("PhoenixTS_")}
+        calls -= {"unit", "OnSpeedValueChanged", "runtimeProperty", "wrapMethod", "PhoenixTS"}
+        unproven = sorted(calls - set(self.PROVEN_CALLS))
+        self.assertEqual(unproven, [], f"verify provenance before shipping: {unproven}")
+
+    def test_braces_and_parens_balance(self):
+        self.assertEqual(self.code.count("{"), self.code.count("}"))
+        self.assertEqual(self.code.count("("), self.code.count(")"))
+
+    def test_dependencies_point_at_bool_fields_only(self):
+        """ADE's 31 dependencies all target Bool fields; an enum target hides the row forever."""
+        bools = set(re.findall(r"public let (\w+): Bool", self.code))
+        for target in re.findall(r'ModSettings\.dependency", "(\w+)"', self.text):
+            self.assertIn(target, bools, f"dependency on non-Bool {target}")
+
+    def test_the_lookup_matches_ades_working_getinstance(self):
+        """ADE's live, working lookup is Get(NameOf<Settings>()) - ours must try that first."""
+        self.assertIn("Get(NameOf<PhoenixTS_Settings>())", self.code)
 
 
 class SignificantDigitTests(unittest.TestCase):

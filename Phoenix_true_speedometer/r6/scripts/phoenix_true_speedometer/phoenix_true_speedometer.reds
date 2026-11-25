@@ -50,13 +50,12 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 1 - custom multiplier")
-    @runtimeProperty("ModSettings.description", "How many of your unit per metre per second - only used when slot 1 is CUSTOM. m/s 1.0  |  km/h 3.6  |  mph 2.23694  |  knots 1.94384  |  ft/s 3.28084  |  Mach 0.00291545 (= 1/343)  |  km/min 0.06  |  yards/s 1.09361  |  furlongs/fortnight 6012.9. Rule: 3600 divided by the unit's length in metres. A custom slot is labelled x<multiplier> on the HUD.")
+    @runtimeProperty("ModSettings.description", "How many of your unit per metre per second - only used when slot 1 is CUSTOM. m/s 1.0  |  km/h 3.6  |  mph 2.23694  |  knots 1.94384  |  ft/s 3.28084  |  Mach 0.00291545 (= 1/343)  |  km/min 0.06  |  yards/s 1.09361  |  furlongs/fortnight 6012.9. Rule: 3600 divided by the unit's length in metres. A custom slot is labelled x<multiplier> on the HUD. Numbers are whole for now.")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "11")
     @runtimeProperty("ModSettings.step", "0.0001")
     @runtimeProperty("ModSettings.min", "0.0001")
     @runtimeProperty("ModSettings.max", "1000.0")
-    @runtimeProperty("ModSettings.dependency", "slot1")
     public let slot1Custom: Float = 1.0;
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
@@ -68,7 +67,7 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 2 - unit")
-    @runtimeProperty("ModSettings.description", "The unit of the second number. m/s = x1.0  |  km/h = x3.6  |  mph = x2.23694  |  knots = x1.94384  |  ft/s = x3.28084  |  Mach = 1/343. Example HUD: 58.8 m/s | 212 km/h")
+    @runtimeProperty("ModSettings.description", "The unit of the second number. m/s = x1.0  |  km/h = x3.6  |  mph = x2.23694  |  knots = x1.94384  |  ft/s = x3.28084  |  Mach = 1/343. Example HUD: 59|212 with labels off, 59 m/s with them on")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "21")
     @runtimeProperty("ModSettings.displayValues.MPS", "m/s")
@@ -89,7 +88,6 @@ public class PhoenixTS_Settings extends ScriptableSystem {
     @runtimeProperty("ModSettings.step", "0.0001")
     @runtimeProperty("ModSettings.min", "0.0001")
     @runtimeProperty("ModSettings.max", "1000.0")
-    @runtimeProperty("ModSettings.dependency", "slot2")
     public let slot2Custom: Float = 3.6;
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
