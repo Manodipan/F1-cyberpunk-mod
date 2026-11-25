@@ -21,6 +21,11 @@
 .PARAMETER GameRoot
     Cyberpunk 2077 install folder (the one containing r6\).
 
+.PARAMETER KeepScripts
+    Remove only the tweak YAML (the physics), and leave the four .reds in place. That keeps the
+    dashboard working - gear, rev lights and the true physics-speed readout - on a stock car.
+    The scripts do not read the YAML, so this is a valid mix.
+
 .PARAMETER Purge
     Do not keep a backup. Cannot be undone.
 
@@ -33,6 +38,7 @@
 [CmdletBinding()]
 param(
     [string]$GameRoot = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty",
+    [switch]$KeepScripts,
     [switch]$Purge
 )
 
@@ -54,7 +60,7 @@ $redsDir   = Join-Path $GameRoot 'r6\scripts\phoenix_aston_valkyrie'
 
 $found = @()
 if (Test-Path $yaml)    { $found += Get-Item $yaml }
-if (Test-Path $redsDir) { $found += Get-ChildItem $redsDir -Filter '*.reds' -File }
+if ((Test-Path $redsDir) -and -not $KeepScripts) { $found += Get-ChildItem $redsDir -Filter '*.reds' -File }
 
 if ($found.Count -eq 0) {
     Write-Step "nothing to remove"
@@ -82,16 +88,20 @@ if (Test-Path $yaml) {
     Write-Ok "deleted r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml"
 }
 if (Test-Path $redsDir) {
-    # the folder is ours alone; removing only the .reds would leave an empty folder the game scans
-    Remove-Item $redsDir -Recurse -Force
-    Write-Ok "deleted r6\scripts\phoenix_aston_valkyrie\"
+    if ($KeepScripts) {
+        Write-Ok "kept r6\scripts\phoenix_aston_valkyrie\  (dashboard + true speed readout stay)"
+    } else {
+        # the folder is ours alone; removing only the .reds would leave an empty folder the game scans
+        Remove-Item $redsDir -Recurse -Force
+        Write-Ok "deleted r6\scripts\phoenix_aston_valkyrie\"
+    }
 }
 
 # ---------------------------------------------------------------- verify
 Write-Step "verify"
 $left = @()
 if (Test-Path $yaml)    { $left += $yaml }
-if (Test-Path $redsDir) { $left += $redsDir }
+if ((Test-Path $redsDir) -and -not $KeepScripts) { $left += $redsDir }
 if ($left.Count -eq 0) {
     Write-Ok "gone - nothing of ours is left in the game folder"
 } else {
@@ -108,4 +118,5 @@ Write-Host ""
 Write-Step "next"
 Write-Warn2 "start the game fresh: TweakXL reads YAML at boot, CET reload will not do it"
 Write-Warn2 "expect the stock car and no build stamp in the scanner"
+if ($KeepScripts) { Write-Warn2 "dashboard stays: gear, rev lights and true m/s on the wheel screen" }
 if (-not $Purge) { Write-Warn2 "reinstall: powershell -ExecutionPolicy Bypass -File .\tools\update.ps1" }

@@ -95,7 +95,52 @@ Do **not** stack CVO and the Authentic Shift Collection: one overwrites per-vehi
 values, the other applies a profile at load, and whichever lands second wins on the cars both touch.
 Pick a philosophy, not both.
 
-## 5. What none of them fix
+## 6. Actual cars
+
+Standalone add-ons, from the authors who keep a catalogue rather than a one-off. In-game top speed
+is `min(what the author typed, 360)` — see §1. The real-world column is the real car's own figure,
+which is why so many of these end up identical in game.
+
+| car | author | traction | uploaded | real vmax | **in game** |
+|---|---|---|---|---|---|
+| **Rimac Nevera** | aalexbug | EV, 4 motors | Apr 2024 | 412 km/h | **360** — reaches it fastest |
+| **Koenigsegg Jesko Absolut** | aalexbug | RWD | Apr 2024 | listed >480 | **360** |
+| **Bugatti Chiron SuperSport** | aalexbug | AWD | Dec 2023 | 440 km/h | **360** |
+| **Koenigsegg Jesko Attack** | bob1479512 | RWD | Oct 2026 | ~480 | **360**, high-speed steering retuned |
+| **Bugatti Chiron Pur Sport** | aalexbug | AWD | Mar 2024 | 350 km/h | **350** — under the wall |
+| **Pagani Huayra** | Morpheus9436 | RWD | May 2025 | 383 km/h | **360** |
+| **Lamborghini Sesto Elemento** | xa1res | AWD | Nov 2026 | 355 km/h | **355** |
+| **Lamborghini Huracán EVO** | MAXSA5 | AWD | Nov 2026 | 325 km/h | **325** |
+| **Ferrari F40** | SDH0 | RWD | 2025 | 324 km/h | **324** |
+| **McLaren Senna** | Morpheus9436 | RWD | Dec 2024 | 340 km/h | **340** |
+| **Porsche 992 GT3 R** | xa1res | RWD race car | Nov 2026 | ~285 km/h | **285** |
+| **KTM X-BOW GTX** | aalexbug | RWD, 1000 kg | 2024 | ~300 km/h | **300** |
+
+### Why the top of that list is a lie you should ignore
+
+Four cars read "360" because the engine stops them there, not because the mod is slow. **A Chiron and
+a Jesko have the same top speed in this game.** What separates them is:
+
+1. **How fast they get to the wall** — thrust vs drag. The Nevera's four motors and AWD put it there
+   in the shortest distance; a RWD Jesko spends its advantage spinning.
+2. **What it does at 300+** — this is where the good ones earn it. The Jesko Attack's changelog
+   explicitly retunes steering for high speed ("the steering wheel turns less at high speed");
+   the GT3 R and Senna have actual downforce models.
+3. **Whether the gearbox hunts at the top** — the same failure this repo spent weeks on. A car with
+   7 usable ratios and a ceiling above its drag limit holds; one geared to the wall sits on it.
+
+That is the recommendation: **Nevera for the pull, Jesko Attack for the high-speed manners, 992 GT3 R
+or Senna for a car that actually has downforce.** Skip anything whose page sells a number above 360 —
+it is selling you a YAML field.
+
+### Patch compatibility, honestly
+
+aalexbug's catalogue is 2023–24, i.e. pre-2.5. Add-on cars are ArchiveXL archives plus TweakXL
+records, so most still load, but nothing on the page promises 2.5. The 2026 uploads (Jesko Attack,
+Huracán EVO, Sesto Elemento, 992 GT3 R) are current-patch by construction. Test one 2023 car before
+installing five.
+
+## 7. What none of them fix
 
 - **The 360 km/h wall.** No mod on Nexus can lift it without native code (`docs/BYPASS-PLAN.md` has
   the parked research; the 2025 unlimiter crashes the game on load).
