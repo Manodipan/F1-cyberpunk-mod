@@ -157,3 +157,16 @@ to xaires) are left verbatim on purpose.
    the pending handling test, and three launch risks worth knowing.
 * [`docs/LOCALISATION.md`](docs/LOCALISATION.md) — why the card shows the TweakDBID, and the one-file pack that turns it into "Phoenix AMV LMH"
    and the two-line YAML flip.
+
+## Removing it
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\uninstall.ps1
+```
+
+Deletes `r6\tweaks\phoenix\phoenix_aston_valkyrie.yaml` and `r6\scripts\phoenix_aston_valkyrie\`
+after backing both up to `%USERPROFILE%\phoenix-uninstall-<timestamp>\`. Nothing else is touched —
+in particular **not** `r6\scripts\auto_drive_enhanced\`, which this repo only carries a read-only
+copy of. The tweak YAML overrides fields rather than replacing the record, so removing it is a full
+return to stock physics. Add `-Purge` to skip the backup.
+
