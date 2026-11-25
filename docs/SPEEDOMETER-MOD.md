@@ -145,3 +145,28 @@ delta ÷ time delta. Two uses:
 
 Cost: a sampled timer, and an odometer that only counts some vehicles. Parked until there is a
 reason — the body read is exact and cheap.
+
+## Fixed: "REDScript compilation has failed. - phoenix_true_speedometer"
+
+The first build used three things that do not exist in redscript, so the file failed to compile and
+**the game disabled every script** (its all-or-nothing behaviour). The HUD-speed source, the units
+and the digits rule were all fine — they never got to run.
+
+| v1 used | status | v2 uses |
+| --- | --- | --- |
+| `vehicle.IsPlayerDriven()` | no such method | dropped; wraps every vehicle, as the Aston mod does |
+| `AbsI(...)` | not in redscript | integer sign handled with `if frac < 0` |
+| `this.GetGame()` | not on `hudCarController` | `GetGameInstance()` (global, proven) |
+| `NameOf<T>()` | **valid** — ADE `debug.reds:56` | `Get(NameOf<PhoenixTS_Settings>())` |
+| `Cast<...>` | avoided | paired `Int32`/`Float` locals |
+
+**The rule this mod is now held to: it may only use constructs that a file already compiling on 2.5
+uses.** `tests/test_speedometer.py::CompileSafetyTests` fails the build if a banned symbol comes
+back. Proven in-repo: `GetGameInstance`, `GameInstance.GetScriptableSystemsContainer(...).Get(...)`,
+`NameOf<T>`, `AbsF`, `ClampF`, `RoundMath`, `IntToString`, `ToString`, `IsDefined`, `Equals`,
+`NotEquals`, `Vector4.Dot`, `inkTextRef.SetText`, `wrappedMethod`, `@runtimeProperty`,
+`ScriptableSystem`, `while`.
+
+If it ever fails to compile again, the log names the exact line: `r6\logs\redscript.log`, or
+`scriptCompilationErrors.log` in the install folder. That is the only reliable oracle — there is no
+redscript compiler in the build environment.

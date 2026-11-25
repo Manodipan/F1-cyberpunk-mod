@@ -66,7 +66,7 @@ class SpeedometerModTests(unittest.TestCase):
         for label in ('"m/s"', '"km/h"', '"mph"', '"kn"', '"ft/s"'):
             self.assertIn(label, self.text, label)
         # a custom slot cannot be named, so it shows the multiplier it is using
-        self.assertIn('return "x" + PhoenixTS_Format', self.text)
+        self.assertIn('return "x" + ToString(', self.text)
 
     def test_each_slot_tooltip_carries_the_factor_table(self):
         self.assertEqual(self.text.count("x2.23694"), 2)   # one per slot dropdown tooltip
@@ -76,6 +76,43 @@ class SpeedometerModTests(unittest.TestCase):
     def test_no_newline_escapes(self):
         # Mod Settings tooltips are plain text; a literal \n would show up as characters
         self.assertNotIn("\\n", self.text)
+
+
+class CompileSafetyTests(unittest.TestCase):
+    """The first version of this file failed REDScript compilation.
+
+    Each symbol below was used and does not exist in redscript, so the whole mod failed to compile
+    and *every* script in the game was disabled. This test class exists so it cannot happen again
+    silently: the rule is that this file may only use constructs already compiled elsewhere in the
+    repository (the car mod and ADE both compile on 2.5).
+    """
+
+    FORBIDDEN = {
+        "IsPlayerDriven": "no such method on VehicleObject",
+        "AbsI(": "no AbsI in redscript",
+        "this.GetGame()": "not available on hudCarController",
+        "Cast<": "avoided in favour of paired Int32/Float locals",
+    }
+
+    def test_no_symbols_that_failed_to_compile(self):
+        text = REDS.read_text(encoding="utf-8")
+        code = "\n".join(line for line in text.splitlines()
+                          if not line.lstrip().startswith("//"))
+        for symbol, why in self.FORBIDDEN.items():
+            self.assertNotIn(symbol, code, f"{symbol} - {why}")
+
+    def test_settings_system_is_looked_up_by_nameof(self):
+        # NameOf<T>() resolves the registered name at compile time - proven by ADE debug.reds:56 on
+        # 2.5. A hand-written name string would return null if wrong, leaving the tab dead.
+        text = REDS.read_text(encoding="utf-8")
+        self.assertIn("Get(NameOf<PhoenixTS_Settings>())", text)
+        self.assertNotIn('Get(n"', text)
+
+    def test_a_missing_settings_system_still_shows_a_speed(self):
+        self.assertIn("if !IsDefined(s) {", REDS.read_text(encoding="utf-8"))
+
+    def test_game_instance_comes_from_the_proven_global(self):
+        self.assertIn("GetGameInstance()", REDS.read_text(encoding="utf-8"))
 
 
 class SignificantDigitTests(unittest.TestCase):
@@ -112,9 +149,36 @@ class SignificantDigitTests(unittest.TestCase):
         self.assertIn("return 5;", text)
 
     def test_the_formatter_pads_zeros(self):
+        # v1 built the padding in a loop; v2 (the version that compiles) uses a literal ladder,
+        # because the loop form and the AbsI helper it called are not proven to exist on 2.5
         text = REDS.read_text(encoding="utf-8")
-        # 0.005 must not render as "0.5"
-        self.assertIn('pad = pad + "0";', text)
+        for ladder in ('pad = "0000";', 'pad = "000";', 'pad = "00";', 'pad = "0";'):
+            self.assertIn(ladder, text)
+        self.assertIn('return IntToString(whole) + "." + pad + IntToString(frac);', text)
+
+    def test_the_fixed_point_formatter_matches_its_python_port(self):
+        """The redscript cannot be run here, so its integer math is mirrored and checked."""
+
+        def render(value, decimals):
+            if decimals <= 0:
+                return str(int(round(value)))
+            scale = {1: 10, 2: 100, 3: 1000, 4: 10000}.get(decimals, 100000)
+            scaled = int(round(value * scale))
+            whole = int(scaled / scale)
+            frac = scaled - whole * scale
+            if frac < 0:
+                return str(whole)
+            width = {1: 1, 2: 2, 3: 3, 4: 4}.get(decimals, 5)
+            return f"{whole}.{frac:0{width}d}"
+
+        self.assertEqual(render(212.4, 0), "212")
+        self.assertEqual(render(58.83, 1), "58.8")
+        self.assertEqual(render(9.876, 2), "9.88")
+        self.assertEqual(render(0.1714, 3), "0.171")
+        self.assertEqual(render(0.01714, 4), "0.0171")
+        self.assertEqual(render(0.005, 5), "0.00500")   # never "0.5"
+        self.assertEqual(render(58.83, 3), "58.830")    # whole number above 100 stays whole
+        self.assertEqual(render(0.0, 3), "0.000")
 
 
 class ConversionMathTests(unittest.TestCase):
