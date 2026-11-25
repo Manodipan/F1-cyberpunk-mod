@@ -4,6 +4,11 @@ Snapshot 2026-11-23, Nexus `Vehicles` category sorted by **Last Updated**. On Ne
 show two dates: the relative one is *last updated*, the absolute one is *uploaded*. Everything below
 is in the window on the **last-updated** date, which is the one that matters for "does it survive 2.5".
 
+> **On the two dates.** Nexus listings show *last updated* as a relative time ("4 days ago") and the
+> absolute date is the **upload** date. The column below is the upload date. The filter is applied to
+> last-updated: everything here was read from listing pages 1–6 of a sort-by-last-updated query, which
+> spans "13 minutes ago" to "2 weeks ago" — i.e. all of it is inside the window, comfortably after 22 Oct.
+
 Why 22 Oct is the right cutoff: ADE 0.0.0.21's changelog reads "Fixed compatibility with 2.50", and
 0.0.0.22 is dated 30 Oct 2026 — so 2.5 shipped in late October. A mod touched after that has been
 looked at by its author under 2.5. Older-but-updated counts too: a 2025 car re-uploaded in November
@@ -11,7 +16,7 @@ is *more* current than a 2026 car that was never revisited.
 
 ## Track and race cars — the ones with downforce
 
-| car | author | updated | upload | end. / DL | note |
+| car | author | uploaded | upload | end. / DL | note |
 |---|---|---|---|---|---|
 | **Ferrari 599 XX EVO** | wzaa0921 | 18 Nov | 16 Nov 2026 | 9 / 1.6 k | **track-only Ferrari**, no road-car compromise — closest thing here to an LMH |
 | **Porsche 992 GT3 R** | xa1res | 04 Nov | — | — | GT3 racer, race ratios, ~285 km/h so it never touches the wall |
@@ -39,7 +44,7 @@ same behaviour.
 
 ## Hypercars
 
-| car | author | updated | upload | end. / DL | note |
+| car | author | uploaded | upload | end. / DL | note |
 |---|---|---|---|---|---|
 | **Ferrari LaFerrari** | wzaa0921 | 19 Nov | 11 Nov 2026 | 9 / 1.2 k | V12 hybrid, the classic |
 | **Pagani Zonda Revolucion** | wzaa0921 | 12 Nov | 12 Nov 2026 | — | the loudest car in the game, by reputation |
@@ -50,7 +55,7 @@ same behaviour.
 
 ## Supercars and sports
 
-| car | author | updated | upload | end. / DL | note |
+| car | author | uploaded | upload | end. / DL | note |
 |---|---|---|---|---|---|
 | **Lamborghini Huracán EVO** | MAXSA5 | 10 Nov | 10 Nov 2026 | 42 / 6.1 k | five bodies, police and weaponised variants |
 | **Maserati MC20** | soliqt | 25 Nov | 25 Nov 2026 | **0 / 13** | brand new — effectively untested by anyone |
@@ -61,7 +66,7 @@ same behaviour.
 
 ## JDM, muscle, everything else
 
-| car | author | updated | upload | end. / DL | note |
+| car | author | uploaded | upload | end. / DL | note |
 |---|---|---|---|---|---|
 | **Dodge Challenger SRT Hellcat Widebody** | Kingospawno | 25 Nov | 25 Nov 2026 | 0 / 113 | 717 hp RWD, working analog cluster, full engine bay |
 | **Ford Hoonitruck** | Jacksonum913 | 22 Nov | 22 Nov 2026 | 6 / 469 | 900 hp drift truck, deliberately absurd |
@@ -109,7 +114,7 @@ the canonical Nexus URLs.
 All by **xa1res**, the author this repo ports the Aston from, all updated 04–05 Nov 2026. Real race
 cars, so the gearing sits *below* the 360 wall and the cars use their range instead of parking on it.
 
-| car | author | updated | end. / DL | link |
+| car | author | uploaded | end. / DL | link |
 |---|---|---|---|---|
 | **Ferrari 296 GT3** | xa1res | 04 Nov | 20 / 3.4 k | https://www.nexusmods.com/cyberpunk2077/mods/37227 |
 | **Porsche 992 GT3 R** | xa1res | 04 Nov | 31 / 6.2 k | https://www.nexusmods.com/cyberpunk2077/mods/37229 |
@@ -120,7 +125,7 @@ cars, so the gearing sits *below* the 360 wall and the cars use their range inst
 
 ## Hypercars and GTs
 
-| car | author | updated | end. / DL | link |
+| car | author | uploaded | end. / DL | link |
 |---|---|---|---|---|
 | **Ferrari 599 XX EVO** | wzaa0921 | 18 Nov | 9 / 1.6 k | https://www.nexusmods.com/cyberpunk2077/mods/38661 |
 | **Pagani Zonda Revolucion** | wzaa0921 | 12 Nov | 4 / 1.8 k | https://www.nexusmods.com/cyberpunk2077/mods/38215 |
@@ -135,7 +140,7 @@ cars, so the gearing sits *below* the 360 wall and the cars use their range inst
 
 ## Sports, GT and proven classics
 
-| car | author | updated | end. / DL | link |
+| car | author | uploaded | end. / DL | link |
 |---|---|---|---|---|
 | **Ferrari F40 (Garage)** | SDH0 | 16 Nov | 625 / 147 k | https://www.nexusmods.com/cyberpunk2077/mods/19954 |
 | **Ferrari F40 ZEPHYR Custom** | SDH0 | 16 Nov | 451 / 76 k | https://www.nexusmods.com/cyberpunk2077/mods/20786 |
@@ -152,7 +157,7 @@ cars, so the gearing sits *below* the 360 wall and the cars use their range inst
 
 ## Days old — unproven
 
-| car | author | updated | end. / DL | link |
+| car | author | uploaded | end. / DL | link |
 |---|---|---|---|---|
 | **Ferrari 296 Speciale** *(same author as the Jesko — check the YAML)* | bob1479512 | 23 Nov | 21 / 1.7 k | https://www.nexusmods.com/cyberpunk2077/mods/39109 |
 | **Maserati MC20** | soliqt | 25 Nov | **0 / 13** | https://www.nexusmods.com/cyberpunk2077/mods/39635 |
