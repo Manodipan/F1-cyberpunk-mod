@@ -146,34 +146,33 @@ delta ÷ time delta. Two uses:
 Cost: a sampled timer, and an odometer that only counts some vehicles. Parked until there is a
 reason — the body read is exact and cheap.
 
-## Status: step A of the bisect
+## Status: step B - settings restored, three significant digits still out
 
-**Shipped now (step A):** `212 km/h | 58 m/s` - whole numbers, live, read from the body. That is
-the whole mod: 22 lines, not one of them mine. It exists only to answer "does *anything* of this mod
-compile on this install?".
+**Shipped now:** the Mod Settings tab is back - two unit slots, seven units including Mach,
+custom multipliers, unit labels, tooltips. **Numbers are whole** (`59 m/s | 212 km/h`) until step C.
 
-**Parked:** everything else — two independent unit slots, mph/knots/ft/s/Mach/custom, unit labels,
-tooltips, the Mod Settings tab. It is in `Phoenix_true_speedometer/settings/`, as
-`PhoenixTS_Settings.reds.pending`, and it is **not installed and not compiled**.
-
-### Why
-
-v1 did not compile (three nonexistent APIs, see the table below). v2 fixed those and still did not
-boot, which shifted suspicion to v2's *structure*:
-
-| | car mod (boots today) | v2 | v3 |
+| build | settings | my formatter | result |
 | --- | --- | --- | --- |
-| `module` declaration | no | **yes** | no |
-| `public enum` | no | **yes** | no |
-| `extends ScriptableSystem` | no | **yes** | no |
-| `@runtimeProperty` | no | yes | no |
-| `@wrapMethod(hudCarController)` | **yes** | yes | yes |
-| speed source | `AbsF(Vector4.Dot(...))` | same | same |
+| v1 | yes | yes | popup |
+| v2 | yes | yes | popup |
+| v3 | no | yes | popup |
+| A | no | no | **boots** |
+| B | yes | no | this build |
 
-v3 is the car mod's shape with only the arithmetic changed, and that arithmetic (`AbsF`,
-`RoundMath`, `IntToString`) is what the car mod already calls in the same file. If v3 boots, the
-HUD is done and the settings layer comes back one variable at a time (`settings/README.md` has the
-order). If v3 does **not** boot, the file is not the cause and the log is mandatory.
+Step A booting while v3 did not proves the formatter was at fault: v3 had no settings at all, so
+the only difference between it and the file that boots was my own integer formatting and one
+statement split across two lines (`return ... " m/s | "` / `+ ...` on the next line). Nothing in
+ADE or the car mod continues an expression on the next line, so step B has no line like that, and a
+test now fails the build if one appears.
+
+Step B also fixes the one construct v2 got wrong that ADE proves: ADE declares `enum DrivingAIType`
+and then `public let drivingAI: DrivingAIType`, where v2 declared `public enum`. Step B copies ADE.
+
+### Step C, if B boots
+
+`settings/PhoenixTS_Settings.reds.pending` holds the three-significant-digit formatter
+(`212` / `58.8` / `5.88` / `0.171`), tested in Python against the redscript integer math. It goes
+back into the shipped file only after B is confirmed, and only as single-line statements.
 
 ## v1: "REDScript compilation has failed. - phoenix_true_speedometer"
 

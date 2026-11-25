@@ -27,45 +27,54 @@ class SpeedometerModTests(unittest.TestCase):
                          if not line.lstrip().startswith("//"))
         self.assertNotIn("PhoenixAMV", code)
 
-    def test_the_shipped_file_declares_nothing_the_car_mod_does_not(self):
-        """v2 did not boot, and the only structural difference left was these three.
-
-        Phoenix_aston_valkyrie.reds boots on the target install and declares none of them, so the
-        shipped build may not either until the boot failure is understood.
-        """
+    def test_the_enum_is_declared_the_way_ade_declares_its_enum(self):
+        """v2 declared `public enum`; ADE declares the bare form and it compiles on 2.5."""
         code = "\n".join(line for line in self.text.splitlines()
                          if not line.lstrip().startswith("//"))
-        for construct in ("module ", "ScriptableSystem", "public enum", "runtimeProperty"):
-            self.assertNotIn(construct, code, construct)
-        self.assertIn("@wrapMethod(hudCarController)", self.text)
+        self.assertIn("\nenum PhoenixTS_Unit {", code)
+        self.assertNotIn("public enum", code)
+        # ADE: public let drivingAI: DrivingAIType = DrivingAIType.Vanilla;
+        self.assertIn("public let slot1: PhoenixTS_Unit = PhoenixTS_Unit.MPS;", self.text)
+
+    def test_no_statement_is_split_across_lines(self):
+        """v3 split a `return` over two lines with a leading `+` and did not boot.
+
+        Nothing in ADE or the car mod continues an expression on the next line, so neither does
+        this file. A line starting with an operator is the signature of that mistake.
+        """
+        for source, label in ((self.text, "shipped"), (self.pending, "parked")):
+            for line in source.splitlines():
+                stripped = line.strip()
+                if stripped and stripped[0] in "+*/" and not stripped.startswith("//"):
+                    self.fail(f"{label}: line continues an expression: {stripped[:60]}")
 
     def test_two_unit_slots_exist(self):
         for field in ("slot1:", "slot1Custom:", "slot2:", "slot2Custom:", "showSlot2:", "showUnits:"):
-            self.assertIn(field, self.pending, field)
+            self.assertIn(field, self.text, field)
 
     def test_seven_units_are_offered_in_both_slots(self):
         for unit in ("MPS", "KMH", "MPH", "KNOTS", "FPS", "MACH", "CUSTOM"):
-            self.assertEqual(self.pending.count(f'"ModSettings.displayValues.{unit}"'), 2,
+            self.assertEqual(self.text.count(f'"ModSettings.displayValues.{unit}"'), 2,
                              f"{unit} should be offered for both slots")
 
     def test_conversion_factors_are_the_real_ones(self):
         expected = {"KMH": "3.6", "MPH": "2.23694", "KNOTS": "1.94384", "FPS": "3.28084"}
         for unit, factor in expected.items():
-            block = re.search(rf"PhoenixTS_Unit\.{unit}\) \{{\s*return ({factor});", self.pending)
+            block = re.search(rf"PhoenixTS_Unit\.{unit}\) \{{\s*return ({factor});", self.text)
             self.assertIsNotNone(block, f"{unit} should convert by {factor}")
 
     def test_mach_is_one_over_343(self):
         # Mach 1 = 343 m/s, so the multiplier is 1/343 - expressed as arithmetic, not a magic number
-        self.assertIn("return 1.0 / 343.0;", self.pending)
-        self.assertIn('@runtimeProperty("ModSettings.displayValues.MACH", "Mach")', self.pending)
-        self.assertIn('return "Mach";', self.pending)
+        self.assertIn("return 1.0 / 343.0;", self.text)
+        self.assertIn('@runtimeProperty("ModSettings.displayValues.MACH", "Mach")', self.text)
+        self.assertIn('return "Mach";', self.text)
         # 58.8 m/s is Mach 0.17 - the significant-digit rule keeps three digits by itself
-        self.assertIn('return "Mach";', self.pending)
+        self.assertIn('return "Mach";', self.text)
         self.assertAlmostEqual(58.8 / 343.0 * 1000, 171.4, places=1)
 
     def test_custom_slot_is_a_free_multiplier_and_is_clamped(self):
-        self.assertIn("ClampF(custom, 0.0001, 1000.0)", self.pending)
-        self.assertIn('@runtimeProperty("ModSettings.max", "1000.0")', self.pending)
+        self.assertIn("ClampF(custom, 0.0001, 1000.0)", self.text)
+        self.assertIn('@runtimeProperty("ModSettings.max", "1000.0")', self.text)
 
     def test_the_speed_comes_from_the_body_not_the_callback(self):
         self.assertIn("Vector4.Dot(vehicle.GetLinearVelocity(), vehicle.GetWorldForward())", self.text)
@@ -74,25 +83,26 @@ class SpeedometerModTests(unittest.TestCase):
         self.assertNotIn("AbsF(speedValue)", self.text)
 
     def test_hud_writes_both_slots_joined(self):
-        self.assertIn('first + " | " + second', self.pending)
+        self.assertIn('return first + " | " + PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.showUnits);',
+                      self.text)
 
     def test_the_hud_names_the_unit_it_is_printing(self):
         # the point of the labels: nobody should have to remember which slot is which
-        self.assertIn("public let showUnits: Bool = true;", self.pending)
-        self.assertIn('return number + " " + PhoenixTS_Label(unit, custom);', self.pending)
+        self.assertIn("public let showUnits: Bool = true;", self.text)
+        self.assertIn('return number + " " + PhoenixTS_Label(unit, custom);', self.text)
         for label in ('"m/s"', '"km/h"', '"mph"', '"kn"', '"ft/s"'):
-            self.assertIn(label, self.pending, label)
+            self.assertIn(label, self.text, label)
         # a custom slot cannot be named, so it shows the multiplier it is using
-        self.assertIn('return "x" + ToString(', self.pending)
+        self.assertIn('return "x" + ToString(', self.text)
 
     def test_each_slot_tooltip_carries_the_factor_table(self):
-        self.assertEqual(self.pending.count("x2.23694"), 2)   # one per slot dropdown tooltip
-        self.assertIn("3600 divided by the unit's length in metres", self.pending)
-        self.assertIn("58.8 m/s | 212 km/h", self.pending)
+        self.assertEqual(self.text.count("x2.23694"), 2)   # one per slot dropdown tooltip
+        self.assertIn("3600 divided by the unit's length in metres", self.text)
+        self.assertIn("58.8 m/s | 212 km/h", self.text)
 
     def test_no_newline_escapes(self):
         # Mod Settings tooltips are plain text; a literal \n would show up as characters
-        self.assertNotIn("\\n", self.pending)
+        self.assertNotIn("\\n", self.text)
 
 
 class CompileSafetyTests(unittest.TestCase):
@@ -122,15 +132,15 @@ class CompileSafetyTests(unittest.TestCase):
         # this lives in the parked file, so it is checked there
         # NameOf<T>() resolves the registered name at compile time - proven by ADE debug.reds:56 on
         # 2.5. A hand-written name string would return null if wrong, leaving the tab dead.
-        text = SETTINGS.read_text(encoding="utf-8")
+        text = REDS.read_text(encoding="utf-8")
         self.assertIn("Get(NameOf<PhoenixTS_Settings>())", text)
         self.assertNotIn('Get(n"', text)
 
     def test_a_missing_settings_system_still_shows_a_speed(self):
-        self.assertIn("if !IsDefined(s) {", SETTINGS.read_text(encoding="utf-8"))
+        self.assertIn("if !IsDefined(s) {", REDS.read_text(encoding="utf-8"))
 
     def test_game_instance_comes_from_the_proven_global(self):
-        self.assertIn("GetGameInstance()", SETTINGS.read_text(encoding="utf-8"))
+        self.assertIn("GetGameInstance()", REDS.read_text(encoding="utf-8"))
 
     def test_the_shipped_hud_uses_only_the_car_mods_api_set(self):
         text = REDS.read_text(encoding="utf-8")
@@ -138,8 +148,8 @@ class CompileSafetyTests(unittest.TestCase):
                        "inkTextRef.SetText(this.m_SpeedValue,", "wrappedMethod(speedValue)"):
             self.assertIn(proven, text, proven)
         self.assertIn("this.m_activeVehicle", text)
-        # step A contains nothing of mine: no custom formatter, no settings plumbing
-        for mine in ("PhoenixTS_Format", "PhoenixTS_SigDigits", "PhoenixTS_Factor"):
+        # step B still ships no formatter of mine - that is step C
+        for mine in ("PhoenixTS_Format", "PhoenixTS_SigDigits"):
             self.assertNotIn(mine, text, mine)
 
 
