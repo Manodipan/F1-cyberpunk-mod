@@ -49,6 +49,7 @@ GetDisplayResolution = function() return 1920, 1080 end
 ImGuiWindowFlags = {
   NoDecoration = 1, NoTitleBar = 2, NoResize = 4, NoMove = 8, NoScrollbar = 16, NoCollapse = 32,
   AlwaysAutoResize = 64, NoSavedSettings = 128, NoFocusOnAppearing = 256, NoNav = 512,
+  NoInputs = 1024,
 }
 ImGuiCol = { Text = 0 }
 
@@ -283,6 +284,14 @@ class HudLuaTests(unittest.TestCase):
         self.draw()
         self.assertEqual(len(self.texts()), before, "hidden HUD must draw nothing")
         self.assertIn("enabled=false", self.ini())
+
+    def test_the_hud_window_cannot_take_input(self):
+        """The readout is click-through: NoInputs must be part of the window flags."""
+        self.lua.execute("_G.__vehicle = makeVehicle()")
+        self.draw()
+        flags = self.lua.eval("_G.__begin.flags")
+        noinputs = self.lua.eval("ImGuiWindowFlags.NoInputs")
+        self.assertEqual(int(flags) & int(noinputs), int(noinputs), "NoInputs missing from HUD flags")
 
     def test_hud_uses_the_cet_display_resolution(self):
         self.lua.execute("_G.__vehicle = makeVehicle()")

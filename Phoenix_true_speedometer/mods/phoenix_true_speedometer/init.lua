@@ -458,9 +458,11 @@ local function flag(name)
 end
 
 local function hudFlags()
+  -- NoInputs matters: it makes the readout provably click-through, so it can never eat a click or
+  -- a keystroke even if some other CET mod or a future version changes how input is routed.
   return flag("NoDecoration") + flag("NoTitleBar") + flag("NoResize") + flag("NoMove")
     + flag("NoScrollbar") + flag("NoCollapse") + flag("AlwaysAutoResize")
-    + flag("NoSavedSettings") + flag("NoFocusOnAppearing") + flag("NoNav")
+    + flag("NoSavedSettings") + flag("NoFocusOnAppearing") + flag("NoNav") + flag("NoInputs")
 end
 
 local function screenSize()

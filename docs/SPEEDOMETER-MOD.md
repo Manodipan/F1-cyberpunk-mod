@@ -39,10 +39,31 @@ The HUD is **on by default**. Hide and show it whenever you like:
 
 The state is remembered in `settings.ini` next to `init.lua`, so it survives a restart.
 
-## Options
+## Where the options live
 
-In the CET overlay a **Phoenix True Speedometer** window appears whenever the overlay is open (it is
-not drawn while you are driving with the overlay closed). Everything is saved the moment it changes.
+Two places, both writing the same `settings.ini`:
+
+1. **CET overlay** (`~`) — a *Phoenix True Speedometer* window, drawn whenever the overlay is open.
+   Needs nothing but CET.
+2. **Settings → Mods** — a *Phoenix Speedometer* tab, with HUD and Units subcategories. That page is
+   supplied by **Native Settings UI** ([Nexus 3518](https://www.nexusmods.com/cyberpunk2077/mods/3518));
+   without it the tab simply does not appear and nothing else changes.
+
+The redscript "Mod Settings" mod ([Nexus 4885](https://www.nexusmods.com/cyberpunk2077/mods/4885))
+that the old build used plays no part here — that row disappeared with the `.reds`.
+
+Everything is saved the moment it changes.
+
+## Input
+
+**The HUD does not take your mouse or keyboard.** CET only traps input for ImGui while its own
+overlay is open: `Overlay.cpp` calls `SetTrapInputInImGui(m_enabled)`, and `D3D12::OnWndProc`
+swallows mouse and keyboard messages only when that flag is set. With the overlay closed, every
+event goes straight to the game.
+
+The readout also carries `ImGuiWindowFlags.NoInputs`, so it is click-through by construction, even if
+that routing ever changed. The settings window *is* interactive — but it only exists while the
+overlay is open, i.e. while CET is trapping input anyway.
 
 | option | default | what it does |
 |---|---|---|
@@ -113,6 +134,7 @@ CET's own source.
 | `ImGui.Checkbox` / `DragFloat` return **value, changed** | BetterVehicleFirstPerson, CyberpunkVRPort_WristHud (both assign the first return) |
 | `GetDisplayResolution()` returns width, height | whitelist; psiberx GameUI-WhereAmI |
 | `ImGui.SetWindowFontScale` | BetterVehicleFirstPerson |
+| input is trapped for ImGui only while the overlay is open | `Overlay.cpp` (`SetTrapInputInImGui(m_enabled)`), `D3D12.cpp` (`OnWndProc`) |
 | `Game["GetMountedVehicle;GameObject"](Game.GetPlayer())` | BetterVehicleFirstPerson |
 | `veh:GetLinearVelocity()`, `GetWorldForward()`, `GetWorldPosition()`, `IsPlayerDriver()`, `GetCameraManager()` | CET class dump of `vehicleCarBaseObject` |
 | `cameraManager:IsTPPActive()` | CET class dump of `vehicleCameraManager` |
@@ -121,7 +143,7 @@ CET's own source.
 
 ## Verified
 
-The Lua is executed against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`): **49 tests**,
+The Lua is executed against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`): **50 tests**,
 all passing, and the harness deliberately reproduces CET's restrictions — `debug` is removed, the
 working directory is the mod folder, and the stubs use CET's real return shapes. Putting
 `debug.traceback` back into `guard()` fails 17 of them.
@@ -142,6 +164,7 @@ Drawing and settings:
   with first-person-only on
 - positions and scales from `GetDisplayResolution()` (1920×1080 → 1152, 842, scale 2.2); still draws
   when the resolution query is unavailable
+- the readout window carries `NoInputs`, so it cannot consume a click or a keystroke
 - colour pushes and pops stay balanced; a colour API that throws leaves the stack untouched
 - a widget that throws still closes both windows, and a throwing `ImGui.Begin` does not escape
   `onDraw`
