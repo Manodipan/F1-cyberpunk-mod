@@ -174,3 +174,13 @@ return to stock physics. Add `-Purge` to skip the backup.
 
 `docs/MODS-LIST.md` — other vehicle mods worth installing, with their real performance and the
 360 km/h engine ceiling that bounds all of them.
+
+### Dashboard without the physics
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install-dash.ps1
+```
+
+Installs only the four `.reds` — gear, rev lights and the true physics-speed readout — and leaves the
+tweak YAML out, so the car stays stock. (`.\tools\uninstall.ps1 -KeepScripts` is the other half:
+removes the physics and keeps scripts that are already there.)
