@@ -36,6 +36,15 @@ class SpeedometerModTests(unittest.TestCase):
         # ADE: public let drivingAI: DrivingAIType = DrivingAIType.Vanilla;
         self.assertIn("public let slot1: PhoenixTS_Unit = PhoenixTS_Unit.MPS;", self.text)
 
+    def test_let_is_used_where_a_value_changes(self):
+        """`let` in redscript is reassignable - ADE reassigns `let` locals 64 times.
+
+        Step C declared its lookup result with `var`, a keyword that appears nowhere in any
+        compiling script in this repository, and the game refused the whole file. `let` is correct.
+        """
+        text = REDS.read_text(encoding="utf-8")
+        self.assertIn("let s: ref<PhoenixTS_Settings>", text)
+
     def test_no_statement_is_split_across_lines(self):
         """v3 split a `return` over two lines with a leading `+` and did not boot.
 
@@ -121,6 +130,7 @@ class CompileSafetyTests(unittest.TestCase):
         "AbsI(": "no AbsI in redscript",
         "this.GetGame()": "not available on hudCarController",
         "Cast<": "avoided in favour of paired Int32/Float locals",
+        "var ": "not a local declaration keyword in redscript - `let` is, and it is reassignable",
     }
 
     def test_no_symbols_that_failed_to_compile(self):

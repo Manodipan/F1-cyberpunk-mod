@@ -158,7 +158,7 @@ public static func PhoenixTS_Number(mps: Float, unit: PhoenixTS_Unit, custom: Fl
 // wrong name returns null - which would leave the Mod Settings tab decorative while the HUD falls
 // back to hardcoded units. All three legal spellings are tried, in order.
 public static func PhoenixTS_SettingsOf() -> ref<PhoenixTS_Settings> {
-    var s: ref<PhoenixTS_Settings> = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(NameOf<PhoenixTS_Settings>()) as PhoenixTS_Settings;
+    let s: ref<PhoenixTS_Settings> = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(NameOf<PhoenixTS_Settings>()) as PhoenixTS_Settings;
     if IsDefined(s) {
         return s;
     }
