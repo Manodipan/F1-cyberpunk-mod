@@ -146,9 +146,11 @@ delta ÷ time delta. Two uses:
 Cost: a sampled timer, and an odometer that only counts some vehicles. Parked until there is a
 reason — the body read is exact and cheap.
 
-## Status: bisecting a boot failure (v3)
+## Status: step A of the bisect
 
-**Shipped now:** `58.8 m/s | 212 km/h`, three significant digits. That is the whole mod.
+**Shipped now (step A):** `212 km/h | 58 m/s` - whole numbers, live, read from the body. That is
+the whole mod: 22 lines, not one of them mine. It exists only to answer "does *anything* of this mod
+compile on this install?".
 
 **Parked:** everything else — two independent unit slots, mph/knots/ft/s/Mach/custom, unit labels,
 tooltips, the Mod Settings tab. It is in `Phoenix_true_speedometer/settings/`, as

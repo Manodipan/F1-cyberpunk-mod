@@ -21,8 +21,11 @@ class SpeedometerModTests(unittest.TestCase):
 
     def test_the_mod_exists_and_is_self_contained(self):
         self.assertTrue(REDS.is_file())
-        # it must not depend on the car mod
-        self.assertNotIn("PhoenixAMV", self.text)
+        # it must not depend on the car mod (the header comment cites it as the source of the
+        # constructs, which is documentation, not a dependency - so comments are excluded)
+        code = "\n".join(line for line in self.text.splitlines()
+                         if not line.lstrip().startswith("//"))
+        self.assertNotIn("PhoenixAMV", code)
 
     def test_the_shipped_file_declares_nothing_the_car_mod_does_not(self):
         """v2 did not boot, and the only structural difference left was these three.
@@ -135,10 +138,20 @@ class CompileSafetyTests(unittest.TestCase):
                        "inkTextRef.SetText(this.m_SpeedValue,", "wrappedMethod(speedValue)"):
             self.assertIn(proven, text, proven)
         self.assertIn("this.m_activeVehicle", text)
+        # step A contains nothing of mine: no custom formatter, no settings plumbing
+        for mine in ("PhoenixTS_Format", "PhoenixTS_SigDigits", "PhoenixTS_Factor"):
+            self.assertNotIn(mine, text, mine)
 
 
 class SignificantDigitTests(unittest.TestCase):
-    """Three significant digits, whole numbers above 100 - the owner's rule."""
+    """Three significant digits, whole numbers above 100 - the owner's rule.
+
+    The formatter is parked with the rest of the feature set while the compile failure is
+    bisected, so these tests read the parked source. Shipping it again is step B.
+    """
+
+    def setUp(self):
+        self.text = SETTINGS.read_text(encoding="utf-8")
 
     THRESHOLDS = [(100.0, 0), (10.0, 1), (1.0, 2), (0.1, 3), (0.01, 4), (0.0, 5)]
 
@@ -165,15 +178,15 @@ class SignificantDigitTests(unittest.TestCase):
         self.assertEqual(self.render(0.01714), "0.0171")
 
     def test_the_rule_matches_the_redscript_thresholds(self):
-        text = REDS.read_text(encoding="utf-8")
+        text = self.text
         for floor, places in ((100.0, 0), (10.0, 1), (1.0, 2), (0.1, 3), (0.01, 4)):
             self.assertRegex(text, rf"if v >= {floor} \{{\s+return {places};", f"threshold {floor}")
         self.assertIn("return 5;", text)
 
     def test_the_formatter_pads_zeros(self):
-        # v1 built the padding in a loop; v2 (the version that compiles) uses a literal ladder,
-        # because the loop form and the AbsI helper it called are not proven to exist on 2.5
-        text = REDS.read_text(encoding="utf-8")
+        # v1 built the padding in a loop; the parked v2 uses a literal ladder, because the loop
+        # form and the AbsI helper it called are not proven to exist on 2.5
+        text = self.text
         for ladder in ('pad = "0000";', 'pad = "000";', 'pad = "00";', 'pad = "0";'):
             self.assertIn(ladder, text)
         self.assertIn('return IntToString(whole) + "." + pad + IntToString(frac);', text)
