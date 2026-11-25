@@ -884,13 +884,24 @@ function M.start()
     overlayOpen = false
   end)
 
+  local frames = 0
   registerForEvent("onDraw", function()
+    frames = frames + 1
     if overlayOpen then
       guard("settings window", M.drawSettings)
     end
     guard("HUD", function()
       M.drawHud(frameDt)
     end)
+    if frames == 60 then
+      -- one line, one second in, every launch. If it never appears, onDraw is not being called at
+      -- all; if it appears with vehicle=false, the mod is running and just has nothing to read.
+      local mps, veh = M.currentMps(frameDt)
+      reported("1 s in: hud=" .. tostring(cfg.enabled)
+        .. " vehicle=" .. tostring(veh ~= nil)
+        .. " driver=" .. tostring(veh ~= nil and isDriving(veh) or false)
+        .. " speed=" .. tostring(mps))
+    end
   end)
 
   registerHotkey("PhoenixSpeedometer_ToggleHud", "Toggle speedometer HUD", function()

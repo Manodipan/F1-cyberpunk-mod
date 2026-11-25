@@ -211,6 +211,33 @@ Static:
 - **First person only** uses `IsTPPActive()`; if a future CET drops it the option turns inert and the
   HUD shows in every view — it fails visible, not invisible.
 
+## If the HUD does not appear
+
+Run the one-shot check — it prints nothing destructive and answers all of it at once:
+
+```
+.\tools\check-hud.ps1
+```
+
+It reports whether the file is installed (and whether it matches the repo), the other CET mods, the
+saved `settings.ini`, and every CET log line about this mod. CET's log lives at
+`bin\x64\plugins\cyber_engine_tweaks\cyber_engine_tweaks.log`.
+
+Then read the two lines the mod prints:
+
+| what you see | meaning |
+|---|---|
+| `[Phoenix True Speedometer] HUD ready - bind the toggle in CET > Bindings` | the file loaded and started |
+| `[Phoenix True Speedometer] 1 s in: hud=true vehicle=true driver=true speed=58.8` | one second in: it can see the car and is reading it |
+| `1 s in: ... vehicle=false` | running fine, but not in a car at that moment |
+| `1 s in: ... speed=nil` | in a car, but the velocity read failed — the position fallback needs another frame |
+| **no "HUD ready" line at all** | the file is not being loaded: wrong folder, or CET has it disabled |
+| **"HUD ready" but no "1 s in"** | `onDraw` is not being called — CET or another mod is not rendering |
+
+The only two build-level things that can produce "no HUD, no messages" are an old copy of `init.lua`
+(the first three builds of this mod never started themselves) or a file outside
+`bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\`.
+
 ## Uninstalling
 
 ```
