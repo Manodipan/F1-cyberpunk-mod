@@ -12,7 +12,9 @@ Getting that order wrong is a real bug the stubs now catch.
 
 Run with a Lua-capable Python (pip install lupa); skipped otherwise.
 """
+import os
 import pathlib
+import re
 import shutil
 import tempfile
 import unittest
@@ -27,6 +29,10 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 INIT = ROOT / "Phoenix_true_speedometer/mods/phoenix_true_speedometer/init.lua"
 
 STUBS = r"""
+-- CET's sandbox exposes no `debug` library (LuaSandbox.cpp whitelist). Taking it away here means a
+-- stray debug.getinfo/debug.traceback fails the tests instead of failing in the game.
+debug = nil
+
 _G.__events = {}
 _G.__hotkeys = {}
 _G.__texts = {}
@@ -116,12 +122,17 @@ class HudLuaTests(unittest.TestCase):
     def setUp(self):
         self.tmp = pathlib.Path(tempfile.mkdtemp())
         shutil.copy(INIT, self.tmp / "init.lua")
+        # CET replaces io.open with one that resolves relative paths against the mod's own folder;
+        # running from that folder reproduces the same resolution.
+        self._cwd = os.getcwd()
+        os.chdir(self.tmp)
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute(STUBS)
         self.mod = self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
         self.mod.start()
 
     def tearDown(self):
+        os.chdir(self._cwd)
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def draw(self):
@@ -352,6 +363,11 @@ class HudLuaTests(unittest.TestCase):
         self.assertGreaterEqual(self.mod.config().posX, 0.0)
         self.assertLessEqual(self.mod.config().posX, 1.0)
 
+    def test_a_second_number_can_be_switched_off(self):
+        self.assertTrue(self.mod.setSlot("slot2", ""))
+        self.assertEqual(self.mod.config().slot2, "")
+        self.assertEqual(self.mod.render(58.8, self.mod.config()), "212 km/h")
+
     def test_slot_setter_accepts_a_name_or_an_index(self):
         self.assertTrue(self.mod.setSlot("slot1", "knots"))
         self.assertEqual(self.mod.config().slot1, "knots")
@@ -404,13 +420,11 @@ class HudLuaTests(unittest.TestCase):
         self.assertEqual(self.mod.config().slot1, "knots")
         self.assertAlmostEqual(self.mod.config().scale, 2.2, places=2)   # default kept
 
-    def test_an_unresolvable_settings_path_is_not_fatal(self):
-        lua = LuaRuntime(unpack_returned_tuples=True)
-        lua.execute(STUBS)
-        lua.execute(INIT.read_text(encoding="utf-8"))      # chunk name is [string]: no directory
-        mod = lua.eval("_G.PhoenixSpeedometer")
-        self.assertFalse(mod.saveSettings())
-        self.assertTrue(mod.start())
+    def test_an_unwritable_settings_file_is_reported_not_fatal(self):
+        os.remove(self.tmp / "settings.ini")
+        os.mkdir(self.tmp / "settings.ini")                 # a directory in the way: io.open fails
+        self.assertFalse(self.mod.saveSettings())
+        self.assertIsInstance(self.mod.config().enabled, bool)
 
 
 class HudStaticTests(unittest.TestCase):
@@ -418,6 +432,10 @@ class HudStaticTests(unittest.TestCase):
 
     def setUp(self):
         self.text = INIT.read_text(encoding="utf-8")
+        stripped = []
+        for line in self.text.splitlines():
+            stripped.append(line.split("--")[0] if "--" in line else line)
+        self.code = "\n".join(stripped)
 
     def test_it_is_a_cet_mod_and_not_redscript(self):
         self.assertTrue(INIT.is_file())
@@ -442,6 +460,32 @@ class HudStaticTests(unittest.TestCase):
         """CET runs LuaJIT: no integer division, no bitwise operators, no goto, no %d on floats."""
         for banned in (" // ", "<<", ">>", "goto ", "%d"):
             self.assertNotIn(banned, self.text, banned)
+
+    def test_it_never_uses_the_debug_library(self):
+        """CET's sandbox does not provide `debug`; guard() and the settings path must not need it."""
+        code = self.code
+        self.assertNotIn("debug.", code)
+        self.assertNotIn("debug(", code)
+
+    def test_it_only_uses_globals_cet_whitelists(self):
+        """Derived from LuaSandbox.cpp: these are simply not in a CET mod's sandbox."""
+        code = self.code
+        # word boundaries matter: "os." would otherwise match "pos.x"
+        for pattern in (r"\bos\s*\.", r"\brequire\s*\(", r"\bloadstring\b", r"\bloadfile\s*\(",
+                        r"\bdofile\s*\(", r"\bgetfenv\b", r"\bsetfenv\b", r"\b_G\b",
+                        r"\bpackage\s*\.", r"\bcoroutine\s*\.", r"\butf8\s*\.",
+                        r"\bcollectgarbage\b"):
+            self.assertIsNone(re.search(pattern, code), pattern)
+
+    def test_the_overlay_can_blank_a_slot(self):
+        self.assertIn('"off"', self.code.replace(" ", ""), "the selector needs an off entry")
+
+    def test_the_enum_tables_are_the_cet_ones(self):
+        """CET whitelists ImGuiWindowFlags and ImGuiCol; the C-style globals are not guaranteed."""
+        self.assertIn("ImGuiWindowFlags", self.code)
+        self.assertIn("ImGuiCol", self.code)
+        self.assertNotIn("ImGuiCol_", self.code)
+        self.assertNotIn("ImGuiWindowFlags_", self.code)
 
     def test_no_lua_5_2_only_functions(self):
         for banned in ("table.unpack(", "math.type(", "utf8."):

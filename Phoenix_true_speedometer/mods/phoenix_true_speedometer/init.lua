@@ -14,6 +14,14 @@
 --   registerForEvent("onUpdate", fn)  fn receives the frame delta    (BetterVehicleFirstPerson)
 --   ImGuiWindowFlags.<Name> / ImGuiCol.<Name>   table-style enums    (BetterVehicleFirstPerson)
 --
+-- And from CET's own source, which is what a mod actually runs inside:
+--   src/scripting/LuaSandbox.cpp   the sandbox exposes no `debug` library at all, so nothing here
+--                                  may call debug.getinfo/debug.traceback; `io.open` is replaced
+--                                  with one that resolves relative paths against THIS mod's folder
+--   src/scripting/ScriptContext.cpp onDraw is called with no arguments; onUpdate gets the delta;
+--                                  only onHook/onTweak/onInit/onShutdown/onUpdate/onDraw/
+--                                  onOverlayOpen/onOverlayClose exist - any other name is an error
+--
 -- Exposed as the global PhoenixSpeedometer for inspection from the CET console.
 
 local M = {}
@@ -76,7 +84,9 @@ local lastError = nil
 
 -- runs fn, reports a distinct failure once: the CET console names it without spamming every frame
 local function guard(what, fn)
-  local ok, err = xpcall(fn, debug.traceback)
+  local ok, err = xpcall(fn, function(message)
+    return tostring(message)               -- CET's sandbox has no debug library for traceback
+  end)
   if not ok then
     if err ~= lastError then
       lastError = err
@@ -88,21 +98,16 @@ local function guard(what, fn)
   return true
 end
 
-local function settingsPath()
-  -- level 1 must be a Lua function, not debug.getinfo itself: pcall(debug.getinfo, 1, ...) reports
-  -- the C function ([C]) and loses the file name. Hence the closure.
-  local ok, info = pcall(function()
-    return debug.getinfo(1, "S")
-  end)
-  if not ok or type(info) ~= "table" or type(info.source) ~= "string" then
-    return nil
+-- CET's sandbox has no `debug` library and replaces io.open with one that resolves relative paths
+-- against this mod's own folder, so a bare filename is both the simplest and the correct choice.
+local SETTINGS_FILE = "settings.ini"
+
+local function openSettings(mode)
+  local ok, file = pcall(io.open, SETTINGS_FILE, mode)
+  if ok and file then
+    return file
   end
-  local source = info.source:gsub("^@", "")
-  local dir = source:match("^(.*[/\\])")
-  if not dir then
-    return nil
-  end
-  return dir .. "settings.ini"
+  return nil
 end
 
 local function encodeValue(v)
@@ -116,12 +121,8 @@ local function encodeValue(v)
 end
 
 function M.saveSettings()
-  local path = settingsPath()
-  if not path then
-    return false
-  end
-  local ok, file = pcall(io.open, path, "w")
-  if not ok or not file then
+  local file = openSettings("w")
+  if not file then
     return false
   end
   for k, v in pairs(cfg) do
@@ -166,12 +167,8 @@ local function clampSettings()
 end
 
 function M.loadSettings()
-  local path = settingsPath()
-  if not path then
-    return false
-  end
-  local ok, file = pcall(io.open, path, "r")
-  if not ok or not file then
+  local file = openSettings("r")
+  if not file then
     return false
   end
   for line in file:lines() do
@@ -442,21 +439,20 @@ end
 -- ---------------------------------------------------------------------------
 -- ImGui
 -- ---------------------------------------------------------------------------
-local function enum(tableName, globalPrefix, name)
-  local ok, value = pcall(function()
-    return _G[tableName][name]
-  end)
-  if ok and value ~= nil then
-    return value
+local windowFlags = {}
+-- CET whitelists ImGuiWindowFlags and ImGuiCol as tables (LuaSandbox.cpp), and every shipping mod
+-- uses that spelling. Nothing here reaches through _G: the sandbox does not whitelist it.
+local function windowFlag(name)
+  local flags = ImGuiWindowFlags
+  if type(flags) == "table" and type(flags[name]) == "number" then
+    return flags[name]
   end
-  return _G[globalPrefix .. name]
+  return 0
 end
 
-local windowFlags = {}                    -- cached once: 0 for anything the binding lacks
 local function flag(name)
   if windowFlags[name] == nil then
-    local value = enum("ImGuiWindowFlags", "ImGuiWindowFlags_", name)
-    windowFlags[name] = (type(value) == "number") and value or 0
+    windowFlags[name] = windowFlag(name)
   end
   return windowFlags[name]
 end
@@ -484,14 +480,12 @@ local function screenSize()
   return nil, nil
 end
 
-local cachedTextIndex = nil
-local textIndexResolved = false
 local function textIndex()
-  if not textIndexResolved then
-    cachedTextIndex = enum("ImGuiCol", "ImGuiCol_", "Text")
-    textIndexResolved = true
+  local colours = ImGuiCol
+  if type(colours) == "table" and type(colours.Text) == "number" then
+    return colours.Text
   end
-  return cachedTextIndex
+  return nil
 end
 
 -- CET takes either 4 floats (BetterVehicleFirstPerson) or one packed 0xAABBGGRR (GameUI-WhereAmI).
@@ -595,7 +589,7 @@ local function uiDragFloat(key, label, step, low, high)
   end
 end
 
--- accepts a unit name or a 1-based index, so either Native Settings UI callback shape works
+-- accepts a unit name, "" for a blank slot, or a 1-based index (Native Settings UI sends indices)
 local function setSlot(key, unit)
   if type(unit) == "number" then
     unit = UNIT_ORDER[unit]
@@ -603,7 +597,7 @@ local function setSlot(key, unit)
   if type(unit) ~= "string" then
     return false
   end
-  if unit ~= "custom" and FACTORS[unit] == nil then
+  if unit ~= "" and unit ~= "custom" and FACTORS[unit] == nil then
     return false
   end
   cfg[key] = unit
@@ -615,16 +609,20 @@ function M.setSlot(key, unit)
   return setSlot(key, unit)
 end
 
+-- the overlay offers an explicit "off" so a second number can be dropped without editing the ini
+local OVERLAY_UNITS = { "m/s", "km/h", "mph", "knots", "ft/s", "Mach", "custom", "off" }
+
 local function uiUnitSelector(label, key)
   local current = cfg[key]
+  local preview = (current == "" or current == nil) and "off" or current
   if type(ImGui.BeginCombo) == "function" and type(ImGui.Selectable) == "function" then
-    if ImGui.BeginCombo(label, current) then
-      for i = 1, #UNIT_ORDER do
-        local unit = UNIT_ORDER[i]
-        if ImGui.Selectable(unit, unit == current) then
-          setSlot(key, unit)
+    if ImGui.BeginCombo(label, preview) then
+      for i = 1, #OVERLAY_UNITS do
+        local entry = OVERLAY_UNITS[i]
+        if ImGui.Selectable(entry, entry == preview) then
+          setSlot(key, entry == "off" and "" or entry)
         end
-        if unit == current and type(ImGui.SetItemDefaultFocus) == "function" then
+        if entry == preview and type(ImGui.SetItemDefaultFocus) == "function" then
           ImGui.SetItemDefaultFocus()
         end
       end
@@ -633,14 +631,15 @@ local function uiUnitSelector(label, key)
     return
   end
   -- binding without combo boxes: cycle with a button
-  if ImGui.Button(label .. ": " .. tostring(current)) then
+  if ImGui.Button(label .. ": " .. preview) then
     local index = 1
-    for i = 1, #UNIT_ORDER do
-      if UNIT_ORDER[i] == current then
+    for i = 1, #OVERLAY_UNITS do
+      if OVERLAY_UNITS[i] == preview then
         index = i
       end
     end
-    setSlot(key, UNIT_ORDER[index % #UNIT_ORDER + 1])
+    local next = OVERLAY_UNITS[index % #OVERLAY_UNITS + 1]
+    setSlot(key, next == "off" and "" or next)
   end
 end
 
@@ -702,6 +701,20 @@ end
 -- ---------------------------------------------------------------------------
 -- optional Native Settings UI tab (in the game's Mods menu, like V's Vehicle Computer)
 -- ---------------------------------------------------------------------------
+local function unitIndex(unit)
+  for i = 1, #UNIT_ORDER do
+    if UNIT_ORDER[i] == unit then
+      return i
+    end
+  end
+  return nil
+end
+
+-- Native Settings UI's real API (its own source and official example):
+--   addSwitch(path, label, desc, currentState, defaultState, callback)
+--   addSelectorString(path, label, desc, elements, selectedIndex, defaultIndex, callback)
+-- The selector is index-based and its callback receives the index, so setSlot() accepts both.
+-- Registering happens in onInit: that is where the library expects mods to add their tab.
 local function addNativeSettings()
   local ok, nativeSettings = pcall(function()
     return GetMod("nativeSettings")
@@ -710,12 +723,9 @@ local function addNativeSettings()
     return false
   end
   local path = "/phoenix_speedometer"
-  pcall(function()
-    nativeSettings.addTab(path, "Phoenix Speedometer")
-  end)
-  pcall(function()
-    nativeSettings.addSubcategory(path .. "/hud", "HUD")
-  end)
+  pcall(nativeSettings.addTab, path, "Phoenix Speedometer")
+  pcall(nativeSettings.addSubcategory, path .. "/hud", "HUD")
+
   local toggles = {
     { "Show the HUD", "Draws its own readout; the game's HUD is untouched.", "enabled" },
     { "Print the units", "Append the unit to each number.", "showLabels" },
@@ -724,23 +734,24 @@ local function addNativeSettings()
   for _, row in ipairs(toggles) do
     local label, description, key = row[1], row[2], row[3]
     pcall(function()
-      nativeSettings.addToggle(path .. "/hud", label, description, cfg[key], function(state)
-        if type(state) == "boolean" then
-          cfg[key] = state
-          M.saveSettings()
-        end
-      end)
+      nativeSettings.addSwitch(path .. "/hud", label, description, cfg[key], DEFAULTS[key],
+        function(state)
+          if type(state) == "boolean" then
+            cfg[key] = state
+            M.saveSettings()
+          end
+        end)
     end)
   end
-  pcall(function()
-    nativeSettings.addSubcategory(path .. "/units", "Units")
-  end)
+
+  pcall(nativeSettings.addSubcategory, path .. "/units", "Units")
   for _, row in ipairs({ { "Slot 1 unit", "slot1" }, { "Slot 2 unit", "slot2" } }) do
     local label, key = row[1], row[2]
     pcall(function()
       nativeSettings.addSelectorString(path .. "/units", label, "The numbers on the HUD.",
-        UNIT_ORDER, cfg[key], function(unit)
-          setSlot(key, unit)
+        UNIT_ORDER, unitIndex(cfg[key]) or 1, unitIndex(DEFAULTS[key]) or 1,
+        function(index)
+          setSlot(key, index)
         end)
     end)
   end
@@ -764,10 +775,10 @@ function M.start()
   if not wrote then
     reported("settings.ini is not writable - options work but will not persist")
   end
-  addNativeSettings()
 
   registerForEvent("onInit", function()
     M.saveSettings()
+    addNativeSettings()                  -- Native Settings UI expects mods to add their tab here
   end)
 
   registerForEvent("onUpdate", function(delta)
@@ -807,5 +818,5 @@ function M.start()
   return true
 end
 
-_G.PhoenixSpeedometer = M
+PhoenixSpeedometer = M   -- visible in the CET console
 return M
