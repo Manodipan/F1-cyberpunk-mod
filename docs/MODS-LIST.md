@@ -50,6 +50,18 @@ Cornering within 0.02 g, braking within 1.3 m. That is a *measurement*, not a cl
 > speed**. Use the Authentic Shift GUI. This is also a reminder that the stock dashboard is a
 > derived number, not the physics velocity — which is why our dash reads the vehicle body directly.
 
+**The reason is the same in both cases, and we have measured it.** The game feeds the HUD speed
+through a `speed_to_multiplier` curve, and at the top of the range that curve is at roughly **2x**:
+this repo's own HUD wrapper was written after seeing **277 km/h displayed as 572**. Authentic
+Shift's "up to twice the real speed" is that curve. It also explains every "500 km/h car mod" that
+never reaches 360 — the number on the dial, not the integrator.
+
+Our `phoenix_aston_valkyrie.reds` wraps `hudCarController.OnSpeedValueChanged` and writes the true
+figure instead, and it does so for **every** vehicle: `PhoenixAMV_TrueSpeedo()` gates on
+`IsDefined(vehicle)`, not on the Phoenix record. Only the wheel screen, LED and audio stay
+Aston-only. So with the scripts installed, the HUD reads physics speed in any car; without them,
+the curve is back.
+
 ## 3. Real cars, from the authors who are actually consistent
 
 Content mods set their own `maxSpeed`, so their top speed is whatever the author typed — and then
