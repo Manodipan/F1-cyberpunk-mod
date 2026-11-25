@@ -39,11 +39,10 @@ class SpeedometerModTests(unittest.TestCase):
     def test_let_is_used_where_a_value_changes(self):
         """`let` in redscript is reassignable - ADE reassigns `let` locals 64 times.
 
-        Step C declared its lookup result with `var`, a keyword that appears nowhere in any
-        compiling script in this repository, and the game refused the whole file. `let` is correct.
+        Step C declared a local with `var`, a keyword that appears nowhere in any compiling script
+        in this repository, and the game refused the whole file. `let` is correct.
         """
-        text = REDS.read_text(encoding="utf-8")
-        self.assertIn("let s: ref<PhoenixTS_Settings>", text)
+        self.assertIn("let i: Int32 = e.GetIndex();", self.text)
 
     def test_no_statement_is_split_across_lines(self):
         """v3 split a `return` over two lines with a leading `+` and did not boot.
@@ -92,8 +91,7 @@ class SpeedometerModTests(unittest.TestCase):
         self.assertNotIn("AbsF(speedValue)", self.text)
 
     def test_hud_writes_both_slots_joined(self):
-        self.assertIn('return first + "|" + PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.showUnits);',
-                      self.text)
+        self.assertIn('return first + "|" + PhoenixTS_Number(mps, slot2, custom2, labels);', self.text)
         # the second number is off by default: the field is ~4 characters wide
         self.assertIn("public let showSlot2: Bool = false;", self.text)
 
@@ -147,22 +145,30 @@ class CompileSafetyTests(unittest.TestCase):
         for symbol, why in self.FORBIDDEN.items():
             self.assertNotIn(symbol, code, f"{symbol} - {why}")
 
-    def test_settings_system_is_looked_up_by_nameof(self):
-        # this lives in the parked file, so it is checked there
-        # NameOf<T>() resolves the registered name at compile time - proven by ADE debug.reds:56 on
-        # 2.5. A hand-written name string would return null if wrong, leaving the tab dead.
+    def test_settings_come_from_the_config_vars_the_ui_edits(self):
+        """Mod Settings writes the chosen value into the class DEFAULT (ModSettings.cpp:133), not
+        into a live instance, so reading an instance never sees a change. The ConfigVars its UI
+        edits are the authoritative store."""
         text = REDS.read_text(encoding="utf-8")
-        # NameOf first, then the two literal spellings: a wrong name returns null, which would
-        # leave the Mod Settings tab decorative while the HUD silently used hardcoded units
-        self.assertIn("Get(NameOf<PhoenixTS_Settings>())", text)
-        self.assertIn('Get(n"PhoenixTrueSpeedometer.PhoenixTS_Settings")', text)
-        self.assertIn('Get(n"PhoenixTS_Settings")', text)
+        self.assertIn("ModSettings.GetCategories(n\"Phoenix True Speedometer\")", text)
+        self.assertIn("ModSettings.GetVars(n\"Phoenix True Speedometer\", cate)", text)
+        self.assertIn("e.GetIndex()", text)
+        self.assertIn("f.GetValue()", text)
+        self.assertIn("b.GetValue()", text)
+        self.assertNotIn("GetScriptableSystemsContainer", text)
+        self.assertNotIn("PhoenixTS_SettingsOf", text)
 
-    def test_a_missing_settings_system_still_shows_a_speed(self):
+    def test_every_modsettings_call_is_module_guarded(self):
+        """ModSettings.* does not exist when the framework is absent; ADE guards every call."""
         text = REDS.read_text(encoding="utf-8")
-        self.assertIn("if !IsDefined(s) {", text)
-        # and says so, instead of looking like a working readout in the wrong unit
-        self.assertIn('IntToString(RoundMath(mps)) + "*"', text)
+        for fn in ("PhoenixTS_ModSettingsPresent", "PhoenixTS_AnyVar", "PhoenixTS_UnitOf",
+                   "PhoenixTS_FloatOf", "PhoenixTS_BoolOf"):
+            self.assertIn(f'@if(ModuleExists("ModSettingsModule"))\npublic static func {fn}(', text, fn)
+            self.assertIn(f'@if(!ModuleExists("ModSettingsModule"))\npublic static func {fn}(', text, fn)
+
+    def test_a_readout_with_no_variables_found_says_so(self):
+        text = REDS.read_text(encoding="utf-8")
+        self.assertIn('return first + "*";', text)
 
     def test_the_readout_stays_short_enough_for_the_widget(self):
         """The HUD speed widget holds about four characters (the car mod writes '113')."""
@@ -170,8 +176,9 @@ class CompileSafetyTests(unittest.TestCase):
         self.assertNotIn('" | "', text)          # no spaced pipe
         self.assertIn('first + "|"', text)
 
-    def test_game_instance_comes_from_the_proven_global(self):
-        self.assertIn("GetGameInstance()", REDS.read_text(encoding="utf-8"))
+    def test_the_file_no_longer_needs_a_game_instance_at_all(self):
+        text = REDS.read_text(encoding="utf-8")
+        self.assertNotIn("GetGameInstance()", text)
 
     def test_the_shipped_hud_uses_only_the_car_mods_api_set(self):
         text = REDS.read_text(encoding="utf-8")
@@ -182,26 +189,6 @@ class CompileSafetyTests(unittest.TestCase):
         # step B still ships no formatter of mine - that is step C
         for mine in ("PhoenixTS_Format", "PhoenixTS_SigDigits"):
             self.assertNotIn(mine, text, mine)
-
-
-class ParkedDraftTests(unittest.TestCase):
-    """The Mod Settings ConfigVar reader is a draft, and must stay out of the install."""
-
-    DRAFT = ROOT / "Phoenix_true_speedometer/settings/PhoenixTS_ReadModSettings.reds.pending"
-
-    def test_the_draft_is_not_installed(self):
-        self.assertTrue(self.DRAFT.is_file())
-        self.assertFalse(self.DRAFT.with_suffix(".reds").exists(), "draft must not be a .reds")
-
-    def test_the_draft_guards_every_modsettings_call(self):
-        """ModSettings.* does not exist without the framework - ADE guards all of them."""
-        text = self.DRAFT.read_text(encoding="utf-8")
-        self.assertIn('@if(ModuleExists("ModSettingsModule"))', text)
-        self.assertIn('@if(!ModuleExists("ModSettingsModule"))', text)
-
-    def test_the_draft_is_honest_about_what_is_unconfirmed(self):
-        text = self.DRAFT.read_text(encoding="utf-8")
-        self.assertIn("UNCONFIRMED", text)
 
 
 class SelfAuditTests(unittest.TestCase):
@@ -228,7 +215,14 @@ class SelfAuditTests(unittest.TestCase):
         "SetText": "inkTextRef.SetText, car mod",
         "ToString": "proven by step B, which booted with it",
         "wrappedMethod": "ADE x62, car mod x7",
-        "NameOf": "ADE x8, incl. the working GetInstance()",
+        "NameOf": "ADE x8",
+        "ModuleExists": "ADE @if(ModuleExists(\"ModSettingsModule\")) guard",
+        "GetCategories": "ADE settings.reds:652",
+        "GetVars": "ADE settings.reds:652",
+        "GetName": "ADE settings.reds:654, var.GetName()",
+        "GetValue": "ADE settings.reds:603, ModConfigVarBool.GetValue()",
+        "GetIndex": "framework source: ModConfigVarEnum.GetIndex()",
+        "if": "regex noise from 'if ('",
     }
 
     def setUp(self):
@@ -254,9 +248,10 @@ class SelfAuditTests(unittest.TestCase):
         for target in re.findall(r'ModSettings\.dependency", "(\w+)"', self.text):
             self.assertIn(target, bools, f"dependency on non-Bool {target}")
 
-    def test_the_lookup_matches_ades_working_getinstance(self):
-        """ADE's live, working lookup is Get(NameOf<Settings>()) - ours must try that first."""
-        self.assertIn("Get(NameOf<PhoenixTS_Settings>())", self.code)
+    def test_the_scriptable_system_class_is_kept_only_for_the_ui(self):
+        """The tab is built from script data, so the class needs no instance and no lookup."""
+        self.assertIn("public class PhoenixTS_Settings extends ScriptableSystem", self.code)
+        self.assertIn("ModSettings.mod", self.text)
 
 
 class SignificantDigitTests(unittest.TestCase):

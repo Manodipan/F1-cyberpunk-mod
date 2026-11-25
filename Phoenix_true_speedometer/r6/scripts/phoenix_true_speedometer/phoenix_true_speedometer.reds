@@ -152,34 +152,139 @@ public static func PhoenixTS_Number(mps: Float, unit: PhoenixTS_Unit, custom: Fl
     return number + " " + PhoenixTS_Label(unit, custom);
 }
 
-// The system's registered name depends on how the game registers modded ScriptableSystems, and a
-// wrong name returns null - which would leave the Mod Settings tab decorative while the HUD falls
-// back to hardcoded units. All three legal spellings are tried, in order.
-public static func PhoenixTS_SettingsOf() -> ref<PhoenixTS_Settings> {
-    let s: ref<PhoenixTS_Settings> = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(NameOf<PhoenixTS_Settings>()) as PhoenixTS_Settings;
-    if IsDefined(s) {
-        return s;
+// Mod Settings writes a chosen value into the class's DEFAULT value in script data
+// (ModSettings.cpp: SetDefaultValue(...)), not into a live instance - so the tab can look perfect
+// while every instance keeps its old value. The authoritative store is the ConfigVars its UI edits,
+// and those are readable: ModConfigVarEnum.GetIndex(), ModConfigVarFloat.GetValue(),
+// ModConfigVarBool.GetValue(). Read them directly; the class below exists only for the UI.
+//
+// Every ModSettings call is wrapped in @if(ModuleExists("ModSettingsModule")), exactly as ADE does,
+// because ModSettings.* does not exist when the framework is not installed and an unguarded call
+// fails to compile.
+
+@if(ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_ModSettingsPresent() -> Bool {
+    return true;
+}
+
+@if(!ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_ModSettingsPresent() -> Bool {
+    return false;
+}
+
+@if(ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_AnyVar() -> Bool {
+    let found: Bool = false;
+    for cate in ModSettings.GetCategories(n"Phoenix True Speedometer") {
+        for v in ModSettings.GetVars(n"Phoenix True Speedometer", cate) {
+            found = true;
+        }
     }
-    s = GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"PhoenixTrueSpeedometer.PhoenixTS_Settings") as PhoenixTS_Settings;
-    if IsDefined(s) {
-        return s;
+    return found;
+}
+
+@if(!ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_AnyVar() -> Bool {
+    return false;
+}
+
+@if(ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_UnitOf(name: CName, fallback: PhoenixTS_Unit) -> PhoenixTS_Unit {
+    for cate in ModSettings.GetCategories(n"Phoenix True Speedometer") {
+        for v in ModSettings.GetVars(n"Phoenix True Speedometer", cate) {
+            if Equals(name, v.GetName()) {
+                let e = v as ModConfigVarEnum;
+                if IsDefined(e) {
+                    let i: Int32 = e.GetIndex();
+                    if i == 1 {
+                        return PhoenixTS_Unit.KMH;
+                    }
+                    if i == 2 {
+                        return PhoenixTS_Unit.MPH;
+                    }
+                    if i == 3 {
+                        return PhoenixTS_Unit.KNOTS;
+                    }
+                    if i == 4 {
+                        return PhoenixTS_Unit.FPS;
+                    }
+                    if i == 5 {
+                        return PhoenixTS_Unit.MACH;
+                    }
+                    if i == 6 {
+                        return PhoenixTS_Unit.CUSTOM;
+                    }
+                    return PhoenixTS_Unit.MPS;
+                }
+            }
+        }
     }
-    return GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(n"PhoenixTS_Settings") as PhoenixTS_Settings;
+    return fallback;
+}
+
+@if(!ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_UnitOf(name: CName, fallback: PhoenixTS_Unit) -> PhoenixTS_Unit {
+    return fallback;
+}
+
+@if(ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_FloatOf(name: CName, fallback: Float) -> Float {
+    for cate in ModSettings.GetCategories(n"Phoenix True Speedometer") {
+        for v in ModSettings.GetVars(n"Phoenix True Speedometer", cate) {
+            if Equals(name, v.GetName()) {
+                let f = v as ModConfigVarFloat;
+                if IsDefined(f) {
+                    return f.GetValue();
+                }
+            }
+        }
+    }
+    return fallback;
+}
+
+@if(!ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_FloatOf(name: CName, fallback: Float) -> Float {
+    return fallback;
+}
+
+@if(ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_BoolOf(name: CName, fallback: Bool) -> Bool {
+    for cate in ModSettings.GetCategories(n"Phoenix True Speedometer") {
+        for v in ModSettings.GetVars(n"Phoenix True Speedometer", cate) {
+            if Equals(name, v.GetName()) {
+                let b = v as ModConfigVarBool;
+                if IsDefined(b) {
+                    return b.GetValue();
+                }
+            }
+        }
+    }
+    return fallback;
+}
+
+@if(!ModuleExists("ModSettingsModule"))
+public static func PhoenixTS_BoolOf(name: CName, fallback: Bool) -> Bool {
+    return fallback;
 }
 
 public static func PhoenixTS_HudText(vehicle: wref<VehicleObject>) -> String {
     let mps: Float = AbsF(Vector4.Dot(vehicle.GetLinearVelocity(), vehicle.GetWorldForward()));
-    let s: ref<PhoenixTS_Settings> = PhoenixTS_SettingsOf();
-    if !IsDefined(s) {
-        // the asterisk is deliberate: it means the settings system could not be reached at all, so
-        // the tab is decorative and the number is hardcoded. A clean readout means it was found.
-        return IntToString(RoundMath(mps)) + "*";
+    let unit1: PhoenixTS_Unit = PhoenixTS_UnitOf(n"slot1", PhoenixTS_Unit.MPS);
+    let custom1: Float = PhoenixTS_FloatOf(n"slot1Custom", 1.0);
+    let labels: Bool = PhoenixTS_BoolOf(n"showUnits", false);
+    let slot2on: Bool = PhoenixTS_BoolOf(n"showSlot2", false);
+    let slot2: PhoenixTS_Unit = PhoenixTS_UnitOf(n"slot2", PhoenixTS_Unit.KMH);
+    let custom2: Float = PhoenixTS_FloatOf(n"slot2Custom", 3.6);
+    let first: String = PhoenixTS_Number(mps, unit1, custom1, labels);
+    // the asterisk: Mod Settings is installed but none of this mod's variables were found, which
+    // means the mod name or a field name does not match - so the defaults above are in use
+    if PhoenixTS_ModSettingsPresent() && !PhoenixTS_AnyVar() {
+        return first + "*";
     }
-    let first: String = PhoenixTS_Number(mps, s.slot1, s.slot1Custom, s.showUnits);
-    if !s.showSlot2 {
+    if !slot2on {
         return first;
     }
-    return first + "|" + PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.showUnits);
+    return first + "|" + PhoenixTS_Number(mps, slot2, custom2, labels);
 }
 
 @wrapMethod(hudCarController)

@@ -171,20 +171,36 @@ label. So the default is now a three-character readout with no unit text at all.
 Defaults are now `showUnits = on`, `showSlot2 = **off**` so the default readout is `59 m/s` and the
 second number is opt-in. Turn units off if it still spills.
 
-### 2. Settings that exist but do nothing
+### 2. Settings that exist but do nothing - solved
 
-The tab is built by reflecting over the class's `@runtimeProperty` fields - it appears whether or
-not the game ever hands that class an instance. The HUD found no instance and fell back to
-hardcoded m/s + km/h, so every dropdown looked dead.
+Reported twice: "the settings dont actually work, merely exist". Correct, and the cause is in the
+framework, not in this mod:
 
-The registered name of a modded `ScriptableSystem` is not knowable without the game's registry, so
-the mod now tries all three legal spellings in order:
+```cpp
+modClass->SetDefaultValue(variable->name, variable->runtimeVar->GetAcceptedValue());   // ModSettings.cpp:133
+```
+
+Mod Settings writes the chosen value into the class's **default value in script data**. A live
+instance - which is what the HUD was reading - keeps whatever it was created with. The tab and the
+mod were reading two different copies, and nothing but a listener bridges them. That is why the
+dropdowns looked alive and the number never moved.
+
+**The fix:** read the ConfigVars the UI actually edits, instead of an instance.
 
 ```redscript
-Get(NameOf<PhoenixTS_Settings>())                  // <Module>.<Class>
-Get(n"PhoenixTrueSpeedometer.PhoenixTS_Settings")
-Get(n"PhoenixTS_Settings")
+ModSettings.GetCategories(n"Phoenix True Speedometer")
+ModSettings.GetVars(n"Phoenix True Speedometer", cate)     // the authoritative store
+(v as ModConfigVarEnum).GetIndex()                          // dropdown
+(v as ModConfigVarFloat).GetValue()                         // multiplier
+(v as ModConfigVarBool).GetValue()                          // toggles
 ```
+
+Every one of those calls is wrapped in `@if(ModuleExists("ModSettingsModule"))` with a no-op twin,
+exactly as ADE does - `ModSettings.*` does not exist when the framework is not installed, and an
+unguarded call fails to compile.
+
+The `ScriptableSystem` class is now purely declarative: it exists so the tab has fields to render.
+No instance is fetched, and `GetScriptableSystemsContainer` is gone from the file entirely.
 
 ### How to tell whether the settings are actually live
 
@@ -194,12 +210,11 @@ The number itself is the test, and it needs no log:
 
 | what you see | meaning |
 | --- | --- |
-| `212` | settings live, conversion correct |
-| `59` | tab is decorative: values never reach the mod |
-| `59*` | the settings *system* could not be found at all |
+| `212` | ConfigVars read correctly, conversion correct |
+| `59*` | Mod Settings is installed but none of this mod's variables were found - the mod name or a field name does not match, so defaults are in use |
 
-`59` versus `59*` is the difference between "found the system, it isn't being written to" and
-"never found it" - and they need different fixes, which is why the asterisk exists.
+There is no longer a "found the system but it isn't being written to" case: the mod never reads an
+instance.
 
 If it is `59*`, the draft in `settings/PhoenixTS_ReadModSettings.reds.pending` reads the values
 straight out of Mod Settings' own ConfigVars instead (the store its UI edits), copying ADE's
