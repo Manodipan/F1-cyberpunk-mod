@@ -17,11 +17,30 @@ is *more* current than a 2026 car that was never revisited.
 | **Porsche 992 GT3 R** | xa1res | 04 Nov | — | — | GT3 racer, race ratios, ~285 km/h so it never touches the wall |
 | **Mitsubishi Lancer Evo X Final Edition** | Pryme7 | 21 Nov | 21 Nov 2026 | 14 / 1.2 k | live gauges, centre screen, **windscreen HUD**, neons follow CrystalCoat |
 
+## ⚠ Do not install the Jesko Attack — it is this project's reference car
+
+`reference/vehicles/jesko_attack.yaml` (995 lines) is the file the Phoenix build was ported from, and
+`docs/STABILITY.md` measured what that chassis actually does:
+
+| car | ADE wobble | manual hold |
+|---|---|---|
+| stock Aston mod (xaires) | **80 m/s** | **85 m/s** |
+| **the Jesko** | **63 m/s** | **77 m/s** |
+
+It is **the worst of the three** — 8 m/s below the stock Aston on the same road, same driver, same
+session — and the project reverted out of it rather than keep tuning it. Eight builds got it to 72 at
+best. Installing it means buying a car whose stability ceiling is the number this repo spent weeks
+trying to escape.
+
+Same author, same pipeline: **Ferrari 296 Speciale** (bob1479512). If you install it, open its YAML and
+search for `useAlternativeTurnUpdate` and `turnUpdateMaxSpeedTurnChangeMul` — that family is
+**Jesko-only** and is what `STABILITY.md` identified as the weave source. If they are there, expect the
+same behaviour.
+
 ## Hypercars
 
 | car | author | updated | upload | end. / DL | note |
 |---|---|---|---|---|---|
-| **Koenigsegg Jesko Attack** | bob1479512 | 29 Oct | 22 Oct 2026 | — | **steering retuned for high speed**, active wing, working wheel screen. Author labels it "vibe-coded" |
 | **Ferrari LaFerrari** | wzaa0921 | 19 Nov | 11 Nov 2026 | 9 / 1.2 k | V12 hybrid, the classic |
 | **Pagani Zonda Revolucion** | wzaa0921 | 12 Nov | 12 Nov 2026 | — | the loudest car in the game, by reputation |
 | **Lamborghini Sesto Elemento** | xa1res | 04 Nov | — | — | 999 kg, AWD, the lightest hypercar here |
@@ -70,8 +89,9 @@ is *more* current than a 2026 car that was never revisited.
    behaviour at 300 km/h will feel like the Valkyrie was supposed to.
 2. **Porsche 992 GT3 R** — the same idea with a roof and a wing, from an author (xa1res) whose files
    this repo already ports from. Lowest risk on the list.
-3. **Koenigsegg Jesko Attack** — the only car here whose changelog says it fixed high-speed steering.
-   That is precisely the failure mode this project has been chasing for weeks.
+3. **Pagani Zonda Revolucion** — `STABILITY.md` used a Pagani as its **stable control** when ranking
+   the Jesko and the Aston. If you want a hypercar that does not weave, that is the only chassis in
+   this repo with evidence behind it.
 4. **Mitsubishi Lancer Evo X** — not fast, but it has a windscreen HUD and live gauges, which is the
    same problem this repo solved for one car.
 5. **Ferrari F40 (Garage)** — 147 k downloads and two years of updates. If one car on this page is

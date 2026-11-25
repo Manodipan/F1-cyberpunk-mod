@@ -118,7 +118,7 @@ which is why so many of these end up identical in game.
 | **Rimac Nevera** | aalexbug | EV, 4 motors | Apr 2024 | 412 km/h | **360** — reaches it fastest |
 | **Koenigsegg Jesko Absolut** | aalexbug | RWD | Apr 2024 | listed >480 | **360** |
 | **Bugatti Chiron SuperSport** | aalexbug | AWD | Dec 2023 | 440 km/h | **360** |
-| **Koenigsegg Jesko Attack** | bob1479512 | RWD | Oct 2026 | ~480 | **360**, high-speed steering retuned |
+| **Koenigsegg Jesko Attack** | bob1479512 | RWD | Oct 2026 | ~480 | **360** — but see CAR-MODLIST: this is our reference car, and `STABILITY.md` ranks its chassis worst of three (63/77 vs the Aston's 80/85) |
 | **Bugatti Chiron Pur Sport** | aalexbug | AWD | Mar 2024 | 350 km/h | **350** — under the wall |
 | **Pagani Huayra** | Morpheus9436 | RWD | May 2025 | 383 km/h | **360** |
 | **Lamborghini Sesto Elemento** | xa1res | AWD | Nov 2026 | 355 km/h | **355** |
