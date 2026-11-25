@@ -89,20 +89,10 @@ public class PhoenixTS_Settings extends ScriptableSystem {
     // ------------------------------------------------------------------ format
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Print the unit next to the number")
-    @runtimeProperty("ModSettings.description", "On: 58.8 m/s | 212 km/h - the HUD names the unit, so nothing has to be remembered. Off: 58.8 | 212 - shorter, if the label overflows your HUD scale. Custom slots are labelled x<multiplier>.")
+    @runtimeProperty("ModSettings.description", "On: 58.8 m/s | 212 km/h - the HUD names the unit, so nothing has to be remembered. Off: 58.8 | 212 - shorter, if the label overflows your HUD scale. Custom slots are labelled x<multiplier>. Numbers always carry three significant digits, or whole numbers above 100.")
     @runtimeProperty("ModSettings.category", "Format")
     @runtimeProperty("ModSettings.category.order", "29")
     public let showUnits: Bool = true;
-
-    @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
-    @runtimeProperty("ModSettings.displayName", "Decimal places")
-    @runtimeProperty("ModSettings.description", "0 = whole numbers, 1 = one decimal (58.8), 2 = two (58.75), 3 = three (0.171). Mach always uses at least three, whatever this says.")
-    @runtimeProperty("ModSettings.category", "Format")
-    @runtimeProperty("ModSettings.category.order", "30")
-    @runtimeProperty("ModSettings.step", "1")
-    @runtimeProperty("ModSettings.min", "0")
-    @runtimeProperty("ModSettings.max", "3")
-    public let decimals: Int32 = 1;
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Only in player vehicles")
@@ -161,30 +151,52 @@ public static func PhoenixTS_Label(unit: PhoenixTS_Unit, custom: Float) -> Strin
     return "m/s";
 }
 
+// Fixed-point to `decimals` places, zero padded. Used by the significant-digit rule below and by
+// the custom-slot label, which needs a stable two decimals.
 public static func PhoenixTS_Format(value: Float, decimals: Int32) -> String {
     if decimals <= 0 {
         return IntToString(RoundMath(value));
     }
-    let scale: Int32 = 10;
-    if decimals == 2 {
-        scale = 100;
-    } else if decimals >= 3 {
-        scale = 1000;
+    let scale: Int32 = 1;
+    let i: Int32 = 0;
+    while i < decimals {
+        scale = scale * 10;
+        i += 1;
     }
     let scaled: Int32 = RoundMath(value * Cast<Float>(scale));
     let whole: Int32 = scaled / scale;
     let frac: Int32 = AbsI(scaled % scale);
     let pad: String = "";
-    if (scale == 100) && (frac < 10) {
-        pad = "0";
-    } else if scale == 1000 {
-        if frac < 10 {
-            pad = "00";
-        } else if frac < 100 {
-            pad = "0";
+    let limit: Int32 = scale / 10;
+    while limit >= 1 {
+        if frac < limit {
+            pad = pad + "0";
         }
+        limit = limit / 10;
     }
     return IntToString(whole) + "." + pad + IntToString(frac);
+}
+
+// Three significant digits, except above 100 where the owner wants whole numbers.
+//   212 -> "212"   58.83 -> "58.8"   5.883 -> "5.88"   0.1714 -> "0.171"   0.01714 -> "0.0171"
+public static func PhoenixTS_SigDigits(value: Float) -> Int32 {
+    let v: Float = AbsF(value);
+    if v >= 100.0 {
+        return 0;
+    }
+    if v >= 10.0 {
+        return 1;
+    }
+    if v >= 1.0 {
+        return 2;
+    }
+    if v >= 0.1 {
+        return 3;
+    }
+    if v >= 0.01 {
+        return 4;
+    }
+    return 5;
 }
 
 // the game's dial value is curve-warped; the body is not
@@ -193,14 +205,9 @@ public static func PhoenixTS_BodyMps(vehicle: wref<VehicleObject>) -> Float {
 }
 
 // one slot rendered: the number, then the unit it is actually in
-public static func PhoenixTS_Number(mps: Float, unit: PhoenixTS_Unit, custom: Float, decimals: Int32, withUnit: Bool) -> String {
+public static func PhoenixTS_Number(mps: Float, unit: PhoenixTS_Unit, custom: Float, withUnit: Bool) -> String {
     let value: Float = mps * PhoenixTS_Factor(unit, custom);
-    // Mach numbers are small: 0.2 says nothing, 0.171 does. Never fewer than three decimals.
-    let places: Int32 = decimals;
-    if Equals(unit, PhoenixTS_Unit.MACH) && (places < 3) {
-        places = 3;
-    }
-    let number: String = PhoenixTS_Format(value, places);
+    let number: String = PhoenixTS_Format(value, PhoenixTS_SigDigits(value));
     if !withUnit {
         return number;
     }
@@ -217,11 +224,11 @@ public static func PhoenixTS_HudText(game: GameInstance, vehicle: wref<VehicleOb
         return "";
     }
     let mps: Float = PhoenixTS_BodyMps(vehicle);
-    let first: String = PhoenixTS_Number(mps, s.slot1, s.slot1Custom, s.decimals, s.showUnits);
+    let first: String = PhoenixTS_Number(mps, s.slot1, s.slot1Custom, s.showUnits);
     if !s.showSlot2 {
         return first;
     }
-    let second: String = PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.decimals, s.showUnits);
+    let second: String = PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.showUnits);
     return first + " | " + second;
 }
 

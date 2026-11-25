@@ -23,7 +23,7 @@ class SpeedometerModTests(unittest.TestCase):
         self.assertNotIn("PhoenixAMV", self.text)
 
     def test_two_unit_slots_exist(self):
-        for field in ("slot1:", "slot1Custom:", "slot2:", "slot2Custom:", "showSlot2:", "decimals:"):
+        for field in ("slot1:", "slot1Custom:", "slot2:", "slot2Custom:", "showSlot2:", "showUnits:"):
             self.assertIn(field, self.text, field)
 
     def test_seven_units_are_offered_in_both_slots(self):
@@ -42,8 +42,8 @@ class SpeedometerModTests(unittest.TestCase):
         self.assertIn("return 1.0 / 343.0;", self.text)
         self.assertIn('@runtimeProperty("ModSettings.displayValues.MACH", "Mach")', self.text)
         self.assertIn('return "Mach";', self.text)
-        # 58.8 m/s is Mach 0.17, so it must not be rounded to nothing
-        self.assertIn("if Equals(unit, PhoenixTS_Unit.MACH) && (places < 3) {", self.text)
+        # 58.8 m/s is Mach 0.17 - the significant-digit rule keeps three digits by itself
+        self.assertIn('return "Mach";', self.text)
         self.assertAlmostEqual(58.8 / 343.0 * 1000, 171.4, places=1)
 
     def test_custom_slot_is_a_free_multiplier_and_is_clamped(self):
@@ -76,6 +76,45 @@ class SpeedometerModTests(unittest.TestCase):
     def test_no_newline_escapes(self):
         # Mod Settings tooltips are plain text; a literal \n would show up as characters
         self.assertNotIn("\\n", self.text)
+
+
+class SignificantDigitTests(unittest.TestCase):
+    """Three significant digits, whole numbers above 100 - the owner's rule."""
+
+    THRESHOLDS = [(100.0, 0), (10.0, 1), (1.0, 2), (0.1, 3), (0.01, 4), (0.0, 5)]
+
+    def places(self, value):
+        v = abs(value)
+        for floor, places in self.THRESHOLDS:
+            if v >= floor:
+                return places
+        return 5
+
+    def render(self, value):
+        places = self.places(value)
+        return f"{value:.{places}f}"
+
+    def test_above_100_is_whole(self):
+        self.assertEqual(self.render(212.4), "212")
+        self.assertEqual(self.render(100.0), "100")
+        self.assertEqual(self.render(361.9), "362")
+
+    def test_three_significant_digits_below_100(self):
+        self.assertEqual(self.render(58.83), "58.8")
+        self.assertEqual(self.render(9.876), "9.88")
+        self.assertEqual(self.render(0.1714), "0.171")
+        self.assertEqual(self.render(0.01714), "0.0171")
+
+    def test_the_rule_matches_the_redscript_thresholds(self):
+        text = REDS.read_text(encoding="utf-8")
+        for floor, places in ((100.0, 0), (10.0, 1), (1.0, 2), (0.1, 3), (0.01, 4)):
+            self.assertIn(f"if v >= {floor} {{\n        return {places};", text, f"threshold {floor}")
+        self.assertIn("return 5;", text)
+
+    def test_the_formatter_pads_zeros(self):
+        text = REDS.read_text(encoding="utf-8")
+        # 0.005 must not render as "0.5"
+        self.assertIn('pad = pad + "0";', text)
 
 
 class ConversionMathTests(unittest.TestCase):

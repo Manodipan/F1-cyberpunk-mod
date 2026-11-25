@@ -51,7 +51,20 @@ you get `58.8 | 212` back.
 | **Slot 2 – unit** | same seven options |
 | **Slot 2 – custom multiplier** | free multiplier for slot 2 |
 | **Print the unit next to the number** | `58.8 m/s \| 212 km/h` on, `58.8 \| 212` off |
-| **Decimal places** | 0, 1, 2 or 3 (Mach forces 3) |
+
+Digits are not a setting: every number carries **three significant digits**, or **whole numbers
+above 100**.
+
+| reading | shown | why |
+|---|---|---|
+| 212.4 m/s | `212` | over 100 → whole |
+| 58.83 m/s | `58.8` | 3 sig |
+| 9.876 m/s | `9.88` | 3 sig |
+| Mach 0.1714 | `0.171` | 3 sig |
+| Mach 0.01714 | `0.0171` | 3 sig, zero-padded |
+
+That is the rule the wheel is read at, not a preference: at three digits the last one is real, at one
+decimal on a Mach number it is noise.
 | **Only in player vehicles** | leaves passenger seats, cutscenes and AVs alone |
 
 ### In the tooltips
@@ -84,8 +97,8 @@ Anything else: take **3600 ÷ (your unit's length in metres)** and you have it. 
 1000.
 
 **Mach** is the sixth preset: `1/343`, i.e. Mach 1 = **343 m/s** at sea level and 15 °C. Because the
-numbers are small — 58.8 m/s is Mach 0.171 — a Mach slot always prints at least three decimals,
-whatever the decimals setting says. `0.2 Mach` would be a lie about a measurement; `0.171` is not.
+numbers are small — 58.8 m/s is Mach 0.171 — the significant-digit rule gives Mach three decimals by
+itself, with no special case needed. `0.2 Mach` would be a lie about a measurement; `0.171` is not.
 Sound speed scales with temperature (343 at 20 °C, 340 at 15 °C in dry air, 295 at -50 °C), so this
 is a fixed sea-level reference, not a local one.
 
