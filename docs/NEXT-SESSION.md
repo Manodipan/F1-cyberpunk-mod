@@ -41,9 +41,16 @@ above it — the first reading past 100 m/s is a measurement, not a confirmation
    thread is the hysteresis limit cycle (reach, wobble, brake, slow, repeat) — a lagging controller
    on an underdamped plant. Read `docs/STABILITY.md` before touching a field; it has 679 lines of
    what has already failed.
-3. **Optional, low priority:** if a maintained speed-unlimiter ever ships for 2.5, the ladder above
-   95 m/s can be revisited. The work is recorded in [SPEED-CAP.md](SPEED-CAP.md) — do not restart it
-   from scratch.
+3. **Optional:** the bypass is researched and staged — [BYPASS-PLAN.md](BYPASS-PLAN.md) plus a
+   complete, untested plugin in [`native/speedcap/`](../native/speedcap/). Two minutes of diagnosis
+   decides it:
+
+   ```powershell
+   findstr /C:"593628708" /C:"4067628720" "<game>\x64\cyberpunk2077_addresses.json"
+   ```
+
+   Both found -> it is buildable (needs Windows + MSVC). Either missing -> blocked until RED4ext
+   ships the hashes; do not write more code. **The 95 m/s car does not depend on this.**
 
 ## Do not repeat
 

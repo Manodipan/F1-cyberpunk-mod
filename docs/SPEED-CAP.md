@@ -89,6 +89,12 @@ the game's own direct velocity writes.
 3. **Build a minimal standalone plugin from the MIT source** — two hooks, ~40 lines, no game
    files touched. Needs a Windows toolchain and an untested DLL; not something to ship blind.
 
+## Building our own bypass
+
+Researched and staged: [BYPASS-PLAN.md](BYPASS-PLAN.md) and `native/speedcap/`. Short version: a ~150
+line RED4ext plugin hooking two functions whose addresses come from a JSON database, and the one
+thing that must be checked first is whether that file contains the two hashes.
+
 ## What is not going to work, so we stop trying
 
 - More `engineMaxRPM`, more `engineMaxTorque`, taller gears, shorter gears, zero drag, AWD.
