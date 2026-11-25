@@ -92,10 +92,10 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Print the unit next to the number")
-    @runtimeProperty("ModSettings.description", "On: '59 m/s' - the HUD names the unit, which matters because the game's own small unit label always reads km/h and would otherwise contradict the number. Off: '59' - three characters, the only form that certainly fits, but then nothing on screen says which unit you are reading. If the text spills over the sidebar, turn this off first.")
+    @runtimeProperty("ModSettings.description", "OFF by default: the HUD speed widget holds about four characters (the Aston mod writes '113' into it), and a label makes the string grow leftwards through the sidebar - that is exactly what happened with '59 m/s | 212 km/h', which showed as a stray '/s' and a clipped 'km/h'. On gives '59 m/s' and may still clip one or two characters. Off gives '59', which fits. The unit you picked is always shown in this tab.")
     @runtimeProperty("ModSettings.category", "Format")
     @runtimeProperty("ModSettings.category.order", "30")
-    public let showUnits: Bool = true;
+    public let showUnits: Bool = false;
 }
 
 public static func PhoenixTS_Factor(unit: PhoenixTS_Unit, custom: Float) -> Float {

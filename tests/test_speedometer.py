@@ -97,6 +97,13 @@ class SpeedometerModTests(unittest.TestCase):
         # the second number is off by default: the field is ~4 characters wide
         self.assertIn("public let showSlot2: Bool = false;", self.text)
 
+    def test_the_default_readout_fits_four_characters(self):
+        """Observed: the widget is right-anchored and text grows left through the sidebar."""
+        self.assertIn("public let showUnits: Bool = false;", self.text)
+        self.assertIn("public let slot1: PhoenixTS_Unit = PhoenixTS_Unit.MPS;", self.text)
+        # worst case with the shipped defaults is a three digit number in m/s
+        self.assertLessEqual(len("212"), 4)
+
     def test_the_hud_names_the_unit_it_is_printing(self):
         # the point of the labels: nobody should have to remember which slot is which
         self.assertIn("public let showUnits: Bool = true;", self.text)
