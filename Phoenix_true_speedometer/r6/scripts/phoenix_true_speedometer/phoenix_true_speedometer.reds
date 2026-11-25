@@ -28,7 +28,7 @@ public class PhoenixTS_Settings extends ScriptableSystem {
     // ------------------------------------------------------------------ slot 1
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 1 - unit (main number)")
-    @runtimeProperty("ModSettings.description", "The unit of the HUD speed number. CUSTOM uses slot 1's multiplier below.")
+    @runtimeProperty("ModSettings.description", "The unit of the main HUD number. m/s = x1.0  |  km/h = x3.6  |  mph = x2.23694  |  knots = x1.94384  |  ft/s = x3.28084. Pick CUSTOM to type your own multiplier. The HUD prints the unit next to the number, so what you pick is what you see.")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "10")
     @runtimeProperty("ModSettings.displayValues.MPS", "m/s")
@@ -41,7 +41,7 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 1 - custom multiplier")
-    @runtimeProperty("ModSettings.description", "How many of your unit per m/s. km/h = 3.6, mph = 2.23694, knots = 1.94384, ft/s = 3.28084, km/min = 0.06. Only used when slot 1 is CUSTOM.")
+    @runtimeProperty("ModSettings.description", "How many of your unit per metre per second - only used when slot 1 is CUSTOM. m/s 1.0  |  km/h 3.6  |  mph 2.23694  |  knots 1.94384  |  ft/s 3.28084  |  km/min 0.06  |  yards/s 1.09361  |  furlongs/fortnight 6012.9  |  Mach 0.0029. Rule: 3600 divided by the unit's length in metres. A custom slot is labelled x<multiplier> on the HUD.",
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "11")
     @runtimeProperty("ModSettings.step", "0.0001")
@@ -60,7 +60,7 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 2 - unit")
-    @runtimeProperty("ModSettings.description", "The unit of the second number.")
+    @runtimeProperty("ModSettings.description", "The unit of the second number. m/s = x1.0  |  km/h = x3.6  |  mph = x2.23694  |  knots = x1.94384  |  ft/s = x3.28084. Example HUD: 58.8 m/s | 212 km/h")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "21")
     @runtimeProperty("ModSettings.displayValues.MPS", "m/s")
@@ -74,7 +74,7 @@ public class PhoenixTS_Settings extends ScriptableSystem {
 
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Slot 2 - custom multiplier")
-    @runtimeProperty("ModSettings.description", "How many of your unit per m/s. Only used when slot 2 is CUSTOM.")
+    @runtimeProperty("ModSettings.description", "How many of your unit per metre per second - only used when slot 2 is CUSTOM. m/s 1.0  |  km/h 3.6  |  mph 2.23694  |  knots 1.94384  |  ft/s 3.28084  |  km/min 0.06  |  yards/s 1.09361  |  furlongs/fortnight 6012.9  |  Mach 0.0029. Rule: 3600 divided by the unit's length in metres.")
     @runtimeProperty("ModSettings.category", "Units")
     @runtimeProperty("ModSettings.category.order", "22")
     @runtimeProperty("ModSettings.step", "0.0001")
@@ -84,6 +84,13 @@ public class PhoenixTS_Settings extends ScriptableSystem {
     public let slot2Custom: Float = 3.6;
 
     // ------------------------------------------------------------------ format
+    @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
+    @runtimeProperty("ModSettings.displayName", "Print the unit next to the number")
+    @runtimeProperty("ModSettings.description", "On: 58.8 m/s | 212 km/h - the HUD names the unit, so nothing has to be remembered. Off: 58.8 | 212 - shorter, if the label overflows your HUD scale. Custom slots are labelled x<multiplier>.")
+    @runtimeProperty("ModSettings.category", "Format")
+    @runtimeProperty("ModSettings.category.order", "29")
+    public let showUnits: Bool = true;
+
     @runtimeProperty("ModSettings.mod", "Phoenix True Speedometer")
     @runtimeProperty("ModSettings.displayName", "Decimal places")
     @runtimeProperty("ModSettings.description", "0 = whole numbers, 1 = one decimal (58.8), 2 = two (58.75).")
@@ -124,6 +131,26 @@ public static func PhoenixTS_Factor(unit: PhoenixTS_Unit, custom: Float) -> Floa
     return 1.0;
 }
 
+// Short labels, because the HUD speed field is one line and not very wide.
+public static func PhoenixTS_Label(unit: PhoenixTS_Unit, custom: Float) -> String {
+    if Equals(unit, PhoenixTS_Unit.KMH) {
+        return "km/h";
+    }
+    if Equals(unit, PhoenixTS_Unit.MPH) {
+        return "mph";
+    }
+    if Equals(unit, PhoenixTS_Unit.KNOTS) {
+        return "kn";
+    }
+    if Equals(unit, PhoenixTS_Unit.FPS) {
+        return "ft/s";
+    }
+    if Equals(unit, PhoenixTS_Unit.CUSTOM) {
+        return "x" + PhoenixTS_Format(ClampF(custom, 0.0001, 1000.0), 2);
+    }
+    return "m/s";
+}
+
 public static func PhoenixTS_Format(value: Float, decimals: Int32) -> String {
     if decimals <= 0 {
         return IntToString(RoundMath(value));
@@ -147,6 +174,15 @@ public static func PhoenixTS_BodyMps(vehicle: wref<VehicleObject>) -> Float {
     return AbsF(Vector4.Dot(vehicle.GetLinearVelocity(), vehicle.GetWorldForward()));
 }
 
+// one slot rendered: the number, then the unit it is actually in
+public static func PhoenixTS_Number(mps: Float, unit: PhoenixTS_Unit, custom: Float, decimals: Int32, withUnit: Bool) -> String {
+    let number: String = PhoenixTS_Format(mps * PhoenixTS_Factor(unit, custom), decimals);
+    if !withUnit {
+        return number;
+    }
+    return number + " " + PhoenixTS_Label(unit, custom);
+}
+
 public static func PhoenixTS_SettingsOf(game: GameInstance) -> ref<PhoenixTS_Settings> {
     return GameInstance.GetScriptableSystemsContainer(game).Get(NameOf<PhoenixTS_Settings>()) as PhoenixTS_Settings;
 }
@@ -157,11 +193,11 @@ public static func PhoenixTS_HudText(game: GameInstance, vehicle: wref<VehicleOb
         return "";
     }
     let mps: Float = PhoenixTS_BodyMps(vehicle);
-    let first: String = PhoenixTS_Format(mps * PhoenixTS_Factor(s.slot1, s.slot1Custom), s.decimals);
+    let first: String = PhoenixTS_Number(mps, s.slot1, s.slot1Custom, s.decimals, s.showUnits);
     if !s.showSlot2 {
         return first;
     }
-    let second: String = PhoenixTS_Format(mps * PhoenixTS_Factor(s.slot2, s.slot2Custom), s.decimals);
+    let second: String = PhoenixTS_Number(mps, s.slot2, s.slot2Custom, s.decimals, s.showUnits);
     return first + " | " + second;
 }
 

@@ -50,6 +50,24 @@ class SpeedometerModTests(unittest.TestCase):
     def test_hud_writes_both_slots_joined(self):
         self.assertIn('first + " | " + second', self.text)
 
+    def test_the_hud_names_the_unit_it_is_printing(self):
+        # the point of the labels: nobody should have to remember which slot is which
+        self.assertIn("public let showUnits: Bool = true;", self.text)
+        self.assertIn('return number + " " + PhoenixTS_Label(unit, custom);', self.text)
+        for label in ('"m/s"', '"km/h"', '"mph"', '"kn"', '"ft/s"'):
+            self.assertIn(label, self.text, label)
+        # a custom slot cannot be named, so it shows the multiplier it is using
+        self.assertIn('return "x" + PhoenixTS_Format', self.text)
+
+    def test_each_slot_tooltip_carries_the_factor_table(self):
+        self.assertEqual(self.text.count("x2.23694"), 2)   # one per slot dropdown tooltip
+        self.assertIn("3600 divided by the unit's length in metres", self.text)
+        self.assertIn("58.8 m/s | 212 km/h", self.text)
+
+    def test_no_newline_escapes(self):
+        # Mod Settings tooltips are plain text; a literal \n would show up as characters
+        self.assertNotIn("\\n", self.text)
+
 
 class ConversionMathTests(unittest.TestCase):
     """The numbers the redscript claims, checked in Python."""

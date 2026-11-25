@@ -28,11 +28,20 @@ never derives.
 
 ## Two slots
 
-Both slots are applied to the same body velocity, and both are shown:
+Both slots are applied to the same body velocity, and both are shown **with their unit spelled out**:
 
 ```
-58.8 | 212          slot 1 = m/s, slot 2 = km/h
+58.8 m/s | 212 km/h
 ```
+
+Nothing has to be remembered: the label belongs to the number that produced it. Slot 2's number is
+never a mislabelled copy of slot 1's, because each slot converts from m/s independently.
+
+A **custom** slot cannot be named, so it labels itself with the multiplier it is using - `58.8 x0.06`
+for km/min. That is the honest version of "whatever unit I want": the HUD shows the arithmetic.
+
+Turn the labels off (**Print the unit next to the number**) if the string overflows your HUD scale;
+you get `58.8 | 212` back.
 
 | setting | what it does |
 |---|---|
@@ -41,8 +50,18 @@ Both slots are applied to the same body velocity, and both are shown:
 | **Slot 2 – show a second unit** | off = one number only |
 | **Slot 2 – unit** | same six options |
 | **Slot 2 – custom multiplier** | free multiplier for slot 2 |
+| **Print the unit next to the number** | `58.8 m/s \| 212 km/h` on, `58.8 \| 212` off |
 | **Decimal places** | 0, 1 or 2 |
 | **Only in player vehicles** | leaves passenger seats, cutscenes and AVs alone |
+
+### In the tooltips
+
+Every setting carries its own reference table, so the menu is usable without this document:
+
+- **Slot 1 / Slot 2 – unit** → `m/s = x1.0 | km/h = x3.6 | mph = x2.23694 | knots = x1.94384 | ft/s = x3.28084`
+- **custom multiplier** → the same table plus `km/min 0.06 | yards/s 1.09361 | furlongs/fortnight 6012.9 | Mach 0.0029`, and the rule (`3600 ÷ the unit's length in metres`)
+- **Print the unit** → what on and off look like
+- **Decimal places** → `0 = whole, 1 = 58.8, 2 = 58.75`
 
 ### Custom multipliers
 
