@@ -29,7 +29,9 @@ local UNITS = {
 
 local chosen = 1                        -- km/h
 local POSITIONS = { "free", "top", "bottom" }
-local position = 3                      -- bottom: comfortable the first time it ever runs
+-- free by default: something that cannot be dragged is worse than something that is out of the way,
+-- and the first run has no remembered place to restore
+local position = 1                      -- free
 local posX, posY = nil, nil             -- last free position, in screen pixels
 
 -- one small file beside init.lua. Lines are key=value; a bare line is read as the legacy unit name
@@ -132,7 +134,7 @@ end
 -- window geometry
 -- ---------------------------------------------------------------------------
 local overlayOpen = false
-local placed = false                    -- the remembered position has been applied once
+local restorePos = true                 -- apply the remembered position once, then leave it alone
 -- the size from the previous frame. Seeded with a plausible box so the very first frame is already
 -- in the right place instead of jumping 24 px once the real size is known.
 local lastW, lastH = 120, 24
@@ -169,6 +171,62 @@ local function hudFlags()
   return flags
 end
 
+-- Explicit drag handling. ImGui can move a window by itself, but that depends on the window being
+-- hit-tested the way ImGui expects; doing it by hand with the mouse delta works regardless and is
+-- what makes dragging reliable here. Only active while the CET overlay is open (that is when input
+-- reaches ImGui at all).
+local dragging = false
+local grabX, grabY = nil, nil           -- where the window was when the drag started
+
+local function mouseDown()
+  local button = ImGuiMouseButton
+  if type(button) == "table" and type(button.Left) == "number" then
+    button = button.Left
+  else
+    button = 0
+  end
+  local ok, down = pcall(ImGui.IsMouseDown, button)
+  return ok and down == true
+end
+
+local function dragWindow()
+  if not overlayOpen or POSITIONS[position] ~= "free" then
+    dragging = false
+    return
+  end
+  local okHover, hovered = pcall(ImGui.IsWindowHovered)
+  if not okHover then
+    hovered = false
+  end
+  local down = mouseDown()
+  local okDelta, dx, dy = pcall(ImGui.GetMouseDragDelta)
+  if not okDelta or type(dx) ~= "number" then
+    dx, dy = 0, 0
+  end
+
+  if down and (dragging or hovered) then
+    if not dragging then
+      -- first frame of the grab: anchor the window's position and measure the drag from there.
+      -- GetMouseDragDelta is cumulative since the button went down, so it must not be added to a
+      -- position that has already been moved by a previous frame's delta.
+      dragging = true
+      grabX = curX or posX or 0
+      grabY = curY or posY or 0
+    end
+    if dx * dx + dy * dy > 0 then
+      posX = grabX + dx
+      posY = grabY + dy
+      ImGui.SetWindowPos(posX, posY)
+      restorePos = false
+      curX, curY = posX, posY
+    end
+  end
+  if not down then
+    dragging = false
+    grabX, grabY = nil, nil
+  end
+end
+
 local function condAlways()
   local cond = ImGuiCond
   if type(cond) == "table" and type(cond.Always) == "number" then
@@ -179,8 +237,11 @@ end
 
 local function applyPosition()
   if POSITIONS[position] == "free" then
-    if not placed and posX and posY then
+    -- A free window is never given a position except once, to restore the place the user dragged it
+    -- to last time. Forcing it every frame is what made dragging impossible.
+    if restorePos and posX and posY then
       ImGui.SetNextWindowPos(posX, posY, condAlways())
+      restorePos = false                 -- applied once, then the window is the user's
     end
     return
   end
@@ -214,9 +275,10 @@ local function positionSelector()
       if ImGui.Selectable(POSITIONS[i], i == position) then
         position = i
         if POSITIONS[i] ~= "free" then
-          placed = true                 -- a pin owns the position from now on
+          -- a pin owns the position from now on
         elseif curX and curY then
           posX, posY = curX, curY       -- unpinning keeps the window exactly where it is
+          restorePos = true             -- ...and applies it for exactly one frame
         end
         saveSettings()
       end
@@ -259,17 +321,28 @@ registerForEvent("onDraw", function()
       ImGui.Text("-- " .. UNITS[chosen].name)
     end
 
+    -- where the window actually is, read before the drag so a grab on the very first frame still
+    -- has a sensible anchor
+    local okPre, px, py = pcall(ImGui.GetWindowPos)
+    if okPre and type(px) == "number" then
+      curX, curY = px, py
+    end
+
+    dragWindow()
+
     if overlayOpen then
       unitSelector()
       positionSelector()
       ImGui.Text("PHOENIX PROBE OK   frames=" .. frames)
     end
 
-    -- ImGui only reports these after Begin, so they are read here and used next frame
+    -- ImGui only reports these after Begin. curX/curY is where the window really is; the remembered
+    -- posX/posY is only written on a real drag (overlay open), never by just existing - otherwise the
+    -- first frame overwrites a restored position before it has been applied.
     local okPos, wx, wy = pcall(ImGui.GetWindowPos)
     if okPos and type(wx) == "number" then
       curX, curY = wx, wy
-      if POSITIONS[position] == "free" then
+      if overlayOpen and POSITIONS[position] == "free" then
         posX, posY = wx, wy
       end
     end
@@ -279,7 +352,6 @@ registerForEvent("onDraw", function()
     end
 
     ImGui.End()
-    placed = true
   end)
 
   if frames == 120 then

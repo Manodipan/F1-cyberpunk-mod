@@ -63,6 +63,7 @@ ImGuiWindowFlags = {
 }
 ImGuiCol = { Text = 0 }
 ImGuiCond = { None = 0, Always = 1, Once = 2, FirstUseEver = 4, Appearing = 8 }
+ImGuiMouseButton = { Left = 0, Right = 1, Middle = 2 }
 
 ImGui = {
   Begin = function(name, flags)
@@ -73,6 +74,13 @@ ImGui = {
   end,
   End = function() _G.__ends = (_G.__ends or 0) + 1 end,
   GetWindowPos = function() return _G.__winX or 500, _G.__winY or 700 end,
+  SetWindowPos = function(x, y)
+    _G.__winX, _G.__winY = x, y              -- the window really moves
+    _G.__setWindowPosCalls = (_G.__setWindowPosCalls or 0) + 1
+  end,
+  IsWindowHovered = function() return _G.__hovered == true end,
+  IsMouseDown = function(button) return _G.__mouseDown == true end,
+  GetMouseDragDelta = function() return _G.__dragX or 0, _G.__dragY or 0 end,
   GetWindowSize = function() return _G.__winW or 120, _G.__winH or 24 end,
   Text = function(s) _G.__texts[#_G.__texts + 1] = s end,
   SetNextWindowPos = function(x, y, cond)
@@ -264,13 +272,12 @@ class ProbeHudTests(unittest.TestCase):
         self.assertIn("132 mph", self.texts())
 
     # -- moving the window -------------------------------------------------
-    def test_it_defaults_to_bottom_middle(self):
+    def test_it_defaults_to_free_and_is_not_positioned(self):
+        """A window that is positioned every frame cannot be dragged - that was the whole bug."""
         self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
         self.lua.eval("_G.__events['onDraw']")()
-        pos = self.lua.eval("_G.__pos")
-        self.assertIsNotNone(pos, "a pinned position must be applied")
-        self.assertAlmostEqual(pos["y"], 1080 - 24 - 20, delta=1, msg="not near the bottom")
-        self.assertAlmostEqual(pos["x"], (1920 - 120) / 2, delta=1, msg="not horizontally centred")
+        self.assertIsNone(self.lua.eval("_G.__pos"), "free mode must not set a position at all")
+        self.assertIsNone(self.lua.eval("_G.__posCalls"))
 
     def test_picking_top_pins_it_to_the_centre_of_the_top_edge(self):
         self.pick_position("top")
@@ -311,11 +318,72 @@ class ProbeHudTests(unittest.TestCase):
         self.lua.eval("_G.__events['onDraw']")()
         pos = self.lua.eval("_G.__pos")
         self.assertEqual((pos["x"], pos["y"]), (300, 400), "the dragged place was not restored")
+        self.assertEqual(self.lua.eval("_G.__posCalls"), 1, "restored once, then left alone")
         # and only once: a remembered position must not be forced every frame, or dragging is dead
         before = self.lua.eval("_G.__posCalls")
         self.lua.execute("_G.__winX = 350")
         self.lua.eval("_G.__events['onDraw']")()
         self.assertEqual(self.lua.eval("_G.__posCalls"), before, "dragging would be fought every frame")
+
+    def test_a_drag_moves_the_window(self):
+        """Grab the window in the overlay and drag 40 px right, 25 px down."""
+        self.open_overlay()
+        self.lua.execute("_G.__winX = 500; _G.__winY = 400; _G.__hovered = true; _G.__mouseDown = true")
+        self.lua.execute("_G.__dragX = 40; _G.__dragY = 25")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual((self.lua.eval("_G.__winX"), self.lua.eval("_G.__winY")), (540, 425))
+        self.assertEqual(self.lua.eval("_G.__setWindowPosCalls"), 1)
+
+    def test_a_drag_keeps_moving_while_the_button_is_held(self):
+        self.open_overlay()
+        self.lua.execute("_G.__winX = 500; _G.__winY = 400; _G.__hovered = true; _G.__mouseDown = true")
+
+        # grab first (cursor over the window), then keep dragging with the cursor outside it.
+        # GetMouseDragDelta is cumulative since the button went down, so these are absolute offsets.
+        self.lua.execute("_G.__dragX = 10; _G.__dragY = 0")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("_G.__winX"), 510, "the initial grab did not move it")
+        for dx, dy in ((20, 10), (30, 15)):
+            self.lua.execute(f"_G.__dragX = {dx}; _G.__dragY = {dy}; _G.__hovered = false")
+            self.lua.eval("_G.__events['onDraw']")()
+            self.assertEqual((self.lua.eval("_G.__winX"), self.lua.eval("_G.__winY")),
+                             (500 + dx, 400 + dy), f"offset {dx},{dy}")
+
+    def test_letting_go_ends_the_drag(self):
+        self.open_overlay()
+        self.lua.execute("_G.__winX = 500; _G.__winY = 400; _G.__hovered = true; _G.__mouseDown = true")
+        self.lua.execute("_G.__dragX = 20; _G.__dragY = 0")
+        self.lua.eval("_G.__events['onDraw']")()
+        moved = self.lua.eval("_G.__winX")
+        self.lua.execute("_G.__mouseDown = false; _G.__hovered = false; _G.__dragX = 50; _G.__dragY = 50")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("_G.__winX"), moved, "the window followed a released mouse")
+
+    def test_a_closed_overlay_cannot_be_dragged(self):
+        self.lua.execute("_G.__winX = 500; _G.__winY = 400; _G.__hovered = true; _G.__mouseDown = true")
+        self.lua.execute("_G.__dragX = 40; _G.__dragY = 25")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual((self.lua.eval("_G.__winX"), self.lua.eval("_G.__winY")), (500, 400))
+
+    def test_a_pinned_window_cannot_be_dragged(self):
+        self.pick_position("top")
+        self.open_overlay()
+        self.lua.execute("_G.__winX = 500; _G.__winY = 400; _G.__hovered = true; _G.__mouseDown = true")
+        self.lua.execute("_G.__dragX = 40; _G.__dragY = 25")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIsNone(self.lua.eval("_G.__setWindowPosCalls"), "a pin must ignore the mouse")
+
+    def test_a_drag_is_what_gets_remembered(self):
+        """Only a real drag may overwrite the remembered position."""
+        self.open_overlay()
+        self.lua.execute("_G.__winX = 500; _G.__winY = 400; _G.__hovered = true; _G.__mouseDown = true")
+        self.lua.execute("_G.__dragX = 40; _G.__dragY = 25")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.lua.execute("_G.__mouseDown = false")
+        self.lua.eval("_G.__events['onOverlayClose']")()
+        ini = (self.tmp / "unit.txt").read_text()
+        self.assertIn("x=540", ini)
+        self.assertIn("y=425", ini)
 
     def test_the_window_is_locked_when_the_overlay_is_closed(self):
         """Closed overlay = CET routes no input, so the flags must say nobody can move it."""
@@ -394,6 +462,34 @@ class ProbeHudTests(unittest.TestCase):
     def test_it_ships_from_the_probe_folder(self):
         self.assertEqual(INIT.parent.name, "probe")
         self.assertEqual(INIT.name, "init.lua")
+
+    def test_every_variable_it_assigns_is_declared(self):
+        """An undeclared variable is a silent nil read. That bug cost two rounds here: `restorePos`
+        was never declared, so the restore never fired and nothing reported an error."""
+        code = INIT.read_text(encoding="utf-8")
+        body = re.sub(r"--[^\n]*", "", code)                 # strip comments
+        declared = set()
+        for m in re.finditer(r"\blocal\s+([A-Za-z_][\w,\s]*)", body):
+            for name in re.split(r"[,\s]+", m.group(1).strip()):
+                if name:
+                    declared.add(name)
+        # globals the sandbox provides, and the loop/tuple variables of generic for
+        allowed = {"ImGui", "ImGuiWindowFlags", "ImGuiCond", "ImGuiMouseButton",
+                   "registerForEvent", "print", "io", "math", "string", "tonumber",
+                   "tostring", "type", "pcall", "pairs", "ipairs", "Game",
+                   "GetDisplayResolution", "SetNextWindowPos"}
+        # strings ("vehicle=" in a print) and table keys (name = "km/h") are not variables
+        flat = re.sub(r'"[^"\n]*"', '""', body)
+        flat = re.sub(r"\{[^{}]*\}", "{}", flat)
+        assigned = set()
+        for m in re.finditer(r"(?<![\w.])([A-Za-z_]\w*)\s*=(?!=)", flat):
+            assigned.add(m.group(1))
+        for m in re.finditer(r"\bfor\s+([A-Za-z_][\w,\s]*)\s+(?:in|=)", body):
+            for name in re.split(r"[,\s]+", m.group(1).strip()):
+                if name:
+                    declared.add(name)
+        undeclared = sorted(assigned - declared - allowed)
+        self.assertEqual(undeclared, [], f"assigned but never declared (silent nil): {undeclared}")
 
     def test_the_installer_copies_this_exact_file(self):
         ps = (ROOT / "tools/update.ps1").read_text(encoding="utf-8", errors="replace")

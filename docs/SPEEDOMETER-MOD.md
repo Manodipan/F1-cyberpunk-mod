@@ -52,12 +52,23 @@ Three positions, in the second dropdown:
 
 | position | behaviour |
 |---|---|
-| `free` | drag it anywhere. **Dragging only works while `~` is open** — see below |
+| `free` | drag it anywhere. **The default.** Dragging only works while `~` is open — see below |
 | `top` | pinned, horizontally centred, 20 px from the top edge |
-| `bottom` | pinned, horizontally centred, 20 px from the bottom edge (the default) |
+| `bottom` | pinned, horizontally centred, 20 px from the bottom edge |
+
+`free` is the default on purpose: a window that cannot be moved is worse than one that starts
+somewhere awkward, and the first run has no remembered place to restore.
 
 A dragged position is remembered: it is written to `unit.txt` when the overlay closes and restored
 on the next launch.
+
+### How the drag works
+
+The window follows the mouse with `IsMouseDown` + `GetMouseDragDelta` + `SetWindowPos`, rather than
+relying only on ImGui's own window-move handling. `GetMouseDragDelta` is cumulative since the button
+went down, so the position is `grab position + delta` — anchoring at the grab and never accumulating
+frame by frame. That distinction is what makes the window follow the cursor exactly instead of
+running away or stalling.
 
 **Why dragging needs `~` open.** CET routes input to ImGui only while its own overlay is open — that
 is the behaviour of CET itself, not of this mod. While the overlay is closed the window carries
@@ -136,6 +147,12 @@ Proven, by running the file:
   text before the dropdown)
 - bottom and top pin to the horizontal centre with the measured coordinates above
 - a position set to `free` stops being forced — the one line that made dragging snap back
+- a drag moves the window by exactly the mouse delta (540,425 after a 40x25 drag from 500,400),
+  keeps following while the button is held even with the cursor outside the window, and stops when
+  released
+- a closed overlay cannot drag it, and neither can a pinned window
+- every variable the file assigns is declared — an undeclared one reads as a silent `nil`, which is
+  how the restore silently stopped working
 - `NoMove`/`NoInputs` while closed, absent while open, so the mouse is only ever captured in `~`
 - a dragged position round-trips through `unit.txt` and is restored after a reload
 - the chosen unit survives a reload; a corrupt or unwritable `unit.txt` does not stop the HUD
