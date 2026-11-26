@@ -14,7 +14,7 @@
 
 -- Shown in the window while the overlay is open, so the running build can be identified on sight
 -- instead of inferred. Bump the last number whenever this file changes materially.
-local BUILD = "b10-version"
+local BUILD = "b11-top"
 
 print("[PhoenixSpeed] init.lua executed (" .. BUILD .. ")")
 
@@ -35,13 +35,15 @@ local chosen = 1                        -- km/h
 -- A name we never offered. If a settings file names something outside UNITS, it was written by some
 -- other version of this file and its value cannot be trusted - including the position, which is how
 -- "position=bottom" trapped the window for three builds.
-local FILE_VERSION = 3
+local FILE_VERSION = 4
 local fileVersion = nil                 -- what the file on disk says, if anything
 local trustedFile = true                -- the file was written by this build
 local POSITIONS = { "free", "top", "bottom" }
 -- free by default: something that cannot be dragged is worse than something that is out of the way,
 -- and the first run has no remembered place to restore
-local position = 1                      -- free
+-- top, not free and not bottom. Bottom is where the game's own HUD sits and the dropdown became
+-- unreachable; a default that cannot be used is worse than one that is merely boring.
+local position = 2                      -- top
 local posX, posY = nil, nil             -- last free position, in screen pixels
 
 -- one small file beside init.lua. Lines are key=value; a bare line is read as the legacy unit name
@@ -87,7 +89,7 @@ local function loadSettings()
   -- pinning the window while the mode it named meant something else.
   if fileVersion ~= FILE_VERSION then
     chosen = 1
-    position = 1
+    position = 2                        -- top: the default that is always reachable
     posX, posY = nil, nil
     trustedFile = false
   end
@@ -297,8 +299,14 @@ local function applyPosition()
   local sw, sh = screenSize()
   local x = (sw - lastW) / 2
   local y = (POSITIONS[position] == "top") and 20 or (sh - lastH - 20)
+  if type(y) ~= "number" or y ~= y then
+    y = 20                              -- a bad screen query must never put the window off-screen
+  end
   if y < 20 then
     y = 20
+  end
+  if sh and y > sh - 40 then
+    y = sh - 40                         -- never past the bottom edge either
   end
   ImGui.SetNextWindowPos(x, y, condAlways())
 end

@@ -84,12 +84,16 @@ A pin only re-applies its position on frames where nobody is dragging.
 
 | position | behaviour |
 |---|---|
-| `free` | drag it anywhere. **The default.** Dragging only works while `~` is open — see below |
-| `top` | pinned, horizontally centred, 20 px from the top edge |
+| `top` | pinned, horizontally centred, 20 px from the top edge. **The default** |
 | `bottom` | pinned, horizontally centred, 20 px from the bottom edge |
+| `free` | drag it anywhere. Dragging only works while `~` is open — see below |
 
-`free` is the default on purpose: a window that cannot be moved is worse than one that starts
-somewhere awkward, and the first run has no remembered place to restore.
+The default is **top**, not bottom and not free: at the bottom edge the window sits on the game's own
+HUD and the dropdown could not be reached, and a default that cannot be used is worse than a boring
+one. A pin is never allowed past either screen edge, even if the resolution query fails.
+
+If a pin is ever in your way, `free` lets you drag it; a drag also works straight from a pinned
+mode and switches the mode to `free` on release, so no pin can fight the mouse.
 
 A dragged position is remembered: it is written to `unit.txt` when the overlay closes and restored
 on the next launch.

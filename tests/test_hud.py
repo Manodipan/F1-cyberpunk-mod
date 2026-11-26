@@ -272,12 +272,17 @@ class ProbeHudTests(unittest.TestCase):
         self.assertIn("132 mph", self.texts())
 
     # -- moving the window -------------------------------------------------
-    def test_it_defaults_to_free_and_is_not_positioned(self):
-        """A window that is positioned every frame cannot be dragged - that was the whole bug."""
+    def test_it_defaults_to_top_centre(self):
+        """Default is TOP: at the bottom the dropdown could not be reached at all."""
         self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
         self.lua.eval("_G.__events['onDraw']")()
-        self.assertIsNone(self.lua.eval("_G.__pos"), "free mode must not set a position at all")
-        self.assertIsNone(self.lua.eval("_G.__posCalls"))
+        pos = self.lua.eval("_G.__pos")
+        self.assertIsNotNone(pos, "the default pin must place the window")
+        self.assertEqual(pos["y"], 20, "not at the top edge")
+        self.assertAlmostEqual(pos["x"], (1920 - 120) / 2, delta=1, msg="not centred")
+        self.open_overlay()                       # the mode is only drawn with the overlay open
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("Position: top", self.texts())
 
     def test_picking_top_pins_it_to_the_centre_of_the_top_edge(self):
         self.pick_position("top")
@@ -391,20 +396,25 @@ class ProbeHudTests(unittest.TestCase):
         self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
         self.lua.eval("_G.__events['onDraw']")()
         self.assertEqual(self.texts()[0], "212 km/h", "an unusable unit was reused")
-        self.assertIsNone(self.lua.eval("_G.__pos"), "an untrusted pin must not be applied")
+        pos = self.lua.eval("_G.__pos")
+        self.assertEqual(pos["y"], 20, "an untrusted pin must not be reused; top is the default")
+        self.open_overlay()
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("Position: top", self.texts())
 
     def test_a_saved_pin_from_an_older_build_cannot_trap_the_window(self):
         """The exact report: an old settings file said position=bottom, so every new build pinned it
         and dragging silently did nothing. It must be visible, and one click must free it."""
         self.open_overlay()
         self.lua.eval("_G.__events['onOverlayClose']")()      # write whatever is current
+        # written by the previous build: it carried v=3, so this build must not trust its position
         (self.tmp / "unit.txt").write_text("v=3\nunit=km/h\nposition=bottom\n")
         self.fresh()
         self.open_overlay()
         self.lua.eval("_G.__events['onDraw']")()
         modes = [t for t in self.texts() if t.startswith("Position:")]
         self.assertTrue(modes, f"the overlay must name the mode, got {self.texts()}")
-        self.assertIn("bottom", modes[0])
+        self.assertIn("top", modes[0], "an old unpinned file must fall back to the top default")
 
         # and switching to free must actually free it
         self.open_overlay()
@@ -417,6 +427,20 @@ class ProbeHudTests(unittest.TestCase):
         self.lua.execute("_G.__dragX = 40; _G.__dragY = 25")
         self.lua.eval("_G.__events['onDraw']")()
         self.assertEqual((self.lua.eval("_G.__winX"), self.lua.eval("_G.__winY")), (540, 425))
+
+    def test_a_current_version_file_is_honoured_and_still_draggable(self):
+        """bottom from THIS build is legitimate: it must be kept, and dragging must still work."""
+        (self.tmp / "unit.txt").write_text("v=4\nunit=km/h\nposition=bottom\n")
+        self.fresh()
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("_G.__pos")["y"], 1080 - 24 - 20, "a valid pin was discarded")
+
+        self.open_overlay()
+        self.lua.execute("_G.__winX = 500; _G.__winY = 900; _G.__hovered = true; _G.__mouseDown = true")
+        self.lua.execute("_G.__dragX = 40; _G.__dragY = -200")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual((self.lua.eval("_G.__winX"), self.lua.eval("_G.__winY")), (540, 700),
+                         "a pinned window refused to be dragged")
 
     def test_a_drag_is_what_gets_remembered(self):
         """Only a real drag may overwrite the remembered position."""
@@ -459,7 +483,7 @@ class ProbeHudTests(unittest.TestCase):
     # -- the readout ------------------------------------------------------
     def test_three_significant_figures(self):
         """In m/s, where the factor is 1: the digits are the renderer's, not the unit's."""
-        (self.tmp / "unit.txt").write_text("v=3\nunit=m/s\n")
+        (self.tmp / "unit.txt").write_text("v=4\nunit=m/s\n")
         self.fresh()
         cases = [(212.4, "212"), (100.0, "100"), (58.83, "58.8"), (9.876, "9.88"),
                  (0.1714, "0.171"), (0.0, "0")]
