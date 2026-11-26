@@ -83,7 +83,7 @@ but it inherited the game's own label, the game's tick bar, and a widget sized f
 characters. Every edit also needed a redscript recompile, and a compile error disables *every*
 redscript mod on the install, not just this one.
 
-Drawing our own text removes all of that — and the file that does it is 120 lines with no
+Drawing our own text removes all of that — and the file that does it is 151 lines with no
 dependencies, which is the point.
 
 ## What is proven, and what is not
