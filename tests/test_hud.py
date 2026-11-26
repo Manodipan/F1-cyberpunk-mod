@@ -20,7 +20,14 @@ import tempfile
 import unittest
 
 try:
-    from lupa import LuaRuntime
+    import os as _os
+    if _os.environ.get("HUD_LUA_BACKEND") == "lua51":
+        # CET runs LuaJIT, i.e. Lua 5.1 semantics. 5.4/5.5 paper over things that break there:
+        # integer division, string.format("%d") on a float, goto, bitwise operators, table.unpack.
+        from lupa import lua51 as _backend
+        LuaRuntime = _backend.LuaRuntime
+    else:
+        from lupa import LuaRuntime
     HAVE_LUA = True
 except Exception:                                    # pragma: no cover
     HAVE_LUA = False
@@ -601,6 +608,28 @@ class HudStaticTests(unittest.TestCase):
         self.assertEqual(INIT.parent.name, "phoenix_true_speedometer")
         self.assertEqual(INIT.parent.parent.name, "mods")
         self.assertEqual(INIT.name, "init.lua")
+
+    def test_the_manifest_keeps_cet_s_auto_load_opt_out(self):
+        """CET skips a mod folder if it contains a file named 'disabled'. We must not ship one."""
+        for stray in INIT.parent.glob("*"):
+            self.assertNotEqual(stray.name.lower(), "disabled", f"{stray} would switch the mod off")
+
+    def test_it_does_not_rely_on_a_global_written_by_another_mod(self):
+        """Mod load order is alphabetical and not guaranteed; only our own names may be global."""
+        for name in ("PhoenixSpeedometer",):
+            self.assertIn(name, self.text)
+
+    def test_the_probe_free_of_vehicle_assumptions(self):
+        """The probe must draw even with no vehicle - that is the whole point of it."""
+        probe = ROOT / "Phoenix_true_speedometer" / "probe" / "init.lua"
+        self.assertTrue(probe.exists(), probe)
+        code = probe.read_text(encoding="utf-8")
+        self.assertIn('registerForEvent("onDraw"', code)
+        self.assertIn("ImGui.Begin(", code)
+        # no early return between onDraw and Begin
+        body = code.split('registerForEvent("onDraw"', 1)[1]
+        begin_at = body.index("ImGui.Begin(")
+        self.assertNotIn("return", body[:begin_at].replace("return ok", ""), "onDraw returns before drawing")
 
 
 if __name__ == "__main__":

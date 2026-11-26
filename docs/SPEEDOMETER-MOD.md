@@ -213,7 +213,35 @@ Static:
 
 ## If the HUD does not appear
 
-Run the one-shot check — it prints nothing destructive and answers all of it at once:
+### Step 0: is CET itself running Lua mods?
+
+The HUD cannot be blamed for CET not loading mods, so settle that first. Install the probe:
+
+```powershell
+.\tools\update.ps1 -Probe
+```
+
+Then launch and look for **either** of these:
+
+- a box in the top-left reading `PHOENIX PROBE OK   frames=...`
+- the line `[PhoenixProbe] init.lua executed` in the CET console (`~`) or log
+
+The probe draws unconditionally: no vehicle check, no settings, no conditions. It answers one
+question and nothing else.
+
+| probe result | verdict |
+|---|---|
+| box or log line appears | **CET is healthy.** The fault is in the HUD's own file or its folder. |
+| nothing at all | **CET is not loading mods.** Nothing written in Lua can help; the fault is CET's install. |
+
+A normal `update.ps1` (no `-Probe`) deletes the probe again.
+
+If the probe works and the HUD still does not, the difference is narrowed to three things, in order
+of likelihood: the HUD is in the wrong folder (`check-hud.ps1` compares hashes), the installed
+`init.lua` is stale, or the HUD's own runtime state says "not driving" (the `1 s in:` line says
+which). Those are all visible in one `check-hud.ps1` run.
+
+### Step 1: the one-shot check
 
 ```
 .\tools\check-hud.ps1
@@ -237,6 +265,32 @@ Then read the two lines the mod prints:
 The only two build-level things that can produce "no HUD, no messages" are an old copy of `init.lua`
 (the first three builds of this mod never started themselves) or a file outside
 `bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\`.
+
+## Is CET the right layer at all?
+
+A fair question, since nothing has drawn yet. The three realistic ways to put a number on screen,
+and what each costs:
+
+| route | language | can it read live speed? | can it draw its own overlay? | verdict |
+|---|---|---|---|---|
+| **CET Lua** (this mod) | Lua via LuaJIT | yes, `GetLinearVelocity` / `GetWorldPosition` | yes, its own window, vanilla HUD untouched | the only route that does both |
+| redscript (`.reds`) | subset of Swift | yes | **no** — it can change what the *vanilla* widget shows, and that is all | rejected by the brief |
+| CET C++ plugin | C++ | yes | yes | works, but needs a compiler, a per-game-build binary and a new binary every CET release |
+
+So there is no route that draws a custom overlay without CET. The alternatives are "CET, but written
+in C++" (strictly more fragile, because a DLL must be rebuilt for every game patch) or "redscript,
+but then it is the vanilla widget again" — the exact thing this mod was told not to touch.
+
+That leaves one genuinely different third option, and it is worth naming because it may be what is
+wanted:
+
+| | |
+|---|---|
+| **Native Settings UI only** | The settings pages would still work — they are a native menu — but the speed readout itself would have to come from somewhere else. Without a drawing surface there is no speed number. |
+
+Conclusion: if the probe does not appear, the answer is to fix CET, not to replace it. Changing the
+layer would mean giving up the "own overlay, vanilla HUD untouched" requirement, which was the first
+constraint set on this work.
 
 ## Uninstalling
 
