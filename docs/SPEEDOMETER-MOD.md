@@ -46,6 +46,15 @@ Press `~` (CET's overlay) and the window shows two dropdowns. Pick a unit: `km/h
 `knots`, `ft/s`, `Mach`. The choice is written to `unit.txt` beside `init.lua` and read back on the
 next launch. If that file cannot be written the dropdown still works for the session.
 
+## Settings file versions
+
+`unit.txt` carries a version line (`v=3`). A file without the current version was written by some
+other build, and its values are not reused: the unit falls back to `km/h`, the position to `free`,
+and the console says so once. This matters because the names can be *valid and still wrong* —
+`position=bottom` from an earlier build was a perfectly legal value that pinned the window under a
+mode whose meaning had changed. Nothing about it could be detected as invalid, so the file has to
+declare which build wrote it.
+
 ## Updating with a verified hash
 
 ```
@@ -66,8 +75,12 @@ the updater printed, the game is running a different file.
 
 Three positions, in the second dropdown:
 
-**The window always shows which mode it is in** (`Position: free|top|bottom`), because a pinned
-window ignores the mouse and that must never be a mystery.
+**The window always shows which mode it is in** (`Position: free|top|bottom`).
+
+**A drag always wins.** It used to be gated on `free`, so a pinned window silently ate the grab —
+and because the mode was invisible, that looked exactly like broken dragging. Grabbing the window
+now works in any mode, and releasing it hands control back: the mode becomes `free` and is saved.
+A pin only re-applies its position on frames where nobody is dragging.
 
 | position | behaviour |
 |---|---|

@@ -365,20 +365,40 @@ class ProbeHudTests(unittest.TestCase):
         self.lua.eval("_G.__events['onDraw']")()
         self.assertEqual((self.lua.eval("_G.__winX"), self.lua.eval("_G.__winY")), (500, 400))
 
-    def test_a_pinned_window_cannot_be_dragged(self):
+    def test_a_drag_overrides_a_pin_and_takes_manual_control(self):
+        """A pinned window used to ignore the mouse entirely, which made the pin invisible and the
+        drag look broken. Grabbing must always win, and must leave the window free afterwards."""
         self.pick_position("top")
         self.open_overlay()
         self.lua.execute("_G.__winX = 500; _G.__winY = 400; _G.__hovered = true; _G.__mouseDown = true")
         self.lua.execute("_G.__dragX = 40; _G.__dragY = 25")
         self.lua.eval("_G.__events['onDraw']")()
-        self.assertIsNone(self.lua.eval("_G.__setWindowPosCalls"), "a pin must ignore the mouse")
+        self.assertEqual((self.lua.eval("_G.__winX"), self.lua.eval("_G.__winY")), (540, 425),
+                         "a drag must move the window even while pinned")
+
+        # releasing hands control back to the user: the mode becomes free, so no pin re-applies
+        self.lua.execute("_G.__mouseDown = false")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("position=free", (self.tmp / "unit.txt").read_text())
+        calls = self.lua.eval("_G.__setWindowPosCalls")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("_G.__setWindowPosCalls"), calls, "the old pin came back")
+
+    def test_an_untrusted_settings_file_is_reset_not_reused(self):
+        """unit=m/s was written by a different version; its position=bottom cannot be trusted."""
+        (self.tmp / "unit.txt").write_text("unit=m/s\nposition=bottom\n")   # no version marker
+        self.fresh()
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.texts()[0], "212 km/h", "an unusable unit was reused")
+        self.assertIsNone(self.lua.eval("_G.__pos"), "an untrusted pin must not be applied")
 
     def test_a_saved_pin_from_an_older_build_cannot_trap_the_window(self):
         """The exact report: an old settings file said position=bottom, so every new build pinned it
         and dragging silently did nothing. It must be visible, and one click must free it."""
         self.open_overlay()
         self.lua.eval("_G.__events['onOverlayClose']")()      # write whatever is current
-        (self.tmp / "unit.txt").write_text("unit=km/h\nposition=bottom\n")
+        (self.tmp / "unit.txt").write_text("v=3\nunit=km/h\nposition=bottom\n")
         self.fresh()
         self.open_overlay()
         self.lua.eval("_G.__events['onDraw']")()
@@ -439,7 +459,7 @@ class ProbeHudTests(unittest.TestCase):
     # -- the readout ------------------------------------------------------
     def test_three_significant_figures(self):
         """In m/s, where the factor is 1: the digits are the renderer's, not the unit's."""
-        (self.tmp / "unit.txt").write_text("m/s\n")
+        (self.tmp / "unit.txt").write_text("v=3\nunit=m/s\n")
         self.fresh()
         cases = [(212.4, "212"), (100.0, "100"), (58.83, "58.8"), (9.876, "9.88"),
                  (0.1714, "0.171"), (0.0, "0")]

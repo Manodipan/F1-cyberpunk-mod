@@ -14,7 +14,7 @@
 
 -- Shown in the window while the overlay is open, so the running build can be identified on sight
 -- instead of inferred. Bump the last number whenever this file changes materially.
-local BUILD = "b8-unpin"
+local BUILD = "b10-version"
 
 print("[PhoenixSpeed] init.lua executed (" .. BUILD .. ")")
 
@@ -32,6 +32,12 @@ local UNITS = {
 }
 
 local chosen = 1                        -- km/h
+-- A name we never offered. If a settings file names something outside UNITS, it was written by some
+-- other version of this file and its value cannot be trusted - including the position, which is how
+-- "position=bottom" trapped the window for three builds.
+local FILE_VERSION = 3
+local fileVersion = nil                 -- what the file on disk says, if anything
+local trustedFile = true                -- the file was written by this build
 local POSITIONS = { "free", "top", "bottom" }
 -- free by default: something that cannot be dragged is worse than something that is out of the way,
 -- and the first run has no remembered place to restore
@@ -50,13 +56,19 @@ local function loadSettings()
   for line in file:lines() do
     local key, value = line:match("^([%w_]+)=(.*)$")
     if key == "unit" then
+      local found = nil
       for i = 1, #UNITS do
-        if UNITS[i].name == value then chosen = i end
+        if UNITS[i].name == value then found = i end
+      end
+      if found then
+        chosen = found
       end
     elseif key == "position" then
       for i = 1, #POSITIONS do
         if POSITIONS[i] == value then position = i end
       end
+    elseif key == "v" then
+      fileVersion = tonumber(value)
     elseif key == "x" then
       posX = tonumber(value)
     elseif key == "y" then
@@ -68,6 +80,17 @@ local function loadSettings()
     end
   end
   file:close()
+
+  -- A file without this build's version marker was written by another version of this file, and its
+  -- values cannot be trusted: "m/s" and "bottom" are both valid names today, so there is nothing
+  -- invalid to detect. That is exactly how "position=bottom" from an earlier build sat there
+  -- pinning the window while the mode it named meant something else.
+  if fileVersion ~= FILE_VERSION then
+    chosen = 1
+    position = 1
+    posX, posY = nil, nil
+    trustedFile = false
+  end
 end
 
 local function saveSettings()
@@ -75,6 +98,13 @@ local function saveSettings()
   if not ok or not file then
     return
   end
+  if type(chosen) ~= "number" then
+    chosen = 1
+  end
+  if chosen < 1 or chosen > #UNITS then
+    chosen = 1
+  end
+  file:write("v=" .. FILE_VERSION .. "\n")
   file:write("unit=" .. UNITS[chosen].name .. "\n")
   file:write("position=" .. POSITIONS[position] .. "\n")
   if posX and posY then
@@ -194,9 +224,15 @@ local function mouseDown()
 end
 
 local function dragWindow()
-  if not overlayOpen or POSITIONS[position] ~= "free" then
+  if not overlayOpen then
     dragging = false
     return
+  end
+  -- Deliberately allowed in every mode. Gating it on "free" meant a pinned window silently ate the
+  -- drag, and the mode itself was invisible for several rounds of this. Grabbing the window now
+  -- always wins; a pin simply re-applies its own position on frames where nobody is dragging.
+  if POSITIONS[position] ~= "free" and not dragging then
+    -- still allow the grab to start, so a drag from a pinned mode is possible too
   end
   local okHover, hovered = pcall(ImGui.IsWindowHovered)
   if not okHover then
@@ -226,6 +262,12 @@ local function dragWindow()
     end
   end
   if not down then
+    if dragging then
+      -- A drag just finished. Whatever the mode was, the user has taken manual control, so the mode
+      -- becomes free: the pin they had would otherwise drag it straight back on the next frame.
+      position = 1
+      saveSettings()
+    end
     dragging = false
     grabX, grabY = nil, nil
   end
@@ -240,6 +282,9 @@ local function condAlways()
 end
 
 local function applyPosition()
+  if dragging then
+    return                              -- the mouse owns the position right now
+  end
   if POSITIONS[position] == "free" then
     -- A free window is never given a position except once, to restore the place the user dragged it
     -- to last time. Forcing it every frame is what made dragging impossible.
@@ -321,10 +366,15 @@ registerForEvent("onDraw", function()
     applyPosition()
     ImGui.Begin("Phoenix speed", hudFlags())
 
+    local unit = UNITS[chosen]
+    if type(chosen) ~= "number" or not unit then
+      chosen = 1
+      unit = UNITS[1]
+    end
     if mps then
-      ImGui.Text(formatSpeed(mps * UNITS[chosen].factor) .. " " .. UNITS[chosen].name)
+      ImGui.Text(formatSpeed(mps * unit.factor) .. " " .. unit.name)
     else
-      ImGui.Text("-- " .. UNITS[chosen].name)
+      ImGui.Text("-- " .. unit.name)
     end
 
     -- where the window actually is, read before the drag so a grab on the very first frame still
@@ -363,6 +413,10 @@ registerForEvent("onDraw", function()
     ImGui.End()
   end)
 
+  if frames == 30 and not trustedFile then
+    print("[PhoenixSpeed] " .. SETTINGS_FILE .. " was written by a different version - "
+      .. "replaced with defaults (unit=km/h, position=free)")
+  end
   if frames == 120 then
     print("[PhoenixSpeed] build " .. BUILD .. ": vehicle=" .. tostring(veh ~= nil)
       .. " speed=" .. tostring(mps)
