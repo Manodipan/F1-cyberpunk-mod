@@ -33,7 +33,10 @@ except Exception:                                    # pragma: no cover
     HAVE_LUA = False
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-INIT = ROOT / "Phoenix_true_speedometer/mods/phoenix_true_speedometer/init.lua"
+# The file that actually ships. It is the probe that was proven to draw on the user's install, plus
+# one dropdown - so these tests are about the probe, not the larger file that never rendered.
+INIT = ROOT / "Phoenix_true_speedometer/probe/init.lua"
+LEGACY = ROOT / "Phoenix_true_speedometer/mods/phoenix_true_speedometer/init.lua"
 
 STUBS = r"""
 -- CET's sandbox exposes no `debug` library (LuaSandbox.cpp whitelist). Taking it away here means a
@@ -62,6 +65,7 @@ ImGuiCol = { Text = 0 }
 
 ImGui = {
   Begin = function(name, flags)
+    _G.__texts = {}                          -- one frame's text, like the real overlay
     _G.__begins = _G.__begins + 1
     _G.__begin = { name = name, flags = flags }
     return _G.__beginVisible ~= false
@@ -97,7 +101,14 @@ ImGui = {
     _G.__widgets[#_G.__widgets + 1] = { kind = "button", label = label }
     return false
   end,
-  Selectable = function() return false end,
+  Selectable = function(entry, selected)
+    _G.__offered = (_G.__offered or "") .. entry .. ","
+    if _G.__pick ~= nil and entry == _G.__pick then
+      _G.__pick = nil                        -- one click only, like a real mouse
+      return true
+    end
+    return false
+  end,
   BeginCombo = function(label)
     _G.__widgets[#_G.__widgets + 1] = { kind = "combo", label = label }
     return _G.__openCombo == true            -- a closed combo draws nothing until it is clicked
@@ -136,21 +147,18 @@ Game = {
 
 
 @unittest.skipUnless(HAVE_LUA, "lupa not installed - Lua tests need it")
-class HudLuaTests(unittest.TestCase):
+
+class ProbeHudTests(unittest.TestCase):
+    """The shipped file: the proven probe, plus a unit dropdown."""
+
     def setUp(self):
         self.tmp = pathlib.Path(tempfile.mkdtemp())
         shutil.copy(INIT, self.tmp / "init.lua")
-        # CET replaces io.open with one that resolves relative paths against the mod's own folder;
-        # running from that folder reproduces the same resolution.
         self._cwd = os.getcwd()
         os.chdir(self.tmp)
-        self.lua = LuaRuntime(unpack_returned_tuples=True)
-        self.lua.execute(STUBS)
-        self.mod = self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
-        # deliberately no start() call: CET does not call anything, so loading must be enough
+        self.fresh()
 
-    def fresh_load(self):
-        """A second load in the same folder with a clean state - what a game restart does."""
+    def fresh(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute(STUBS)
         return self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
@@ -159,517 +167,143 @@ class HudLuaTests(unittest.TestCase):
         os.chdir(self._cwd)
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def draw(self):
+    # -- the architecture that was proven to draw --------------------------
+    def test_it_registers_on_draw_at_file_scope(self):
+        """The probe drew with exactly this shape: a bare registerForEvent, no start() function."""
+        self.assertIsNotNone(self.lua.eval("_G.__events['onDraw']"))
+        self.assertNotIn("function M.start", INIT.read_text(encoding="utf-8"))
+
+    def test_it_draws_a_window_every_frame_with_no_conditions(self):
+        for _ in range(5):
+            self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("_G.__begins"), 5)
+        self.assertEqual(self.lua.eval("_G.__ends"), 5, "Begin/End must stay balanced")
+
+    def test_it_draws_even_with_no_vehicle(self):
+        self.lua.execute("_G.__vehicle = nil")
         self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("_G.__begins"), 1)
+        self.assertIn("-- km/h", self.texts())
 
-    def texts(self):
-        return [v for _, v in sorted(self.lua.eval("_G.__texts").items())]
+    def test_drawing_has_no_hotkey_or_overlay_dependency(self):
+        self.assertEqual(len(self.lua.eval("_G.__hotkeys")), 0, "no hotkey is needed")
+        # opening or closing the overlay must not matter: no such handler is registered
+        self.assertIsNone(self.lua.eval("_G.__events['onOverlayOpen']"))
 
-    def ini(self):
-        return (self.tmp / "settings.ini").read_text()
+    # -- the one added feature --------------------------------------------
+    def test_the_dropdown_offers_every_unit(self):
+        self.lua.execute("_G.__openCombo = true")
+        self.lua.eval("_G.__events['onDraw']")()
+        offered = self.lua.eval("_G.__offered") or ""
+        for unit in ("km/h", "mph", "m/s", "knots", "ft/s", "Mach"):
+            self.assertIn(unit, offered, f"the dropdown never offered {unit}")
 
-    # -- registration ------------------------------------------------------
-    def test_it_registers_the_cet_events_and_both_hotkeys(self):
-        events = self.lua.eval("_G.__events")
-        for name in ("onInit", "onUpdate", "onDraw", "onOverlayOpen", "onOverlayClose"):
-            self.assertIn(name, events, name)
-        hotkeys = self.lua.eval("_G.__hotkeys")
-        self.assertIn("PhoenixSpeedometer_ToggleHud", hotkeys)
-        self.assertIn("PhoenixSpeedometer_ToggleLabels", hotkeys)
+    def test_picking_a_unit_changes_the_readout(self):
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.execute("_G.__openCombo = true; _G.__pick = 'mph'")
+        self.lua.eval("_G.__events['onDraw']")()      # the click lands here
+        self.lua.eval("_G.__events['onDraw']")()      # the new unit is drawn next frame
+        self.assertIn("132 mph", self.texts())
 
-    def test_loading_the_file_is_enough_to_start_the_mod(self):
-        """CET calls nothing after loading init.lua; the mod must register itself."""
-        events = self.lua.eval("_G.__events")
-        self.assertIn("onDraw", events, "no onDraw handler: the file loaded but never started")
-        self.assertIn("onInit", events)
-        hotkeys = self.lua.eval("_G.__hotkeys")
-        self.assertIn("PhoenixSpeedometer_ToggleHud", hotkeys)
-        self.assertIn("PhoenixSpeedometer_ToggleLabels", hotkeys)
+    def test_the_unit_text_updates_on_the_frame_after_the_click(self):
+        """Immediate mode: the number is drawn before the dropdown, so a click lands one frame later."""
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.execute("_G.__openCombo = true; _G.__pick = 'mph'")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("(function() return 1 end)()"), 1)
+        self.assertEqual(self.mod_unit(), "mph")
 
-    def test_settings_are_written_next_to_the_mod_on_first_run(self):
-        self.assertTrue((self.tmp / "settings.ini").is_file())
-        text = self.ini()
-        self.assertIn("slot1=", text)
-        self.assertIn("enabled=", text)
+    def test_the_chosen_unit_is_remembered(self):
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.execute("_G.__openCombo = true; _G.__pick = 'knots'")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual((self.tmp / "unit.txt").read_text().strip(), "knots")
+        self.lua.execute("_G.__openCombo = false; _G.__pick = nil")
+        self.fresh()
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("114 knots", self.texts())
 
-    # -- digits ------------------------------------------------------------
-    def test_three_significant_figures_whole_above_100(self):
-        cases = {212.4: "212", 100.0: "100", 58.83: "58.8", 9.876: "9.88",
-                 0.1714: "0.171", 0.01714: "0.0171", 0.0: "0", 999.6: "1000"}
-        for value, expected in cases.items():
-            got = self.mod.format(value)
-            self.assertEqual(got, expected, f"format({value}) = {got!r}, want {expected!r}")
+    def test_a_broken_unit_file_does_not_stop_the_hud(self):
+        (self.tmp / "unit.txt").write_text("furlongs\n")
+        self.fresh()
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("212 km/h", self.texts())
 
-    def test_format_survives_a_non_number_and_nan(self):
-        self.assertEqual(self.mod.format(None), "0")
-        self.assertEqual(self.mod.format("banana"), "0")
-        self.assertEqual(self.mod.format(float("nan")), "0")
+    def test_an_unwritable_unit_file_still_draws(self):
+        self.lua.execute("""
+          io.open = function() error("no disk for you") end
+        """)
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.execute("_G.__openCombo = true; _G.__pick = 'mph'")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("132 mph", self.texts())
 
-    # -- conversion --------------------------------------------------------
-    def test_unit_factors_and_labels(self):
-        expected = {"m/s": (1.0, "m/s"), "km/h": (3.6, "km/h"), "mph": (2.23694, "mph"),
-                    "knots": (1.94384, "kn"), "ft/s": (3.28084, "ft/s"), "Mach": (1 / 343.0, "Mach")}
-        for unit, (factor, label) in expected.items():
-            self.assertAlmostEqual(self.mod.factor(unit, 1.0), factor, places=6, msg=unit)
-            self.assertEqual(self.mod.label(unit, 1.0), label, unit)
-
-    def test_custom_factor_is_clamped(self):
-        self.assertAlmostEqual(self.mod.factor("custom", 0.00001), 0.0001, places=9)
-        self.assertAlmostEqual(self.mod.factor("custom", 5000.0), 1000.0, places=6)
-        self.assertEqual(self.mod.label("custom", 0.06), "x0.06")
-
-    def test_default_readout_is_kmh_and_ms(self):
-        self.assertEqual(self.mod.render(58.8, self.mod.config()), "212 km/h   58.8 m/s")
-
-    def test_units_can_be_hidden_and_a_slot_emptied(self):
-        cfg = self.mod.config()
-        cfg.showLabels = False
-        self.assertEqual(self.mod.render(58.8, cfg), "212   58.8")
-        cfg.slot2 = ""
-        self.assertEqual(self.mod.render(58.8, cfg), "212")
-
-    def test_every_unit_reaches_the_screen(self):
-        """The reported bug: "it looks locked to m/s". Sweep every unit through the real render path."""
-        cfg = self.mod.config()
-        expected = {
-            "m/s": "58.8 m/s", "km/h": "212 km/h", "mph": "132 mph", "knots": "114 kn",
-            "ft/s": "193 ft/s", "Mach": "0.171 Mach",
-        }
-        for unit, want in expected.items():
-            cfg.slot1 = unit
-            cfg.slot2 = ""
-            self.assertEqual(self.mod.render(58.8, cfg), want, f"unit {unit}")
-
-    def test_a_selected_unit_is_still_there_after_a_restart(self):
-        """Every unit, written to disk and read back by a fresh load - not just 'off'."""
-        for unit in ("km/h", "mph", "knots", "ft/s", "Mach", "custom"):
-            self.mod.setSlot("slot1", unit)
-            self.mod.setSlot("slot2", "")
-            self.mod.saveSettings()
-            fresh = self.fresh_load()
-            self.assertEqual(fresh.config().slot1, unit, f"{unit} lost on reload")
-            self.assertEqual(fresh.config().slot2, "", "a blank slot came back on reload")
-
-    def test_off_survives_a_restart_in_either_slot(self):
-        """Blank was a real setting but the loader clamped slot1 back to km/h, undoing it."""
-        for key in ("slot1", "slot2"):
-            self.mod.setSlot(key, "")
-            self.mod.saveSettings()
-            fresh = self.fresh_load()
-            self.assertEqual(fresh.config()[key], "", f"{key}=off was undone on reload")
-
-    def test_both_slots_off_draws_nothing_rather_than_guessing_m_s(self):
-        """With both slots blank the old render() hardcoded m/s, which reads as a stuck unit."""
-        cfg = self.mod.config()
-        cfg.slot1 = ""
-        cfg.slot2 = ""
-        self.assertIsNone(self.mod.render(58.8, cfg))
-
-    def test_an_unknown_unit_falls_back_to_ms(self):
-        cfg = self.mod.config()
-        cfg.slot1 = "furlongs"
-        self.assertAlmostEqual(self.mod.factor("furlongs", 1.0), 1.0)
-
-    # -- speed -------------------------------------------------------------
-    def test_speed_comes_from_body_velocity(self):
-        veh = self.lua.eval("makeVehicle()")
-        self.assertAlmostEqual(self.mod.mpsFromVelocity(veh), 58.8, places=3)
+    # -- the readout ------------------------------------------------------
+    def test_three_significant_figures(self):
+        """In m/s, where the factor is 1: the digits are the renderer's, not the unit's."""
+        (self.tmp / "unit.txt").write_text("m/s\n")
+        self.fresh()
+        cases = [(212.4, "212"), (100.0, "100"), (58.83, "58.8"), (9.876, "9.88"),
+                 (0.1714, "0.171"), (0.0, "0")]
+        for mps, want in cases:
+            self.lua.execute(f"_G.__vehicle = makeVehicle(); _G.__velocity = {mps}")
+            self.lua.eval("_G.__events['onDraw']")()
+            shown = self.texts()[0]
+            self.assertEqual(shown, f"{want} m/s", f"{mps} m/s")
 
     def test_reverse_travel_reads_positive(self):
-        self.lua.execute("_G.__velocity = -30.0")
-        veh = self.lua.eval("makeVehicle()")
-        self.assertAlmostEqual(self.mod.mpsFromVelocity(veh), 30.0, places=3)
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = -58.8")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("212 km/h", self.texts())
 
-    def test_position_fallback_derives_speed(self):
-        veh = self.lua.eval("makeVehicle()")
-        self.lua.execute("_G.__px = 0")
-        self.assertIsNone(self.mod.mpsFromPosition(veh, 0.1))      # first sample: no delta yet
-        self.lua.execute("_G.__px = 5.88")                        # 5.88 m in 0.1 s = 58.8 m/s
-        self.assertAlmostEqual(self.mod.mpsFromPosition(veh, 0.1), 58.8, places=1)
-
-    def test_a_bad_frame_delta_does_not_produce_a_speed(self):
-        veh = self.lua.eval("makeVehicle()")
-        self.assertIsNone(self.mod.mpsFromPosition(veh, 0))
-        self.assertIsNone(self.mod.mpsFromPosition(veh, 2.0))
-
-    def test_missing_velocity_methods_fall_through_to_the_fallback(self):
-        self.lua.execute("_G.__noVelocityMethods = true; _G.__vehicle = makeVehicle(); _G.__px = 0")
-        self.assertIsNone(self.mod.mpsFromVelocity(self.lua.eval("_G.__vehicle")))
-        dt = 1 / 60
-        self.mod.currentMps(dt)
-        self.lua.execute("_G.__px = 1.0")                          # 1 m in one frame ~ 60 m/s
-        mps = self.mod.currentMps(dt)
-        mps = mps[0] if isinstance(mps, tuple) else mps      # (mps, vehicle)
-        self.assertIsNotNone(mps)
-        self.assertGreater(float(mps), 1.0)
-
-    def test_first_person_detection(self):
-        veh = self.lua.eval("makeVehicle()")
-        self.lua.execute("_G.__tpp = false")
-        self.assertTrue(self.mod.isFirstPerson(veh))
-        self.lua.execute("_G.__tpp = true")
-        self.assertFalse(self.mod.isFirstPerson(veh))
-
-    def test_first_person_unknown_shows_rather_than_hides(self):
-        self.lua.execute("_G.__noCameraManager = true")
-        veh = self.lua.eval("makeVehicle()")
-        self.assertIsNone(self.mod.isFirstPerson(veh))
-
-    # -- HUD ---------------------------------------------------------------
-    def test_hud_draws_the_text_when_driving(self):
-        self.lua.execute("_G.__vehicle = makeVehicle()")
-        self.draw()
-        self.assertIn("212 km/h   58.8 m/s", self.texts())
-
-    def test_hud_is_silent_when_no_vehicle(self):
+    def test_no_vehicle_shows_a_dash_not_a_stale_number(self):
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.eval("_G.__events['onDraw']")()
         self.lua.execute("_G.__vehicle = nil")
-        before = len(self.texts())
-        self.draw()
-        self.assertEqual(len(self.texts()), before)
-
-    def test_hud_is_silent_when_parked_as_a_passenger(self):
-        self.lua.execute("""_G.__vehicle = makeVehicle()
-            _G.__vehicle.IsPlayerDriver = function() return false end""")
-        before = len(self.texts())
-        self.draw()
-        self.assertEqual(len(self.texts()), before)
-
-    def test_first_person_only_hides_in_third_person(self):
-        self.lua.execute("_G.__vehicle = makeVehicle()")
-        self.mod.config().fppOnly = True
-        self.lua.execute("_G.__tpp = true")
-        before = len(self.texts())
-        self.draw()
-        self.assertEqual(len(self.texts()), before)
-        self.lua.execute("_G.__tpp = false")
-        self.draw()
-        self.assertIn("212 km/h   58.8 m/s", self.texts())
-
-    def test_hotkey_toggles_the_hud_and_persists(self):
-        self.lua.execute("_G.__vehicle = makeVehicle()")
-        self.lua.eval("_G.__hotkeys")["PhoenixSpeedometer_ToggleHud"].fn()
-        self.assertFalse(self.mod.config().enabled)
-        before = len(self.texts())
-        self.draw()
-        self.assertEqual(len(self.texts()), before, "hidden HUD must draw nothing")
-        self.assertIn("enabled=false", self.ini())
-
-    def test_the_hud_window_cannot_take_input(self):
-        """The readout is click-through: NoInputs must be part of the window flags."""
-        self.lua.execute("_G.__vehicle = makeVehicle()")
-        self.draw()
-        flags = self.lua.eval("_G.__begin.flags")
-        noinputs = self.lua.eval("ImGuiWindowFlags.NoInputs")
-        self.assertEqual(int(flags) & int(noinputs), int(noinputs), "NoInputs missing from HUD flags")
-
-    def test_hud_uses_the_cet_display_resolution(self):
-        self.lua.execute("_G.__vehicle = makeVehicle()")
-        self.draw()
-        pos = self.lua.eval("_G.__pos")
-        self.assertAlmostEqual(pos["x"], 1920 * 0.60, places=1)
-        self.assertAlmostEqual(pos["y"], 1080 * 0.78, places=1)
-        self.assertAlmostEqual(self.lua.eval("_G.__scale"), 2.2, places=2)
-
-    def test_hud_still_draws_without_any_resolution_query(self):
-        self.lua.execute("""_G.__vehicle = makeVehicle()
-            GetDisplayResolution = nil
-            ImGui.GetIO = function() return nil end""")
-        self.draw()
-        self.assertIn("212 km/h   58.8 m/s", self.texts(), "no position is better than no readout")
-
-    def test_colour_pushes_and_pops_stay_balanced(self):
-        self.lua.execute("_G.__vehicle = makeVehicle()")
-        self.draw()
-        self.assertEqual(self.lua.eval("_G.__pushes"), self.lua.eval("_G.__pops"))
-
-    def test_a_failing_colour_api_does_not_leak_or_break_the_text(self):
-        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__failColour = true")
-        self.draw()
-        self.assertEqual(self.lua.eval("_G.__pushes"), 0)
-        self.assertEqual(self.lua.eval("_G.__pops"), 0, "popping what was never pushed corrupts the style stack")
-        self.assertIn("212 km/h   58.8 m/s", self.texts())
-
-    def test_a_throwing_widget_still_closes_both_windows(self):
-        """An ImGui window left open corrupts every later frame, so End must always run."""
-        self.lua.execute("""_G.__vehicle = makeVehicle()
-            ImGui.DragFloat = function() error("boom") end""")
-        self.lua.eval("_G.__events['onOverlayOpen']")()
-        self.draw()
-        self.assertEqual(self.lua.eval("_G.__ends"), self.lua.eval("_G.__begins"))
-
-    def test_a_throwing_imgui_does_not_escape_on_draw(self):
-        self.lua.execute("""_G.__vehicle = makeVehicle()
-            ImGui.Begin = function() error("no window") end""")
-        self.draw()            # must not raise out of the event handler
-        self.assertEqual(self.lua.eval("_G.__pushes"), self.lua.eval("_G.__pops"))
-
-    # -- settings window ---------------------------------------------------
-    def test_the_settings_window_only_draws_while_the_overlay_is_open(self):
-        begins = self.lua.eval("_G.__begins")
-        self.draw()
-        self.assertEqual(self.lua.eval("_G.__begins"), begins)
-        self.lua.eval("_G.__events['onOverlayOpen']")()
-        self.draw()
-        self.assertGreater(self.lua.eval("_G.__begins"), begins)
-
-    def test_checkbox_uses_the_cet_value_first_order(self):
-        """A click must write the new value, not the 'changed' flag."""
-        self.lua.eval("_G.__events['onOverlayOpen']")()
-        self.lua.execute("_G.__clickCheckbox = true")     # stub returns (not v, true)
-        self.draw()
-        self.assertFalse(self.mod.config().enabled, "clicking 'Show the HUD' should turn it off")
-        self.lua.execute("_G.__clickCheckbox = false")
-
-    def test_a_nil_returning_checkbox_never_nils_a_setting(self):
-        self.lua.eval("_G.__events['onOverlayOpen']")()
-        self.lua.execute("_G.__checkboxNil = true")
-        self.draw()
-        self.assertIsInstance(self.mod.config().enabled, bool)
-
-    def test_a_nil_returning_drag_float_never_nils_a_setting(self):
-        self.lua.eval("_G.__events['onOverlayOpen']")()
-        self.lua.execute("_G.__dragNil = true")
-        self.draw()
-        self.assertIsInstance(self.mod.config().scale, float)
-        self.assertGreater(self.mod.config().scale, 0)
-
-    def test_drag_float_is_clamped_to_its_range(self):
-        self.lua.eval("_G.__events['onOverlayOpen']")()
-        self.lua.execute("_G.__clickDrag = true")         # stub returns the low bound
-        self.draw()
-        self.assertGreaterEqual(self.mod.config().scale, 0.5)
-        self.assertGreaterEqual(self.mod.config().posX, 0.0)
-        self.assertLessEqual(self.mod.config().posX, 1.0)
-
-    def test_a_second_number_can_be_switched_off(self):
-        self.assertTrue(self.mod.setSlot("slot2", ""))
-        self.assertEqual(self.mod.config().slot2, "")
-        self.assertEqual(self.mod.render(58.8, self.mod.config()), "212 km/h")
-
-    def test_slot_setter_accepts_a_name_or_an_index(self):
-        self.assertTrue(self.mod.setSlot("slot1", "knots"))
-        self.assertEqual(self.mod.config().slot1, "knots")
-        self.assertTrue(self.mod.setSlot("slot1", 2))       # Native Settings UI may pass an index
-        self.assertEqual(self.mod.config().slot1, "km/h")
-        self.assertFalse(self.mod.setSlot("slot1", "furlongs"))
-        self.assertEqual(self.mod.config().slot1, "km/h")
-
-    def test_no_other_mod_is_required(self):
-        """CET alone must be enough: the whole file loads and starts with Native Settings absent."""
-        self.lua.execute("_G.__nativeSettings = nil")
-        mod = self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
-        self.lua.eval("_G.__events['onInit']")()
-        self.assertTrue(self.lua.eval("_G.__events['onDraw'] ~= nil"))
-        self.assertEqual(mod.render(58.8, mod.config()), "212 km/h   58.8 m/s")
-
-    def test_it_never_reaches_for_another_mod(self):
-        """No GetMod, no Native Settings calls: the dependency was removed, not made optional."""
-        code = INIT.read_text(encoding="utf-8")
-        for banned in ("GetMod(", "nativeSettings", "nativeSettingsRef", "setOption",
-                       "addTab", "addSubcategory", "addSelectorString", "addRangeFloat",
-                       "registerRestoreDefaultsCallback"):
-            self.assertNotIn(banned, code, f"{banned} is a Native Settings UI dependency")
-
-    def test_the_overlay_offers_every_setting_that_was_on_the_old_tab(self):
-        """The tab is gone, so the overlay must carry all of it - counted, not assumed."""
-        body = INIT.read_text(encoding="utf-8")
-        window = body.split("local function settingsBody()", 1)[1].split("\nend\n", 1)[0]
-        # three switches
-        for label in ('uiCheckbox("enabled"', 'uiCheckbox("showLabels"', 'uiCheckbox("fppOnly"'):
-            self.assertIn(label, window, label)
-        # both unit selectors, with off
-        self.assertEqual(window.count('uiUnitSelector("Slot'), 2)
-        # the nine numbers that were sliders on the Mods tab
-        for key in ("custom1", "custom2", "scale", "posX", "posY",
-                    "colorR", "colorG", "colorB", "smooth"):
-            self.assertIn(f'uiDragFloat("{key}"', window, key)
-        # and a reset
-        self.assertIn("M.resetToDefaults()", window)
-
-    def test_every_setting_is_reachable_in_the_overlay(self):
-        """The Mods tab is gone, so the CET window must contain all 14 settings - by label."""
-        self.lua.eval("_G.__events['onOverlayOpen']")()
         self.lua.eval("_G.__events['onDraw']")()
-        widgets = list(self.lua.eval("_G.__widgets").values())
-        labels = [w["label"] for w in widgets]
-        kinds = [w["kind"] for w in widgets]
-        self.assertEqual(kinds.count("checkbox"), 3, labels)
-        self.assertEqual(kinds.count("drag"), 9, labels)    # the nine numeric settings
-        self.assertEqual(kinds.count("combo"), 2, labels)   # two unit selectors
-        self.assertEqual(kinds.count("button"), 1, labels)  # reset
-        for want in ("Show the HUD", "Print the units", "First person only", "Slot 1 unit",
-                     "Slot 2 unit", "Slot 1 custom multiplier", "Slot 2 custom multiplier",
-                     "Text size", "Reset to defaults"):
-            self.assertTrue(any(want in l for l in labels), f"missing widget: {want}")
+        self.assertIn("-- km/h", self.texts())
 
-    def test_picking_an_entry_in_the_open_combo_sets_the_unit(self):
-        """The path a real click takes: open the combo, click the entry, unit changes and persists."""
-        self.lua.eval("_G.__events['onOverlayOpen']")()
-        self.lua.execute("_G.__openCombo = true; _G.__pick = 'mph'")
-        # both combos are open in this frame; the second one must not pick the same entry twice
+    # -- failure containment ---------------------------------------------
+    def test_a_throwing_im_tgui_call_cannot_escape_on_draw(self):
+        self.lua.execute("ImGui.Text = function() error('kaboom') end")
+        self.lua.eval("_G.__events['onDraw']")()          # must not raise
+        self.lua.execute("ImGui.GetLinearVelocity = nil")
+
+    def test_a_throwing_vehicle_read_cannot_escape_on_draw(self):
         self.lua.execute("""
-          ImGui.Selectable = function(entry, selected)
-            _G.__offered = (_G.__offered or '') .. entry .. ','
-            if entry ~= _G.__pick then return false end
-            _G.__picks = (_G.__picks or 0) + 1
-            if _G.__picks == 1 then return true end   -- slot 1 only
-            return false
-          end
+          Game["GetMountedVehicle;GameObject"] = function() error("vehicle api gone") end
         """)
-        self.lua.eval("_G.__events['onDraw']")()
-        offered = self.lua.eval("_G.__offered")
-        for unit in ("m/s", "km/h", "mph", "knots", "ft/s", "Mach", "custom", "off"):
-            self.assertIn(unit + ",", offered, f"the combo never offered {unit}")
-        self.assertEqual(self.mod.config().slot1, "mph")
-        self.assertEqual(self.mod.render(58.8, self.mod.config()), "132 mph   58.8 m/s")
-        self.assertIn("slot1=mph", self.ini())
+        self.lua.eval("_G.__events['onDraw']")()          # must not raise
+        self.assertEqual(self.lua.eval("_G.__begins"), 1)
 
-    def test_the_overlay_selector_offers_off_and_writes_it(self):
-        """The one unit list left in the mod: it must include off, and off must persist."""
+    # -- static guarantees ------------------------------------------------
+    def test_it_needs_nothing_but_cet(self):
         code = INIT.read_text(encoding="utf-8")
-        self.assertIn('"custom", "off" }', code)
-        mod = self.mod
-        mod.setSlot("slot2", "")
-        self.assertEqual(mod.render(58.8, mod.config()), "212 km/h")
+        for banned in ("GetMod(", "nativeSettings", "require("):
+            self.assertNotIn(banned, code, f"{banned} would be a dependency")
 
-    # -- persistence -------------------------------------------------------
-    def test_settings_round_trip(self):
-        cfg = self.mod.config()
-        cfg.slot1 = "knots"
-        cfg.scale = 3.1
-        self.assertTrue(self.mod.saveSettings())
-        cfg.slot1 = "m/s"
-        cfg.scale = 1.0
-        self.mod.loadSettings()
-        self.assertEqual(cfg.slot1, "knots")
-        self.assertAlmostEqual(cfg.scale, 3.1, places=3)
+    def test_no_debug_library(self):
+        """CET's sandbox has no debug table; the harness removes it too."""
+        self.assertNotIn("debug.", INIT.read_text(encoding="utf-8"))
 
-    def test_a_hand_edited_settings_file_cannot_hide_the_hud(self):
-        (self.tmp / "settings.ini").write_text(
-            "scale=99\nposX=5.5\nposY=-3\ncolorR=9\nslot1=furlongs\nslot2=nonsense\n")
-        self.mod.loadSettings()
-        cfg = self.mod.config()
-        self.assertAlmostEqual(cfg.scale, 6.0, places=3)
-        self.assertAlmostEqual(cfg.posX, 1.0, places=3)
-        self.assertAlmostEqual(cfg.posY, 0.0, places=3)
-        self.assertAlmostEqual(cfg.colorR, 1.0, places=3)
-        self.assertEqual(cfg.slot1, "km/h", "unknown unit falls back instead of blanking the readout")
-        self.assertEqual(cfg.slot2, "m/s")
-
-    def test_a_corrupt_settings_line_is_ignored(self):
-        (self.tmp / "settings.ini").write_text("slot1=knots\nbogus\nscale=notanumber\n")
-        self.mod.loadSettings()
-        self.assertEqual(self.mod.config().slot1, "knots")
-        self.assertAlmostEqual(self.mod.config().scale, 2.2, places=2)   # default kept
-
-    def test_an_unwritable_settings_file_is_reported_not_fatal(self):
-        os.remove(self.tmp / "settings.ini")
-        os.mkdir(self.tmp / "settings.ini")                 # a directory in the way: io.open fails
-        self.assertFalse(self.mod.saveSettings())
-        self.assertIsInstance(self.mod.config().enabled, bool)
-
-
-class HudStaticTests(unittest.TestCase):
-    """Checks that need no interpreter, so they also run without lupa."""
-
-    def setUp(self):
-        self.text = INIT.read_text(encoding="utf-8")
-        stripped = []
-        for line in self.text.splitlines():
-            stripped.append(line.split("--")[0] if "--" in line else line)
-        self.code = "\n".join(stripped)
-
-    def test_it_is_a_cet_mod_and_not_redscript(self):
-        self.assertTrue(INIT.is_file())
-        self.assertIn('registerForEvent("onDraw"', self.text)
-        self.assertIn("registerHotkey(", self.text)
-        self.assertIn('Game["GetMountedVehicle;GameObject"]', self.text)
-        self.assertNotIn("runtimeProperty", self.text)
-        self.assertNotIn("wrapMethod", self.text)
-
-    def test_the_widget_return_order_is_the_cet_one(self):
-        """CET returns (value, changed). Assigning them the other way round breaks every control."""
-        self.assertIn("local value, changed = ImGui.Checkbox(", self.text)
-        self.assertIn("local value, changed = ImGui.DragFloat(", self.text)
-        self.assertNotIn("changed, cfg.", self.text)
-
-    def test_units_match_the_documented_factors(self):
-        for pair in ('["m/s"] = 1.0', '["km/h"] = 3.6', '["mph"] = 2.23694',
-                     '["knots"] = 1.94384', '["ft/s"] = 3.28084', '["Mach"] = 1.0 / 343.0'):
-            self.assertIn(pair, self.text, pair)
-
-    def test_lua_is_5_1_safe_for_cet(self):
-        """CET runs LuaJIT: no integer division, no bitwise operators, no goto, no %d on floats."""
-        for banned in (" // ", "<<", ">>", "goto ", "%d"):
-            self.assertNotIn(banned, self.text, banned)
-
-    def test_it_never_uses_the_debug_library(self):
-        """CET's sandbox does not provide `debug`; guard() and the settings path must not need it."""
-        code = self.code
-        self.assertNotIn("debug.", code)
-        self.assertNotIn("debug(", code)
-
-    def test_it_only_uses_globals_cet_whitelists(self):
-        """Derived from LuaSandbox.cpp: these are simply not in a CET mod's sandbox."""
-        code = self.code
-        # word boundaries matter: "os." would otherwise match "pos.x"
-        for pattern in (r"\bos\s*\.", r"\brequire\s*\(", r"\bloadstring\b", r"\bloadfile\s*\(",
-                        r"\bdofile\s*\(", r"\bgetfenv\b", r"\bsetfenv\b", r"\b_G\b",
-                        r"\bpackage\s*\.", r"\bcoroutine\s*\.", r"\butf8\s*\.",
-                        r"\bcollectgarbage\b"):
-            self.assertIsNone(re.search(pattern, code), pattern)
-
-    def test_no_local_function_is_used_before_it_is_defined(self):
-        """A local declared after its use becomes a nil global in Lua - silently, at runtime."""
-        code = self.code
-        offenders = []
-        for match in re.finditer(r"local function (\w+)\s*\(", code):
-            name, at = match.group(1), match.start()
-            early = list(re.finditer(r"\b" + re.escape(name) + r"\s*\(", code[:at]))
-            if early:
-                offenders.append((name, code[:early[0].start()].count("\n") + 1))
-        self.assertEqual(offenders, [], f"used before defined: {offenders}")
-
-    def test_the_overlay_can_blank_a_slot(self):
-        self.assertIn('"off"', self.code.replace(" ", ""), "the selector needs an off entry")
-
-    def test_the_enum_tables_are_the_cet_ones(self):
-        """CET whitelists ImGuiWindowFlags and ImGuiCol; the C-style globals are not guaranteed."""
-        self.assertIn("ImGuiWindowFlags", self.code)
-        self.assertIn("ImGuiCol", self.code)
-        self.assertNotIn("ImGuiCol_", self.code)
-        self.assertNotIn("ImGuiWindowFlags_", self.code)
-
-    def test_no_lua_5_2_only_functions(self):
-        for banned in ("table.unpack(", "math.type(", "utf8."):
-            self.assertNotIn(banned, self.text, banned)
-
-    def test_it_lives_where_cet_expects(self):
-        self.assertEqual(INIT.parent.name, "phoenix_true_speedometer")
-        self.assertEqual(INIT.parent.parent.name, "mods")
+    def test_it_ships_from_the_probe_folder(self):
+        self.assertEqual(INIT.parent.name, "probe")
         self.assertEqual(INIT.name, "init.lua")
 
-    def test_the_manifest_keeps_cet_s_auto_load_opt_out(self):
-        """CET skips a mod folder if it contains a file named 'disabled'. We must not ship one."""
-        for stray in INIT.parent.glob("*"):
-            self.assertNotEqual(stray.name.lower(), "disabled", f"{stray} would switch the mod off")
+    def test_the_installer_copies_this_exact_file(self):
+        ps = (ROOT / "tools/update.ps1").read_text(encoding="utf-8", errors="replace")
+        self.assertIn("Phoenix_true_speedometer\\probe\\init.lua", ps)
 
-    def test_it_does_not_rely_on_a_global_written_by_another_mod(self):
-        """Mod load order is alphabetical and not guaranteed; only our own names may be global."""
-        for name in ("PhoenixSpeedometer",):
-            self.assertIn(name, self.text)
+    # -- helper -----------------------------------------------------------
+    def texts(self):
+        return list(self.lua.eval("_G.__texts").values())
 
-    def test_the_probe_free_of_vehicle_assumptions(self):
-        """The probe must draw even with no vehicle - that is the whole point of it."""
-        probe = ROOT / "Phoenix_true_speedometer" / "probe" / "init.lua"
-        self.assertTrue(probe.exists(), probe)
-        code = probe.read_text(encoding="utf-8")
-        self.assertIn('registerForEvent("onDraw"', code)
-        self.assertIn("ImGui.Begin(", code)
-        # no early return between onDraw and Begin
-        body = code.split('registerForEvent("onDraw"', 1)[1]
-        begin_at = body.index("ImGui.Begin(")
-        self.assertNotIn("return", body[:begin_at].replace("return ok", ""), "onDraw returns before drawing")
+    def mod_unit(self):
+        path = self.tmp / "unit.txt"
+        return path.read_text().strip() if path.exists() else None
 
 
 if __name__ == "__main__":

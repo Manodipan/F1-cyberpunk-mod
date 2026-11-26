@@ -1,326 +1,151 @@
 # Phoenix True Speedometer — CET HUD
 
-A speed readout that draws **its own HUD** and leaves the game's speedometer completely alone.
-Nothing is overridden, no redscript is compiled, and nothing of the vanilla HUD changes — you switch
-this one on when you want it.
+A small always-there speed readout. It draws its own window, leaves the game's speedometer completely
+alone, and has exactly one setting: a dropdown for the unit.
 
 ```
 bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\init.lua
 ```
 
-Requires **Cyber Engine Tweaks**, and nothing else. The complete settings surface is the mod's own
-CET overlay window - no Native Settings UI, no second mod, no version chasing.
+Requires **Cyber Engine Tweaks**, and nothing else — not Native Settings UI, not Mod Settings, not a
+second mod of any kind.
 
-## Why a HUD instead of the old override
+## What this is, and why it is so small
 
-The previous build (redscript, commit `27493d9`) wrapped the vanilla widget. It read the right
-number, but it inherited three things it could not fix: a widget sized for about four characters, a
-`km/h` label that belongs to the game, and a tick bar drawn from the game's inflated curve. On top of
-that every edit needed a redscript recompile, and a compile error disables *every* redscript mod on
-the install, not just this one. Drawing our own text removes all four problems at once.
+An earlier version of this mod grew into a full settings system: a CET settings window, a Native
+Settings UI tab, nine sliders, two unit slots, colour controls, a reset button, hotkeys. All of it
+tested, and none of it ever appeared on the user's install.
 
-The number is unchanged, and still the reason the mod exists:
+What *did* appear was a 71-line diagnostic probe: a bare `registerForEvent("onDraw", ...)` with
+`ImGui.Begin`, `ImGui.Text`, `ImGui.End` and no conditions at all.
 
-| real | the game's dial showed | ratio |
+So the rule is now: **ship the thing that drew.** This file is that probe with one feature added. The
+larger version is still in the repo at `mods/phoenix_true_speedometer/init.lua` for reference, but it
+is not what gets installed.
+
+| | probe | this mod |
 |---|---|---|
-| 277 km/h | 572 | 2.06× |
-| 58.8 m/s (17 s per km) | 110–117 | 1.92× |
-
-The HUD never reads the game's HUD number. It reads the physics body —
-`veh:GetLinearVelocity()` dotted with `veh:GetWorldForward()` — which the game never derives.
+| registers `onDraw` at file scope | yes | yes |
+| draws every frame, no conditions | yes | yes |
+| draws with no vehicle | yes | yes (`-- km/h`) |
+| hotkeys, settings window, other mods | none | none |
+| unit dropdown | — | **yes** |
+| remembers the unit | — | yes (`unit.txt`) |
 
 ## Turning it on
 
-The HUD is **on by default**. Hide and show it whenever you like:
+Nothing to bind and nothing to enable. The window is on screen from the moment CET loads the file,
+including in the main menu and on foot, showing `-- km/h` when there is nothing to read.
 
-1. CET overlay (`~`) → **Bindings**
-2. `PhoenixSpeedometer_ToggleHud` — show/hide
-3. `PhoenixSpeedometer_ToggleLabels` — units on/off
+Pick a unit in the dropdown: `km/h`, `mph`, `m/s`, `knots`, `ft/s`, `Mach`. The choice is written to
+`unit.txt` beside `init.lua` and read back on the next launch. If that file cannot be written the
+dropdown still works for the session.
 
-The state is remembered in `settings.ini` next to `init.lua`, so it survives a restart.
+There is no separate probe anymore: the mod is the probe.
 
-## Where the options live
+## What it reads
 
-**One place: the CET overlay.** Press `~` and a *Phoenix True Speedometer* window is drawn with every
-setting in it — nothing else has to be installed.
+`veh:GetLinearVelocity()` dotted with `veh:GetWorldForward()` — the body's own speed in m/s, not the
+game's curve-warped HUD number. An earlier build measured the stock dial at **2.07× the real speed**,
+which is why this reads the body and not the gauge.
 
-| section | widgets |
-|---|---|
-| HUD | Show the HUD · Print the units · First person only |
-| Units | Slot 1 unit · Slot 2 unit (both offer `off`) · two custom multipliers |
-| Position and look | text size · X · Y · colour R/G/B · fallback smoothing |
-| bottom | **Reset to defaults** |
-
-The whole dependency list is CET. There is no `GetMod`, no `require`, no second mod's API in the
-file, so there is nothing to be out of date or missing.
-
-Every value is written to `settings.ini` next to `init.lua` the moment it changes, and read back on
-load, so the overlay reopens showing what you left it at.
-
-The redscript "Mod Settings" mod ([Nexus 4885](https://www.nexusmods.com/cyberpunk2077/mods/4885))
-that the old build used plays no part here — that row disappeared with the `.reds`.
-
-Everything is saved the moment it changes.
-
-### If the unit looks stuck
-
-Two bugs produced exactly that symptom and are both fixed:
-
-- **A blank slot was undone on reload.** `off` was saved correctly but the loader treated it as an
-  invalid unit for Slot 1 and clamped it back to `km/h`. Only Slot 2 accepted `off`. Now either slot
-  accepts it, and `off` survives a restart.
-- **Both slots off printed `m/s` anyway.** An empty readout fell back to a hardcoded
-  `m/s`, which is by definition "locked to m/s" and ignores every setting. Now both slots off draws
-  nothing at all, which is what "off" means.
-
-The `1 s in:` line now names the units it is actually using, so nothing has to be inferred:
-
-```
-[Phoenix True Speedometer] 1 s in: ... | slot1=mph slot2=off labels=true text="132 mph"
-```
-
-If `slot1=` there disagrees with what the overlay shows, the setting is not reaching the mod; if
-`text=` is right but the screen is not, the failure is between the mod and CET.
-
-## Input
-
-**The HUD does not take your mouse or keyboard.** CET only traps input for ImGui while its own
-overlay is open: `Overlay.cpp` calls `SetTrapInputInImGui(m_enabled)`, and `D3D12::OnWndProc`
-swallows mouse and keyboard messages only when that flag is set. With the overlay closed, every
-event goes straight to the game.
-
-The readout also carries `ImGuiWindowFlags.NoInputs`, so it is click-through by construction, even if
-that routing ever changed. The settings window *is* interactive — but it only exists while the
-overlay is open, i.e. while CET is trapping input anyway.
-
-| option | default | what it does |
-|---|---|---|
-| Show the HUD | on | master switch, same as the hotkey |
-| Print the units | on | `212 km/h` instead of `212` |
-| First person only | off | hide in third person and photo mode |
-| Slot 1 unit | `km/h` | the main number |
-| Slot 2 unit | `m/s` | second number; any unit, or **off** for one number |
-| custom multiplier | 1.0 | used when a slot is set to `custom`: value × multiplier |
-| Text size | 2.2 | ImGui font scale |
-| Horizontal / vertical position | 0.60 / 0.78 | fraction of the screen, 0–1 |
-| Colour red / green / blue | 0.35 / 0.95 / 1.00 | text colour |
-| Position-fallback smoothing | 0.25 | only used if the velocity methods are unavailable |
-
-Units: `m/s`, `km/h`, `mph`, `knots`, `ft/s`, `Mach` (1 Mach = 343 m/s), `custom`, `off`.
-
-Example at 58.8 m/s, both slots on:
-
-```
-212 km/h   58.8 m/s
-```
-
-If `m/s` should lead instead, set Slot 1 to `m/s` and Slot 2 to `km/h` — it is one click, both
-numbers are on screen either way.
-
-`settings.ini` is plain text and can be edited by hand while the game is closed. Every value is
-clamped on load, so a typo cannot hide the HUD or move it off screen:
-
-```ini
-enabled=true
-slot1=km/h
-slot2=m/s
-showLabels=true
-fppOnly=false
-scale=2.2
-posX=0.60
-posY=0.78
-colorR=0.35
-colorG=0.95
-colorB=1.00
-```
+Reverse reads positive. With no vehicle (or on foot) it shows `--` rather than a stale number.
 
 ## Digits
 
 Three significant figures, whole numbers once the value reaches 100:
 
-| m/s | km/h | shown (m/s) | shown (km/h) |
-|---|---|---|---|
-| 58.8 | 211.7 | `58.8` | `212` |
-| 9.876 | 35.6 | `9.88` | `35.6` |
-| 0.1714 | 0.617 | `0.171` | `0.617` |
-| 100.0 | 360.0 | `100` | `360` |
-| 0 | 0 | `0` | `0` |
+| m/s | shown (m/s) | shown (km/h) |
+|---|---|---|
+| 58.83 | `58.8` | `212` |
+| 9.876 | `9.88` | `35.6` |
+| 0.1714 | `0.171` | `0.617` |
+| 100.0 | `100` | `360` |
+| 0 | `0` | `0` |
 
-## Where every API fact comes from
+## Units
 
-Nothing in this mod is guessed; each call below was checked against a shipping mod, a class dump or
-CET's own source.
+The game reports m/s, so each unit is a multiplier on that:
 
-| call | evidence |
+| unit | factor |
 |---|---|
-| `registerForEvent("onDraw" / "onInit" / "onUpdate" / "onOverlayOpen" / "onOverlayClose")` | `ScriptContext.cpp` — exactly these names exist, anything else logs an error |
-| `onDraw` takes no arguments, `onUpdate` gets the delta | `ScriptContext.cpp` (`TryLuaFunction(m_logger, m_onDraw)`) |
-| `registerHotkey(id, label, fn)` | `ScriptContext.cpp` overloads; BetterVehicleFirstPerson |
-| sandbox has **no `debug` library**; `io.open` resolves relative paths against the mod folder | `LuaSandbox.cpp` whitelist + `InitializeIOForSandbox` |
-| CET calls **nothing** after loading `init.lua`, and sets `registerForEvent` to nil straight after — a mod has to start itself during load | `ScriptContext.cpp` (`ExecuteFile`, then `env["registerForEvent"] = sol::nil`) |
-| `_G` is not whitelisted | same whitelist — the mod never touches it |
-| `ImGuiWindowFlags.<Name>`, `ImGuiCol.<Name>` are tables | whitelist entries; BetterVehicleFirstPerson, CET-Mod-Manager, GameUI-WhereAmI |
-| `ImGui.Checkbox` / `DragFloat` return **value, changed** | BetterVehicleFirstPerson, CyberpunkVRPort_WristHud (both assign the first return) |
-| `GetDisplayResolution()` returns width, height | whitelist; psiberx GameUI-WhereAmI |
-| `ImGui.SetWindowFontScale` | BetterVehicleFirstPerson |
-| input is trapped for ImGui only while the overlay is open | `Overlay.cpp` (`SetTrapInputInImGui(m_enabled)`), `D3D12.cpp` (`OnWndProc`) |
-| `Game["GetMountedVehicle;GameObject"](Game.GetPlayer())` | BetterVehicleFirstPerson |
-| `veh:GetLinearVelocity()`, `GetWorldForward()`, `GetWorldPosition()`, `IsPlayerDriver()`, `GetCameraManager()` | CET class dump of `vehicleCarBaseObject` |
-| `cameraManager:IsTPPActive()` | CET class dump of `vehicleCameraManager` |
-| `Vector4` instances expose `.x/.y/.z/.w` | CyberpunkVRPort geometry code (`p.x, p.y, p.z`) |
+| `m/s` | 1 |
+| `km/h` | 3.6 |
+| `mph` | 2.23694 |
+| `knots` | 1.94384 |
+| `ft/s` | 3.28084 |
+| `Mach` | 1 / 343 (Mach 1 = 343 m/s at sea level) |
 
-## Verified
+## Why not the earlier approaches
 
-The Lua is executed against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`): **64 tests**,
-all passing, and the harness deliberately reproduces CET's restrictions — `debug` is removed, the
-working directory is the mod folder, and the stubs use CET's real return shapes. Putting
-`debug.traceback` back into `guard()` fails 17 of them.
+The previous build (redscript, commit `27493d9`) wrapped the vanilla widget. It read the right number,
+but it inherited the game's own label, the game's tick bar, and a widget sized for about four
+characters. Every edit also needed a redscript recompile, and a compile error disables *every*
+redscript mod on the install, not just this one.
 
-Speed and digits:
+Drawing our own text removes all of that — and the file that does it is 120 lines with no
+dependencies, which is the point.
 
-- digits at 0, 0.01714, 0.171, 9.876, 58.83, 100, 212.4, 999.6, plus `NaN` and a non-number
-- every unit factor and label, custom-multiplier clamps, an unknown unit falling back to m/s
-- the default readout is exactly `212 km/h   58.8 m/s` at 58.8 m/s; labels off, slot 2 off
-- every unit through the render path and back through a save+reload; `off` survives a restart in
-  either slot; both slots off draws nothing rather than falling back to a hardcoded `m/s`
-- the overlay builds all 14 settings (3 switches, 2 unit combos, 9 numbers, reset), and clicking an
-  entry in the open combo actually changes the unit
-- speed from body velocity; reverse travel reads positive
-- position-difference fallback: 5.88 m in 0.1 s → 58.8 m/s, no speed on the first frame, none from a
-  nonsense delta; missing velocity methods fall through instead of throwing
-- first-person detection, and an unavailable camera query *shows* the HUD instead of hiding it
+## What is proven, and what is not
 
-Drawing and settings:
+Proven, by running the file:
 
-- draws while driving; nothing with no vehicle, as a passenger, when toggled off, or in third person
-  with first-person-only on
-- positions and scales from `GetDisplayResolution()` (1920×1080 → 1152, 842, scale 2.2); still draws
-  when the resolution query is unavailable
-- the readout window carries `NoInputs`, so it cannot consume a click or a keystroke
-- colour pushes and pops stay balanced; a colour API that throws leaves the stack untouched
-- a widget that throws still closes both windows, and a throwing `ImGui.Begin` does not escape
-  `onDraw`
-- a checkbox click writes the **value**, not the "changed" flag
-- a binding returning `nil` can never nil out a setting; drag floats are clamped
-- the unit setter accepts a name or an index and rejects nonsense; a slot can be blanked to `off`
-- settings round-trip; a corrupt line keeps the default; a hand-edited file cannot hide the HUD
-  (`scale=99`, `posX=5.5`, `posY=-3`, unknown units → clamped); an unwritable file is not fatal
-- the file contains no `GetMod`, no `nativeSettings` and no `setOption`, so it cannot depend on
-  another mod being installed (a test asserts this against the source)
+- it loads and registers `onDraw` with nothing else called (CET calls nothing after loading a mod, and
+  nils `registerForEvent` immediately after — so the registration has to be at file scope)
+- it draws a window every frame, `Begin`/`End` balanced
+- it draws with no vehicle, and shows `--` rather than a stale number
+- every unit reaches the screen; a click changes the unit on the next frame (immediate mode draws the
+  text before the dropdown)
+- the chosen unit survives a reload; a corrupt or unwritable `unit.txt` does not stop the HUD
+- a throwing ImGui call or a throwing vehicle read cannot escape `onDraw`
+- 19 tests, passing on **Lua 5.1** (CET's LuaJIT) and 5.5
 
-Startup:
+Not proven here:
 
-- simply loading the file registers both events and both hotkeys — no explicit call needed. (Removing
-  the self-start line fails 27 tests.)
+- **The picture itself.** Only the game can show that. The version that is shipped is the one that
+  already drew `PHOENIX PROBE OK` on screen; the only addition since is `BeginCombo`/`Selectable`/
+  `EndCombo`, which are bound by CET (`src/sol_imgui/sol_imgui.h`) but cannot be exercised outside it.
+  If the dropdown misbehaves, everything else still draws.
+- **Exact speed at the top end** — the game's own physics wall is 100 m/s (360 km/h); see
+  `docs/PHYSICS.md`.
 
-Static:
-
-- no `//`, `<<`, `>>`, `goto`, `%d`, `table.unpack`, `math.type`, `utf8`
-- no `debug`, `os`, `_G`, `require`, `loadstring`, `loadfile`, `getfenv`, `package`, `coroutine`
-- no C-style enum spellings (`ImGuiCol_Text`), only the whitelisted tables
-- no redscript symbols; `init.lua` sits in `mods\phoenix_true_speedometer\`
-
-## Honest limits
-
-- **Only the game can prove the picture appears.** Every API shape is sourced (see the table above),
-  but the rendering itself is unverifiable here. If a call is missing it is skipped, and the CET
-  console (`~`) names the file and line — that is the first place to look.
-- **Removing the old `.reds` triggers one redscript cache rebuild on the next launch.** That is
-  normal, happens once, and is not a compile of this mod.
-- **CET reload works:** the mod holds no state outside its own Lua environment, so a CET reload
-  re-registers its events and hotkeys cleanly. There is no second mod to re-register with, which was
-  the only reason a reload needed care.
-- **First person only** uses `IsTPPActive()`; if a future CET drops it the option turns inert and the
-  HUD shows in every view — it fails visible, not invisible.
-
-## If the HUD does not appear
-
-### Step 0: is CET itself running Lua mods?
-
-The HUD cannot be blamed for CET not loading mods, so settle that first. Install the probe:
+## Install
 
 ```powershell
-.\tools\update.ps1 -Probe
+cd $HOME\f1-cyberpunk-mod
+git pull --rebase
+.\tools\update.ps1
 ```
 
-Then launch and look for **either** of these:
+`update.ps1` installs `Phoenix_true_speedometer\probe\init.lua` as
+`mods\phoenix_true_speedometer\init.lua`, and removes the old separate `phoenix_probe` folder.
 
-- a box in the top-left reading `PHOENIX PROBE OK   frames=...`
-- the line `[PhoenixProbe] init.lua executed` in the CET console (`~`) or log
+Verify what is installed:
 
-The probe draws unconditionally: no vehicle check, no settings, no conditions. It answers one
-question and nothing else.
-
-| probe result | verdict |
-|---|---|
-| box or log line appears | **CET is healthy.** The fault is in the HUD's own file or its folder. |
-| nothing at all | **CET is not loading mods.** Nothing written in Lua can help; the fault is CET's install. |
-
-A normal `update.ps1` (no `-Probe`) deletes the probe again.
-
-If the probe works and the HUD still does not, the difference is narrowed to three things, in order
-of likelihood: the HUD is in the wrong folder (`check-hud.ps1` compares hashes), the installed
-`init.lua` is stale, or the HUD's own runtime state says "not driving" (the `1 s in:` line says
-which). Those are all visible in one `check-hud.ps1` run.
-
-### Step 1: the one-shot check
-
-```
-.\tools\check-hud.ps1
+```powershell
+Get-FileHash "$env:GAME\bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\init.lua"
 ```
 
-It reports whether the file is installed (and whether it matches the repo), the other CET mods, the
-saved `settings.ini`, and every CET log line about this mod. CET's log lives at
-`bin\x64\plugins\cyber_engine_tweaks\cyber_engine_tweaks.log`.
+## If it does not appear
 
-Then read the two lines the mod prints:
+The mod prints two lines to the CET console (`~`) and to
+`bin\x64\plugins\cyber_engine_tweaks\cyber_engine_tweaks.log`:
+
+```
+[PhoenixSpeed] init.lua executed
+[PhoenixSpeed] 2 s in: vehicle=true speed=58.8 unit=km/h
+```
 
 | what you see | meaning |
 |---|---|
-| `[Phoenix True Speedometer] HUD ready - bind the toggle in CET > Bindings` | the file loaded and started |
-| `[Phoenix True Speedometer] 1 s in: hud=true vehicle=true driver=true speed=58.8` | one second in: it can see the car and is reading it |
-| `1 s in: ... vehicle=false` | running fine, but not in a car at that moment |
-| `1 s in: ... speed=nil` | in a car, but the velocity read failed — the position fallback needs another frame |
-| **no "HUD ready" line at all** | the file is not being loaded: wrong folder, or CET has it disabled |
-| **"HUD ready" but no "1 s in"** | `onDraw` is not being called — CET or another mod is not rendering |
+| both lines and the window | working |
+| `init.lua executed` only | the file loaded but `onDraw` is not being called — CET is not drawing |
+| neither line | the file is not being loaded at all: wrong folder, or CET is not running |
 
-The only two build-level things that can produce "no HUD, no messages" are an old copy of `init.lua`
-(the first three builds of this mod never started themselves) or a file outside
-`bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\`.
-
-## Is CET the right layer at all?
-
-A fair question, since nothing has drawn yet. The three realistic ways to put a number on screen,
-and what each costs:
-
-| route | language | can it read live speed? | can it draw its own overlay? | verdict |
-|---|---|---|---|---|
-| **CET Lua** (this mod) | Lua via LuaJIT | yes, `GetLinearVelocity` / `GetWorldPosition` | yes, its own window, vanilla HUD untouched | the only route that does both |
-| redscript (`.reds`) | subset of Swift | yes | **no** — it can change what the *vanilla* widget shows, and that is all | rejected by the brief |
-| CET C++ plugin | C++ | yes | yes | works, but needs a compiler, a per-game-build binary and a new binary every CET release |
-
-So there is no route that draws a custom overlay without CET. The alternatives are "CET, but written
-in C++" (strictly more fragile, because a DLL must be rebuilt for every game patch) or "redscript,
-but then it is the vanilla widget again" — the exact thing this mod was told not to touch.
-
-That leaves one genuinely different third option, and it is worth naming because it may be what is
-wanted:
-
-| | |
-|---|---|
-| **Native Settings UI only** | A native settings page could still be written, but the speed readout itself would have to come from somewhere else. Without a drawing surface there is no number, which is why the settings now live in the CET overlay instead. |
-
-Conclusion: if the probe does not appear, the answer is to fix CET, not to replace it. Changing the
-layer would mean giving up the "own overlay, vanilla HUD untouched" requirement, which was the first
-constraint set on this work.
+`. \tools\check-hud.ps1` prints the install path, the installed file's hash, the other CET mods and
+the log tail in one go.
 
 ## Uninstalling
 
-```
-.\tools\uninstall.ps1                    # removes the car, keeps the HUD
-.\tools\uninstall.ps1 -WithSpeedometer   # removes the HUD as well
-```
-
-The HUD folder is
-`bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\` and nothing else in the game
-touches it. Deleting that folder removes the HUD; `settings.ini` lives inside it.
+Delete `bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\`. Nothing else is touched:
+no redscript, no archives, no game files.

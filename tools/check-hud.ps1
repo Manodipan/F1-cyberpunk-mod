@@ -48,7 +48,7 @@ $cetRoot  = Join-Path $GameRoot 'bin\x64\plugins\cyber_engine_tweaks'
 $cetMods  = Join-Path $cetRoot 'mods'
 $cetLog   = Join-Path $cetRoot 'cyber_engine_tweaks.log'
 $installed = Join-Path $cetMods 'phoenix_true_speedometer\init.lua'
-$repoFile  = Join-Path $Repo 'Phoenix_true_speedometer\mods\phoenix_true_speedometer\init.lua'
+$repoFile  = Join-Path $Repo 'Phoenix_true_speedometer\probe\init.lua'
 
 Write-Step "cyber engine tweaks"
 if (Test-Path $cetRoot) { Write-Ok $cetRoot } else { Write-Bad "CET is not installed at $cetRoot"; exit 1 }
@@ -80,11 +80,10 @@ Get-ChildItem $cetMods -Directory -ErrorAction SilentlyContinue | ForEach-Object
 }
 
 Write-Step "settings.ini"
-$ini = Join-Path $cetMods 'phoenix_true_speedometer\settings.ini'
+$ini = Join-Path $cetMods 'phoenix_true_speedometer\unit.txt'
 if (Test-Path $ini) {
     Get-Content $ini | ForEach-Object { Write-Ok $_ }
-    $enabled = (Select-String -Path $ini -Pattern '^enabled=true$' -Quiet)
-    if (-not $enabled) { Write-Warn2 "enabled is not true - the HUD is switched off in the saved settings" }
+    Write-Ok ("chosen unit: " + (Get-Content $ini -First 1))
 } else {
     Write-Warn2 "no settings.ini - the mod has never run (this is written on first load)"
 }
@@ -93,7 +92,7 @@ Write-Step "CET log"
 if (Test-Path $cetLog) {
     $lines = Get-Content $cetLog
     Write-Ok ("{0} lines, last written {1}" -f $lines.Count, (Get-Item $cetLog).LastWriteTime)
-    $hits = $lines | Select-String -Pattern 'Phoenix True Speedometer|phoenix_true_speedometer|scripting' |
+    $hits = $lines | Select-String -Pattern 'PhoenixSpeed|phoenix_true_speedometer|scripting' |
             Select-Object -Last 40
     if ($hits) {
         Write-Step "lines about this mod / scripting"
@@ -109,8 +108,8 @@ if (Test-Path $cetLog) {
 
 Write-Step "what to look for"
 Write-Ok "1. this line on load, in the console (~) or the log:"
-Write-Ok "     [Phoenix True Speedometer] HUD ready - bind the toggle in CET > Bindings"
-Write-Ok "2. one second into the game:"
-Write-Ok "     [Phoenix True Speedometer] 1 s in: hud=true vehicle=... driver=... speed=..."
-Write-Ok "no line 1 = the file is not being loaded; line 1 but no line 2 = onDraw is not running;"
-Write-Ok "line 2 with vehicle=false = running fine, just not in a vehicle at that moment."
+Write-Ok "     [PhoenixSpeed] init.lua executed"
+Write-Ok "2. two seconds into the game:"
+Write-Ok "     [PhoenixSpeed] 2 s in: vehicle=... speed=... unit=..."
+Write-Ok "no line 1 = the file is not being loaded; line 1 but no line 2 = onDraw is not running."
+Write-Ok "the window should be visible from the main menu, showing '-- km/h' with no vehicle."

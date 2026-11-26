@@ -40,9 +40,7 @@ param(
     [string]$GameRoot = "G:\Cyberpunk2077\Cyberpunk 2077 Phantom Liberty",
     [string]$Repo = "$HOME\f1-cyberpunk-mod",
     [switch]$NoPull,
-    [switch]$NoCopy,
-    # install the diagnostic probe alongside the HUD (see Phoenix_true_speedometer\probe\init.lua)
-    [switch]$Probe
+    [switch]$NoCopy
 )
 
 $ErrorActionPreference = 'Stop'
@@ -155,31 +153,28 @@ try {
 
         # standalone speedometer: a CET Lua HUD. No redscript - it draws its own readout, so the
         # vanilla HUD is left completely alone and nothing can fail to compile.
-        $speedoLua = Join-Path $Repo 'Phoenix_true_speedometer\mods\phoenix_true_speedometer\init.lua'
+        #
+        # The shipped file IS the probe that was proven to draw, plus one dropdown. The larger
+        # version that grew out of it never rendered on the user's install, so it is not what gets
+        # installed; it stays in the repo at mods/phoenix_true_speedometer for reference only.
+        $speedoLua = Join-Path $Repo 'Phoenix_true_speedometer\probe\init.lua'
         if (Test-Path $speedoLua) {
             $cetMods    = Join-Path $GameRoot 'bin\x64\plugins\cyber_engine_tweaks\mods'
             $destSpeedo = Join-Path $cetMods 'phoenix_true_speedometer'
             if (Test-Path $cetMods) {
                 New-Item -ItemType Directory -Force -Path $destSpeedo | Out-Null
-                Copy-Item $speedoLua $destSpeedo -Force
+                Copy-Item $speedoLua (Join-Path $destSpeedo 'init.lua') -Force
                 Write-Ok "init.lua -> bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\"
                 $pairs += ,@($speedoLua, (Join-Path $destSpeedo 'init.lua'))
+
+                # the old separate probe is gone: the shipped mod is that file
+                $oldProbe = Join-Path $cetMods 'phoenix_probe'
+                if (Test-Path $oldProbe) {
+                    Remove-Item $oldProbe -Recurse -Force
+                    Write-Ok "removed the old separate phoenix_probe folder"
+                }
             } else {
                 Write-Warn2 "cyber_engine_tweaks\mods not found - is Cyber Engine Tweaks installed?"
-            }
-
-            # diagnostic probe: draws unconditionally, so it answers "is CET running Lua mods here"
-            # independently of the HUD's own logic. Removed again on any run without -Probe.
-            $probeLua  = Join-Path $Repo 'Phoenix_true_speedometer\probe\init.lua'
-            $destProbe = Join-Path $cetMods 'phoenix_probe'
-            if ($Probe -and (Test-Path $probeLua) -and (Test-Path $cetMods)) {
-                New-Item -ItemType Directory -Force -Path $destProbe | Out-Null
-                Copy-Item $probeLua (Join-Path $destProbe 'init.lua') -Force
-                Write-Ok "probe init.lua -> ...\mods\phoenix_probe\  (diagnostic only, remove with a normal update)"
-                $pairs += ,@($probeLua, (Join-Path $destProbe 'init.lua'))
-            } elseif (-not $Probe -and (Test-Path $destProbe)) {
-                Remove-Item $destProbe -Recurse -Force
-                Write-Ok "removed the diagnostic probe"
             }
         }
 
