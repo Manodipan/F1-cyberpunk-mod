@@ -1,0 +1,39 @@
+{
+  "Header": {
+    "WKitJsonVersion": "0.0.9",
+    "GameVersion": 2500,
+    "DataType": "CR2W",
+    "WolvenKitVersion": "10.0.0-beta.1"
+  },
+  "Data": {
+    "Version": 195,
+    "BuildVersion": 0,
+    "RootChunk": {
+      "$type": "JsonResource",
+      "cookingPlatform": "PLATFORM_None",
+      "root": {
+        "HandleId": "0",
+        "Data": {
+          "$type": "localizationPersistenceOnScreenEntries",
+          "entries": [
+            {
+              "$type": "localizationPersistenceOnScreenEntry",
+              "femaleVariant": "Phoenix AMV LMH",
+              "maleVariant": "",
+              "primaryKey": "0",
+              "secondaryKey": "phoenix_aston_valkyrie_name"
+            },
+            {
+              "$type": "localizationPersistenceOnScreenEntry",
+              "femaleVariant": "Aston Martin Valkyrie LMH, rebuilt as the Phoenix F1 prototype: 2000 hp, 500 km/h, 7-speed sequential, rear-wheel drive.",
+              "maleVariant": "",
+              "primaryKey": "0",
+              "secondaryKey": "phoenix_aston_valkyrie_info"
+            }
+          ]
+        }
+      }
+    },
+    "EmbeddedFiles": []
+  }
+}

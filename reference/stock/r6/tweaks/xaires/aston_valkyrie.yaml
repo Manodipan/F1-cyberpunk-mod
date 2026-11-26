@@ -1,0 +1,267 @@
+# Aston Martin Valkyrie LMH - Cyberpunk 2077 arac modu (xaires). wkit\gen_yaml.py URETIR, elle duzenleme.
+# Model: Aston Martin Valkyrie LMH (vecarz.com GLB, 2026-11-09 bastan). Kaplama modelin kendi #007 kaplamasi (The Heart of Racing).
+# Sablon: Johnny'nin 911'i (sport2 binme animasyonlari); kapilar tavandan menteseli yukari (eksen +y, 70 derece, 911 kapi klibi donusturuldu).
+# Motor sesi: Wwise bankasi xaires_amv (ayri proje audio\wwise_amv) + reds aston_valkyrie_audio.reds (audio\wwise_reds_amv.py);
+# oyunun motor sesi 911 kaydinin sessiz kopyasi xaires_amv_engine (AudioXL + VehicleCore gerekli). Trafik sesi 911.
+
+Vehicle.xaires_aston_valkyrie_data:
+  $type: VehicleUIData
+  productionYear: 2023
+  horsepower: 680
+  mass: 1750
+  info: LocKey#xaires_aston_valkyrie_info
+
+# Arkadan itis (AMR-LMH: V12 arkada, hibrit yok); el freni arkada
+Vehicle.xaires_amv_wheel_front:
+  $type: VehicleWheelRole
+  isDrive: false
+  isHandBrake: false
+  isMainBrake: true
+
+Vehicle.xaires_amv_wheel_back:
+  $type: VehicleWheelRole
+  isDrive: true
+  isHandBrake: true
+  isMainBrake: true
+
+# 7 ileri sirali (hizlar m/s), V12 10000 devir sinirli; azami hiz = son vitesin maxSpeed'i (91.7 m/s = 330 km/h)
+Vehicle.xaires_amv_gear_r:
+  $base: Vehicle.v_sport1_quadra_turbo_r_inline10
+  torqueMultiplier: 0.765
+  minSpeed: 0
+  maxSpeed: 15
+  minEngineRPM: 1000
+  maxEngineRPM: 8300
+
+Vehicle.xaires_amv_gear_1:
+  $base: Vehicle.v_sport1_quadra_turbo_r_inline11
+  torqueMultiplier: 0.782
+  minSpeed: 0
+  maxSpeed: 25
+  minEngineRPM: 1000
+  maxEngineRPM: 9800
+
+Vehicle.xaires_amv_gear_2:
+  $base: Vehicle.v_sport1_quadra_turbo_r_inline12
+  torqueMultiplier: 0.646
+  minSpeed: 22
+  maxSpeed: 36.1
+  minEngineRPM: 6400
+  maxEngineRPM: 9800
+
+Vehicle.xaires_amv_gear_3:
+  $base: Vehicle.v_sport1_quadra_turbo_r_inline13
+  torqueMultiplier: 0.535
+  minSpeed: 33
+  maxSpeed: 47.2
+  minEngineRPM: 6900
+  maxEngineRPM: 9850
+
+Vehicle.xaires_amv_gear_4:
+  $base: Vehicle.v_sport1_quadra_turbo_r_inline14
+  torqueMultiplier: 0.459
+  minSpeed: 44
+  maxSpeed: 58.3
+  minEngineRPM: 7200
+  maxEngineRPM: 9850
+
+Vehicle.xaires_amv_gear_5:
+  $base: Vehicle.v_sport1_quadra_turbo_r_inline14
+  torqueMultiplier: 0.399
+  minSpeed: 55
+  maxSpeed: 69.4
+  minEngineRPM: 7400
+  maxEngineRPM: 9900
+
+Vehicle.xaires_amv_gear_6:
+  $base: Vehicle.v_sport1_quadra_turbo_r_inline14
+  torqueMultiplier: 0.348
+  minSpeed: 66
+  maxSpeed: 80.6
+  minEngineRPM: 7600
+  maxEngineRPM: 9900
+
+Vehicle.xaires_amv_gear_7:
+  $base: Vehicle.v_sport1_quadra_turbo_r_inline14
+  torqueMultiplier: 0.306
+  minSpeed: 77
+  maxSpeed: 91.7
+  minEngineRPM: 7800
+  maxEngineRPM: 9950
+
+Vehicle.xaires_aston_valkyrie:
+  $base: Vehicle.v_sport2_porsche_911turbo
+  player_audio_resource: xaires_amv_engine
+  # Sirali cagirma bug'i dersi: 911'in ic kayitlari araca ozel kopya. Lastik yaricapi modelden (LMH 18 inc: on 30/68-18, arka 34/71-18).
+  vehWheelDimensionsSetup:
+    $type: VehicleWheelDimensionsSetup
+    frontPreset:
+      $type: VehicleWheelDimensionsPreset
+      tireRadius: 0.392
+      rimRadius: 0.251
+      tireWidth: 0.341
+      wheelOffset: 0.10
+    backPreset:
+      $type: VehicleWheelDimensionsPreset
+      tireRadius: 0.392
+      rimRadius: 0.251
+      tireWidth: 0.374
+      wheelOffset: 0.08
+  vehDataPackage:
+    $base: Vehicle.VehicleDataPackageSport2
+    useAuxiliary: true
+    hasSpoiler: false
+    driverCombat: DriverCombatTypes.Doors
+    vehSeatSet: Vehicle.Vehicle2SeatSetDefault
+    additionalAnimFeatures:
+      - porscheCorrectivePose
+  appearanceName: aston_valkyrie
+  entityTemplatePath: xaires\aston_valkyrie\aston_valkyrie.ent
+  destruction:
+    $base: Vehicle.v_sport2_porsche_911turbo_inline8
+  displayName: xaires_aston_valkyrie_name
+  manufacturer: Vehicle.xaires_aston_valkyrie_manufacturer
+  vehicleUIData: Vehicle.xaires_aston_valkyrie_data
+  icon: UIIcon.xaires_aston_valkyrie_icon
+  vehDriveModelData:
+    $base: Vehicle.VehicleDriveModelData_911Turbo
+    total_mass: 1750
+    chassis_mass: 1750
+    # 2026-11-13 tester: 260 km/h ustune cikmiyordu -> hava direnci 911 1.93 -> 1.35; el freni hafif 1000 -> 2600
+    airResistanceFactor: 1.35
+    handbrakeBrakingTorque: 2600
+    momentOfInertiaScale: { x: 1, y: 1, z: 1 }
+    # Caliburn atalet (2026-10-29; onceki Apollo x kutle 4030/1200/4410 fazlaydi)
+    momentOfInertia: { x: 3050, y: 900, z: 3530 }
+    # ortadan motorlu, %43/57: agirlik merkezi arka aksa dogru; yapay viraj yatmasi kapali
+    # z teker merkezi (Root) yuksekligine gore: vanilla 911 +0.14 (yerden ~0.49 m). Apollodan gelen -0.18 agirlik merkezini yerden
+    # ~0.17 m, akslarin ALTINA koyuyordu -> kaldirim/rampada arac agirliksiz gibi ucuyordu (oyun testi 2026-10-28, Apollo da).
+    # Countach ile ayni +0.08 (yerden ~0.43 m); y Caliburn (-0.13, ortadan motorlu)
+    center_of_mass_offset: { x: 0.0, y: -0.13, z: 0.08 }
+    turningRollFactor: 0
+    # Direksiyon (Apollo "cok agir" sonrasi): 86 derece/s, 24 m/s ustu %29
+    wheelTurnMaxAddPerSecond: 94
+    turnUpdateMaxSpeedThreshold: 26
+    turnUpdateMaxSpeedTurnMul: 0.33
+    driveHelpers:
+      - $base: Vehicle.RotationLimiter_Exotic
+        maxAngularSpeedRad: 2.6
+        driftLimit: 1.6
+      # Exotic: kayan arka tekerin yanal tutusu %62'ye duser (bilerek oversteer) -> %95
+      - $base: Vehicle.RearWheelsFrictionModifier_Exotic
+        minLatFrictionCoef: 0.95
+        minLongFrictionCoef: 0.95
+      - Vehicle.DriveWheelsAccelerateNoise_Sport
+      - Vehicle.HandbrakeFrictionModifier_Exotic
+      - Vehicle.UphillDriveHelper_Standard
+      - $base: Vehicle.DynamicDownforceHelper_Exotic
+        maxSpeedFactorGround: 0.6
+        maxSpeedFactorAir: 0
+      # havada yere cekme: 911'in kendi kaydi (InAirGravityModifier), Bolide/Apollo agir ayari
+      - $base: Vehicle.VehicleDriveModelData_911Turbo_inline7
+        baseAddedGravity: 1.0
+        driveSpeedAddedGravity: 0.4
+    wheelSetup:
+      $base: Vehicle.VehicleDriveModelData_911Turbo_inline0
+      LF: Vehicle.xaires_amv_wheel_front
+      RF: Vehicle.xaires_amv_wheel_front
+      LB: Vehicle.xaires_amv_wheel_back
+      RB: Vehicle.xaires_amv_wheel_back
+      # karbon frenler; Apollo 660/560 @ 1350 kg kutle oraniyla. yay/sonum/viraj demiri Caliburn
+      frontPreset:
+        $base: Vehicle.VehicleDriveModelData_911Turbo_inline1
+        frictionMulLateral: 1.29
+        frictionMulLongitudinal: 1.15
+        maxBrakingTorque: 1410
+        mass: 25
+        springStiffness: 23
+        springDamping: 2000
+        springReboundDamping: 4300
+        springBoundDampingLowRate: 2900
+        springReboundDampingLowRate: 5000
+        springDampingLowRateCompression: 0.2
+        springDampingHighRateCompression: 0.35
+        swaybarStiffness: 11
+        swaybarLengthScalar: 2
+        swaybarDisplacementLimit: 0.2
+        extremeCompressionEventScalor: 0.74
+        logicalSuspensionCompressionLength: 0.45
+        visualSuspensionCompressionLength: 0.02
+        tenderSpringLength: 0
+        wheelsVerticalOffset: 0.08
+        visualSuspensionDroop: 0.05
+      backPreset:
+        $base: Vehicle.VehicleDriveModelData_911Turbo_inline2
+        frictionMulLateral: 1.33
+        frictionMulLongitudinal: 1.20
+        maxBrakingTorque: 1200
+        mass: 20
+        springStiffness: 22
+        springDamping: 2000
+        springReboundDamping: 4500
+        springBoundDampingLowRate: 2900
+        springReboundDampingLowRate: 2900
+        springDampingLowRateCompression: 0.2
+        springDampingHighRateCompression: 0.35
+        swaybarStiffness: 16
+        swaybarLengthScalar: 2
+        extremeCompressionEventScalor: 0.67
+        swaybarDisplacementLimit: 0.2
+        logicalSuspensionCompressionLength: 0.45
+        visualSuspensionCompressionLength: 0.02
+        tenderSpringLength: 0
+        wheelsVerticalOffset: 0.08
+        visualSuspensionDroop: 0.05
+  vehEngineData:
+    $base: Vehicle.VehicleEngineData_4_SuperSport
+    # 2026-11-13 tester: hizlanma zayif -> tork 960 (SuperSport) -> 1300
+    engineMaxTorque: 1300
+    maxRPM: 10100
+    minRPM: 1000
+    gears:
+      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline0
+      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline1
+      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline2
+      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline3
+      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline4
+      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline5
+      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline6
+      - !remove Vehicle.VehicleEngineData_4_SuperSport_inline7
+      - !append Vehicle.xaires_amv_gear_r
+      - !append Vehicle.xaires_amv_gear_1
+      - !append Vehicle.xaires_amv_gear_2
+      - !append Vehicle.xaires_amv_gear_3
+      - !append Vehicle.xaires_amv_gear_4
+      - !append Vehicle.xaires_amv_gear_5
+      - !append Vehicle.xaires_amv_gear_6
+      - !append Vehicle.xaires_amv_gear_7
+
+# Arac cagirma menusu gorseli (ui\amv_icon.inkatlas)
+UIIcon.xaires_aston_valkyrie_icon:
+  $type: UIIcon_Record
+  atlasResourcePath: xaires\aston_valkyrie\ui\amv_icon.inkatlas
+  atlasPartName: amv
+
+Vehicle.xaires_aston_valkyrie_purchasable:
+  $base: Vehicle.xaires_aston_valkyrie
+Vehicle.xaires_aston_valkyrie_purchasable.dealerPrice: 900000
+Vehicle.xaires_aston_valkyrie_purchasable.dealerCred: 0
+# Virtual Car Dealer onizleme gorseli (tirnakli: tirnaksiz yazan baska mod TweakXL'de "Ambiguous definition" veriyor)
+Vehicle.xaires_aston_valkyrie_purchasable.dealerAtlasPath: "xaires\\aston_valkyrie\\ui\\amv_dealer.inkatlas"
+Vehicle.xaires_aston_valkyrie_purchasable.dealerPartName: "amv_full"
+
+# Oyuncu araç listesi: bu kayıt olmadan araç çağırma menüsünde çıkmıyor ve VCD satın alması bir şey yapmıyor
+# (2026-10-28 ilk kurulumda eksikti; Apollo/Bolide yaml'larında var)
+Vehicle.vehicle_list.list:
+  - !append Vehicle.xaires_aston_valkyrie
+  - !append Vehicle.xaires_aston_valkyrie_purchasable
+
+# Tarayici uretici logosu (ui\aston_valkyrie_logo.inkatlas, wkit\marka_logo.ps1); yoksa 911 tabanindan Vehicle.Porsche miras kalir
+Vehicle.xaires_aston_valkyrie_manufacturer:
+  $type: VehicleManufacturer_Record
+  enumName: xaires_aston_valkyrie_logo
+
+UIIcon.xaires_aston_valkyrie_logo:
+  $type: UIIcon_Record
+  atlasResourcePath: xaires\aston_valkyrie\ui\aston_valkyrie_logo.inkatlas
+  atlasPartName: logo

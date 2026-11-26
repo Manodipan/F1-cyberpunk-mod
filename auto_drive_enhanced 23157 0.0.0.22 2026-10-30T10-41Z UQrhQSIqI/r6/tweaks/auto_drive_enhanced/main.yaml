@@ -1,0 +1,96 @@
+playerStateMachineInputContext.vehicleDriverCombatMountedWeaponsContext.hasOnUpdate: true
+
+GameplayRestriction.ADEPasengerCombat:
+  $type: gamedataGameplayRestrictionStatusEffect_Record
+  duration: BaseStats.InfiniteDuration
+  dynamicDuration: False
+  isAffectedByTimeDilationNPC: True
+  isAffectedByTimeDilationPlayer: True
+  maxStacks: BaseStats.InfiniteStacks
+  reapplyPackagesOnMaxStacks: False
+  removeAllStacksWhenDurationEnds: False
+  removeOnStoryTier: False
+  replicated: False
+  savable: True
+  statusEffectType: BaseStatusEffectTypes.Misc
+  stopActiveSfxOnDeactivate: True
+  debugTags: []
+  gameplayTags:
+    - GameplayRestriction
+    - Firearms
+  immunityStats: []
+  packages:
+    - $type: gamedataGameplayLogicPackage_Record
+      stackable: False
+      animationWrapperOverrides: []
+      effectors: []
+      items: []
+      statPools: []
+      stats:
+        - $type: gamedataConstantStatModifier_Record
+          value: 0
+          modifierType: Multiplier
+          statType: BaseStats.HasKerenzikov
+  SFX: []
+  VFX: []
+
+
+# Add vehicleAutodrivePassengerContext
+playerStateMachineDefinitions.InputContext.states:
+  - !append vehicleAutodrivePassengerContext
+
+playerStateMachineInputContext.vehiclePassengerContext.transitionTo:
+  - "vehiclePassengerRemoteControlDriverContext"
+  - "allForcedContexts"
+  - "allUIContexts"
+  - "vehicleDelamainTaxiContext"
+  - "vehicleAutodrivePassengerContext" # insert for AutodrivePassenger
+  - "gameplayContext"
+playerStateMachineInputContext.vehiclePassengerContext.transitionCondition:
+  - ""
+  - ""
+  - ""
+  - ""
+  - ""
+  - "ExitCondition"
+
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.affinity: n"None"
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.alias: [ n"allVehicleContexts" ]
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.forceInputContext: n"VehicleAutodrivePassenger"
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.forceInputContextDirectBlend: False
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.hasEnterCondition: True
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.hasExitCondition: False
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.hasOnEnter: True
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.hasOnExit: True
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.hasOnUpdate: True
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.stateBodyClassName: ""
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.transitionCondition:
+  - ""
+  - ""
+  - ""
+  - "ExitCondition"
+# playerStateMachineInputContext.vehicleAutodrivePassengerContext.transitionConditionOverridesEnterCondition: []
+# playerStateMachineInputContext.vehicleAutodrivePassengerContext.transitionSkipInternalCondition: []
+playerStateMachineInputContext.vehicleAutodrivePassengerContext.transitionTo:
+  - "allForcedContexts"
+  - "allUIContexts"
+  - "vehicleCinematicCameraContext"
+  - "gameplayContext"
+
+playerStateMachineInputContext.vehicleCinematicCameraContext.transitionCondition:
+  - ""
+  - ""
+  - ""
+  - ""
+  - ""
+  - ""
+  - "ExitCondition"
+
+playerStateMachineInputContext.vehicleCinematicCameraContext.transitionTo:
+  - allForcedContexts
+  - allUIContexts
+  - vehicleAutodriveContext
+  - vehicleMountedWeaponsAutodriveContext
+  - vehicleDelamainTaxiContext
+  - vehicleAutodrivePassengerContext # insert for AutodrivePassenger
+  - gameplayContext

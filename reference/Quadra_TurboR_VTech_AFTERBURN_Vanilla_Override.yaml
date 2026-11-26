@@ -1,0 +1,349 @@
+# Quadra Turbo-R V-Tech AFTERBURN
+# THIS IS A WORK OF FICTION.
+#
+# Any resemblance to actual Italian supercars,
+# living or dead, is entirely intentional.
+#
+# Apparently, the paperwork made it from
+# Maranello to Dearborn after all.
+#
+# No Ferraris were harmed in the making of this car.
+# Allegedly.
+# ============================================================
+# VEHICLE CONFIGURATION - Identity / Appearance / References
+# ============================================================
+Vehicle.v_sport1_quadra_turbo_r_player:
+  vehDriveModelData: Vehicle.turbor_afterburn_drive_model
+  vehEngineData: Vehicle.turbor_afterburn_engine
+  # AFTERBURN-Only health multiplier; leaves inherited vehicle stat groups intact.
+  statModifiers:
+    - !append-once Vehicle.turbor_afterburn_health_x15
+
+# Wheel Dimensions & Camber
+  vehWheelDimensionsSetup: Vehicle.turbor_afterburn_wheel_dimensions
+  leftFrontCamber: 1.36   # RT-2!
+  rightFrontCamber: -1.36
+  leftBackCamber: 2.43
+  rightBackCamber: -2.43
+  leftFrontCamberOffset: {x: 0.01, y: 0, z: 0}
+  rightFrontCamberOffset: {x: -0.01, y: 0, z: 0}
+  leftBackCamberOffset: {x: 0.02, y: 0, z: 0}
+  rightBackCamberOffset: {x: -0.02, y: 0, z: 0}
+
+
+# ============================================================
+# VEHICLE DYNAMICS - Mass / Handling / Steering / Braking
+# ============================================================
+Vehicle.turbor_afterburn_drive_model:
+  $base: Vehicle.VehicleDriveModelData_TurboR_VTech
+  # AFTERBURN exclusive in-air gravity helper.
+  # Replace the inherited V-Tech helper IN PLACE (do not append a second one).
+  # Original V-Tech helper order retained, with RotationLimiter removed.
+  driveHelpers:
+    - Vehicle.turbor_afterburn_rear_friction
+    - Vehicle.turbor_afterburn_handbrake_friction
+    - Vehicle.VehicleDriveModelData_TurboR_VTech_inline6
+    - Vehicle.turbor_afterburn_in_air_gravity
+    - Vehicle.VehicleDriveModelData_TurboR_VTech_inline8
+    - Vehicle.turbor_afterburn_dynamic_downforce
+
+  # Mass / center of mass / rotation
+  total_mass: 1669    # Vehicle curb weight: 1420 kg (in-game specification). Default value: 1500 kg (NOT LB! GITHUB, YOU'RE WRONG!). EY! I'M AMERICAN, CAPISCE?! BORN AND RAISED IN DETROIT! 🤌
+  chassis_mass: 1669    # No idea if this even does anything in-game. It defaults to the same value as total_mass (1500 kg). Guess I'll just horner the default value. May the defaults be forever blessed.
+  center_of_mass_offset: {x: 0, y: -0.21290, z: 0.12}    # Front: Rear 42:58  coz I want it this way okey. DONT YOU DARE ASK ME WHY. Default value: {x: 0, y: -0.14, z: 0.12}.  maybe, just maybe, the Concept car has a slightly more rearward center of mass than the Turbo-R V-Tech. I don't know, I don't care, I just want it this way.
+  momentOfInertia: {x: 2625, y: 642, z: 3041}   # X = Pitch, Y = Roll, Z = Yaw
+  momentOfInertiaScale: {x: 1, y: 1, z: 1}
+  forwardWeightTransferFactor: 0.1896   # dear lazy-ass CDPR devs, you guys just keep the same values 0.2/0.3/0.8(Bike) for all cars, tf yall doin?
+  sideWeightTransferFactor: 0.2667    # 0.23 for all cars, 0.5 for bikes, dear devs what are you doing? momentOfInertia its right there, just use it to calculate the weight transfer factors, its not rocket science.
+  
+# Steering response
+  maxWheelTurnDeg: 42   # Defult value: 50.0, you kidding me? It ain't a drift car, its a street car.
+  wheelTurnMaxSubPerSecond: 140
+  perfectSteeringFactor: 0    # You're on your own now. God bless y'all.
+  turnUpdateMidSpeedTurnMul: 1.00
+  turnUpdateMidSpeedTurnChangeMul: 1.5
+  turnUpdateMaxSpeedTurnMul: 1.00   # why take away the fun by limiting Max steering angle to 50%(0.5) by default? If ppl wanna fly off the road at 200 mph, let em.
+  turnUpdateMaxSpeedTurnChangeMul: 1.25
+
+# Tire slip response
+  slipAngleCurveScale: 3
+  slipAngleMinSpeedThreshold: 3
+  slipRatioCurveScale: 2
+  slipRatioMinSpeedThreshold: 5
+
+# Braking / stability / air drag
+  brakingFrictionFactor: 1.4
+  handbrakeBrakingTorque: 1156
+  antiSwaybarDampingScalor: 0.7
+  airResistanceFactor: 2.45    # MADONNA MIA! AMERICANI! COSA AVETE FATTO ALLA MIA FERRARI?! È ENORME! 🤌
+  
+  # Keep original V-Tech RWD wheel roles (LF/RF/LB/RB) via the inherited wheel setup.
+  wheelSetup: Vehicle.turbor_afterburn_chassis_wheel_setup
+
+Vehicle.turbor_afterburn_chassis_wheel_setup:
+  $base: Vehicle.VehicleDriveModelData_TurboR_VTech_inline0
+  frontPreset: Vehicle.turbor_afterburn_chassis_front
+  backPreset: Vehicle.turbor_afterburn_chassis_rear
+
+
+# ============================================================
+# DRIFT & TRACTION - Rear Grip / Handbrake
+# ============================================================
+
+# Rear wheels friction modifier
+Vehicle.turbor_afterburn_rear_friction:
+  $base: Vehicle.VehicleDriveModelData_TurboR_VTech_inline4
+  maxHelperAcceleration: 10
+  maxLatSlipRatio: 5
+  maxLongSlipRatio: 1
+  maxSpeed: 13
+  minLatFrictionCoef: 0.85
+  minLatSlipRatio: 0.25
+  minLongFrictionCoef: 0.90
+  minLongSlipRatio: 0.70
+
+# Handbrake friction modifier
+Vehicle.turbor_afterburn_handbrake_friction:
+  $base: Vehicle.VehicleDriveModelData_TurboR_VTech_inline5
+  additionalBrakeForLongUse: 0.0    # Like WHAT?
+  blendOutTime: 0.5
+  postHandbrakeTractionBoost: 0   # No extra traction after handbrake PLS
+  rearWheelsLatFrictionCoef: 0.75
+  rearWheelsLongFrictionCoef: 0.80
+
+
+# ============================================================
+# POWERTRAIN - Engine / Transmission / Drivetrain
+# ============================================================
+# Private engine data; no shared vanilla records are overwritten.
+  # Some challenges are best answered with 392 cubic inches.
+Vehicle.turbor_afterburn_engine:
+  $type: gamedataVehicleEngineData_Record
+  engineMaxTorque: 1074.7   # Two fifty-eights. One very bad idea.
+  fastR1GearChange: false
+  finalGearTorqueDecimationScalor: 0.928
+  flyWheelMomentOfInertia: 0.42
+  forceReverseRPMToMin: false
+  gearChangeCooldown: 0.32
+  gearChangeTime: 0.16
+  # Thanks Brian for the torque curve! I love you, man. You are a true hero.
+  gearCurvesPath: base\gameplay\vehicles\curves\engine_torque\qv8_64t2_afterburn.curveset
+  # AFTERBURN TX-9070R DCT MR-Spec Transaxle Conversion
+  # 7-Speed Reinforced Wet Dual-Clutch Transmission   
+  # Mid-mounted V8, rear-wheel drive. End of discussion.
+  # Dear transmission nerds: yes, I know. No, I don't care.
+  gears:
+    - Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_reverse
+    - Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_1
+    - Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_2
+    - Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_3
+    - Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_4
+    - Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_5
+    - Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_6
+    - Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_7
+  maxRPM: 7150.0
+  minRPM: 850.0
+  resistanceTorque: 202.78
+  reverseDirDelay: 0.3
+  wheelsResistanceRatio: 15.0
+
+  # Gear ratios are based on the real-world DCT, if you know you know :D
+Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_reverse:
+  $type: gamedataVehicleGear_Record
+  maxEngineRPM: 3000.0
+  maxSpeed: 10.0
+  minEngineRPM: 850.0
+  minSpeed: 0.0
+  torqueMultiplier: 0.879
+
+Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_1:
+  $type: gamedataVehicleGear_Record
+  maxEngineRPM: 6800.0
+  maxSpeed: 16.80
+  minEngineRPM: 850.0
+  minSpeed: 0.0
+  torqueMultiplier: 1.000
+
+Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_2:
+  $type: gamedataVehicleGear_Record
+  maxEngineRPM: 6850.0
+  maxSpeed: 24.21
+  minEngineRPM: 4440.0
+  minSpeed: 13.5
+  torqueMultiplier: 0.653
+
+Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_3:
+  $type: gamedataVehicleGear_Record
+  maxEngineRPM: 6900.0
+  maxSpeed: 32.24
+  minEngineRPM: 4773.0
+  minSpeed: 22.5
+  torqueMultiplier: 0.455
+
+Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_4:
+  $type: gamedataVehicleGear_Record
+  maxEngineRPM: 6900.0
+  maxSpeed: 37.38
+  minEngineRPM: 5308.0
+  minSpeed: 31.5
+  torqueMultiplier: 0.350
+
+Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_5:
+  $type: gamedataVehicleGear_Record
+  maxEngineRPM: 6850.0
+  maxSpeed: 41.96
+  minEngineRPM: 5402.0
+  minSpeed: 36.5
+  torqueMultiplier: 0.274
+
+Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_6:
+  $type: gamedataVehicleGear_Record
+  maxEngineRPM: 6850.0
+  maxSpeed: 49.78
+  minEngineRPM: 5425.0
+  minSpeed: 41.0
+  torqueMultiplier: 0.217
+
+Vehicle.turbor_afterburn_afterburn_tx9070r_dct_gear_7:
+  $type: gamedataVehicleGear_Record
+  maxEngineRPM: 6800.0
+  maxSpeed: 58.5
+  minEngineRPM: 5619.0
+  minSpeed: 49.08
+  torqueMultiplier: 0.178
+
+
+# ============================================================
+# CHASSIS DYNAMICS - Tires / Suspension / Dampers / Anti-Roll Bars
+# ============================================================
+# Front axle: V-Tech stock values, edit one group at a time.
+Vehicle.turbor_afterburn_chassis_front:
+  $base: Vehicle.VehicleDriveModelData_TurboR_VTech_inline1
+  # Tire grip and rolling resistance
+  # Front axle - 375 mm
+  frictionMulLateral: 0.924324   # Michelin Pilot Sport 4 S Weeeee!
+  frictionMulLongitudinal: 1.029405
+  tireFrictionCoef: 1.0
+  tireLateralSlipEffectsMul: 0.8
+  tireLongitudinalSlipEffectsMul: 1.0
+  tireRollingResistanceCoef: 0.00886000 
+
+  # Springs / dampers / anti-roll bars
+  # And a little "deja vu at 200 mph" touch?
+  springStiffness: 27.13    # 66.76 N/mm   # 9,674 N·s/m     # lb/mm. WTF, CDPR?! ARE YOU GUYS EVEN HUMAN?! DO YOU HAVE ANY IDEA HOW MANY HOURS I SPENT TRYING TO FIGURE THIS SHIT OUT?! TFFFFFFFFFFFFFFFF!!!!    # Edit: I'm not even mad anymore. This isn't even a real-world measurement. I was wrong, okay? I'm not even mad anymore. I'm just trying to make sense of this shit. Sorry, CDPR. I guess.
+  springDamping: 1935   # Coz Nvidia's PhysX says so... (I think I got it right this time. I hope I did.)
+  springReboundDamping: 4451    # 2.3:1 Stop bouncing people into cyberpsychosis.
+  springBoundDampingLowRate: 1505
+  springReboundDampingLowRate: 3010
+  springDampingHighRateCompression: 0.40
+  springDampingLowRateCompression: 0.24
+  swaybarStiffness: 12.24   # 4G7Z-5482-AA
+  swaybarLengthScalar: 1.30   # Ghidra was involved. I don't wanna talk about it.
+  swaybarDisplacementLimit: 0.15
+  tenderSpringLength: 0
+
+  # Braking and suspension travel
+  maxBrakingTorque: 1203
+  logicalSuspensionCompressionLength: 0.3504
+  visualSuspensionCompressionLength: 0.055
+  visualSuspensionDroop: 0.056  # 19.05 mm
+  wheelsVerticalOffset: 0.01
+  mass: 23.4
+  extremeCompressionEventScalor: 0.70
+
+# Rear axle: 645 mm (spring/comp damping only) anti-squat support 
+Vehicle.turbor_afterburn_chassis_rear:
+  $base: Vehicle.VehicleDriveModelData_TurboR_VTech_inline2
+  # Tire grip and rolling resistance
+  # Rear axle - 645 mm
+  frictionMulLateral: 0.975676
+  frictionMulLongitudinal: 1.086595    # Tires: SKRRRRRRRRRRRT!!!
+  tireFrictionCoef: 1.0
+  tireLateralSlipEffectsMul: 1.0
+  tireLongitudinalSlipEffectsMul: 1.66
+  tireRollingResistanceCoef: 0.00906402
+  
+  # Springs / dampers / anti-roll bars
+  # 92 years later, A Ferrari Slayer rises once more in Detroit?
+  springStiffness: 33.99   # SO.. If I am right, and at least I think I am, this should be 76.47 N/mm   #12,167 N·s/m
+  springDamping: 2433
+  springReboundDamping: 5597
+  springBoundDampingLowRate: 1846
+  springReboundDampingLowRate: 3425
+  springDampingHighRateCompression: 0.40
+  springDampingLowRateCompression: 0.24
+  swaybarStiffness: 11.28   # 4G7Z-5A772-AA
+  swaybarLengthScalar: 0.90
+  swaybarDisplacementLimit: 0.15
+  tenderSpringLength: 0
+  
+  # Braking and suspension travel
+  maxBrakingTorque: 802
+  logicalSuspensionCompressionLength: 0.3765
+  visualSuspensionCompressionLength: 0.070
+  visualSuspensionDroop: 0.068
+  wheelsVerticalOffset: 0.01
+  mass: 38.4
+  extremeCompressionEventScalor: 0.70
+
+# Exact V-Tech tire geometry; separate records keep the original car untouched.
+# The original player vehicle points to private wheel records.
+Vehicle.turbor_afterburn_wheel_dimensions:
+  $type: gamedataVehicleWheelDimensionsSetup_Record
+  frontPreset: Vehicle.turbor_afterburn_wheel_front
+  backPreset: Vehicle.turbor_afterburn_wheel_rear
+
+#  Front: 375 mm width / 700 mm overall diameter / 21-inch rim
+Vehicle.turbor_afterburn_wheel_front:
+  $type: gamedataVehicleWheelDimensionsPreset_Record
+  rimRadius: 0.2667
+  tireRadius: 0.3500
+  tireWidth: 0.375   # Defeat value: 0.270 (ahhhhhhh my eyes! CDPR, why do you keep using 270 mm for the front tire width? The real-world equivalent is 275 mm. I can't leave it at 0.270 because the tire geometry IRL is 275 mm.) edit: nvm, Blender says it's actually 375 mm.
+  wheelOffset: 0.079245   # 7.9245% rear wheel offset. why? coz the rear wheels protrude noticeably farther outward than the front wheels. I tested it and it finally has the correct rear tire collision geometry (I finally found it!)
+
+#  Rear: 645 mm MEASURED! tread width / 758 mm overall diameter / 22-inch rim
+Vehicle.turbor_afterburn_wheel_rear:
+  $type: gamedataVehicleWheelDimensionsPreset_Record
+  rimRadius: 0.2794
+  tireRadius: 0.3790
+  tireWidth: 0.645    # Rear tire width is 500 mm by default. Just when I thought things couldn't get any crazier...
+  wheelOffset: 0.10
+
+
+# ============================================================
+# AERODYNAMICS - Air Resistance / Downforce / Lift
+# ============================================================
+# AFTERBURN - private in-air gravity modifier.
+# Original Turbo-R V-Tech: driveSpeedAddedGravity: 0.200000003
+Vehicle.turbor_afterburn_in_air_gravity:
+  $type: gamedataInAirGravityModifier_Record
+  type: Vehicle.InAirGravityModifier_HelperType
+  baseAddedGravity: 0.4
+  smoothingFactor: 0.2
+  driveSpeedAddedGravity: 0.223   # So many... apples... woaaahhh... the gravity... dude... WOOOAAAH
+  maxDriveSpeed: 20
+  minDriveSpeed: 3
+  zVelReductionStart: -2
+  zVelReductionEnd: -10
+
+# AFTERBURN - Mild Dynamic Downforce
+Vehicle.turbor_afterburn_dynamic_downforce:
+  $type: gamedataDynamicDownforceHelper_Record
+  type: Vehicle.DynamicDownforceHelper_HelperType
+  minSpeed: 10
+  maxSpeed: 58.5
+  maxSpeedFactorGround: -0.05655   # An apple a day keeps the traction away.
+  maxSpeedFactorAir: 0.025
+
+
+# ============================================================
+# MISCELLANEOUS - Vehicle Health
+# ============================================================
+
+# AFTERBURN-only +50% Health (Okay, this is straight-up cheating. WTF am I doing? People are NOT gonna like this.).
+# Multiplier 1.5 applies to BaseStats.Health; this does not affect body deformation visuals.
+Vehicle.turbor_afterburn_health_x15:
+  $type: gamedataConstantStatModifier_Record
+  statType: BaseStats.Health
+  modifierType: Multiplier
+  value: 1.5

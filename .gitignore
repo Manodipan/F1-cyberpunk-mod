@@ -1,0 +1,27 @@
+# Binary game assets: only the Phoenix archive is tracked (it IS the deliverable).
+# Everything else binary stays out of Git.
+*.archive
+!Phoenix_aston_cheats/archive/pc/mod/phoenix_aston_valkyrie.archive
+*.archive.xl
+!Phoenix_aston_cheats/archive/pc/mod/phoenix_aston_valkyrie.archive.xl
+# packed onscreens archive (docs/WOLVENKIT.md) - optional, 8 KB, ships when built
+!Phoenix_aston_cheats/archive/pc/mod/phoenix_strings.archive
+*.bnk
+
+# Local tooling noise
+__pycache__/
+*.pyc
+.venv/
+
+# Nexus/Vortex upload artefacts
+dist/
+
+# Reference corpus (tools/collect_vehicles.py). Tracked deliberately: these are other
+# authors' tweak files, kept for comparison only, never shipped in Phoenix_aston_cheats/.
+# `git add reference/vehicles` is enough now - no -f, no exceptions.
+
+# Local diagnostic output from the tools - never committed
+car_manager_dump.txt
+paint_dump.txt
+gearbox_check.txt
+fastcar.txt
