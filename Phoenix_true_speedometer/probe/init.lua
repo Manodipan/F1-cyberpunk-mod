@@ -12,7 +12,11 @@
 -- While the overlay is open the window also shows the controls and a frame counter, so there is
 -- always a sign the mod is running. Closed, it is just the number.
 
-print("[PhoenixSpeed] init.lua executed")
+-- Shown in the window while the overlay is open, so the running build can be identified on sight
+-- instead of inferred. Bump the last number whenever this file changes materially.
+local BUILD = "b8-unpin"
+
+print("[PhoenixSpeed] init.lua executed (" .. BUILD .. ")")
 
 -- ---------------------------------------------------------------------------
 -- units
@@ -269,6 +273,8 @@ local function unitSelector()
   end
 end
 
+-- A saved position from an older build is honoured, but it must be obvious when the window is in a
+-- mode the mouse cannot move. While the overlay is open the current mode is always named.
 local function positionSelector()
   if ImGui.BeginCombo("Position", POSITIONS[position]) then
     for i = 1, #POSITIONS do
@@ -333,7 +339,10 @@ registerForEvent("onDraw", function()
     if overlayOpen then
       unitSelector()
       positionSelector()
-      ImGui.Text("PHOENIX PROBE OK   frames=" .. frames)
+      -- the mode is always named: a pinned window ignores the mouse, and that must never be a
+      -- mystery. "free" is the mode where it can be dragged.
+      ImGui.Text("Position: " .. POSITIONS[position])
+      ImGui.Text("BUILD " .. BUILD .. "   frames=" .. frames)
     end
 
     -- ImGui only reports these after Begin. curX/curY is where the window really is; the remembered
@@ -355,7 +364,7 @@ registerForEvent("onDraw", function()
   end)
 
   if frames == 120 then
-    print("[PhoenixSpeed] 2 s in: vehicle=" .. tostring(veh ~= nil)
+    print("[PhoenixSpeed] build " .. BUILD .. ": vehicle=" .. tostring(veh ~= nil)
       .. " speed=" .. tostring(mps)
       .. " unit=" .. UNITS[chosen].name
       .. " position=" .. POSITIONS[position])

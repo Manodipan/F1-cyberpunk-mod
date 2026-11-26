@@ -46,9 +46,28 @@ Press `~` (CET's overlay) and the window shows two dropdowns. Pick a unit: `km/h
 `knots`, `ft/s`, `Mach`. The choice is written to `unit.txt` beside `init.lua` and read back on the
 next launch. If that file cannot be written the dropdown still works for the session.
 
+## Updating with a verified hash
+
+```
+.\tools\update-hud.ps1
+```
+
+It pulls, prints the build stamp, the line count and the SHA-256 of both the repo file and the
+installed copy, and **fails** unless they match each other and the recorded
+`init.lua.sha256`. That is the check that makes "did the right build actually install" answerable
+rather than assumed.
+
+The same numbers are printed by the HUD itself: with the overlay open the window shows
+`BUILD b8-unpin  frames=N`, and the console logs
+`[PhoenixSpeed] init.lua executed (b8-unpin)` on load. If the build stamp on screen is not the one
+the updater printed, the game is running a different file.
+
 ## Moving the window
 
 Three positions, in the second dropdown:
+
+**The window always shows which mode it is in** (`Position: free|top|bottom`), because a pinned
+window ignores the mouse and that must never be a mystery.
 
 | position | behaviour |
 |---|---|

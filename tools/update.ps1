@@ -159,12 +159,41 @@ try {
         # installed; it stays in the repo at mods/phoenix_true_speedometer for reference only.
         $speedoLua = Join-Path $Repo 'Phoenix_true_speedometer\probe\init.lua'
         if (Test-Path $speedoLua) {
+            $srcHash = (Get-FileHash $speedoLua -Algorithm SHA256).Hash
+            Write-Step "speedometer source"
+            Write-Ok "file : $speedoLua"
+            Write-Ok "hash : $srcHash"
+            Write-Ok "lines: $((Get-Content $speedoLua).Count)"
+            Write-Ok "build: $((Select-String -Path $speedoLua -Pattern 'BUILD = ' -SimpleMatch | Select-Object -First 1).Line.Trim())"
             $cetMods    = Join-Path $GameRoot 'bin\x64\plugins\cyber_engine_tweaks\mods'
             $destSpeedo = Join-Path $cetMods 'phoenix_true_speedometer'
             if (Test-Path $cetMods) {
                 New-Item -ItemType Directory -Force -Path $destSpeedo | Out-Null
                 Copy-Item $speedoLua (Join-Path $destSpeedo 'init.lua') -Force
                 Write-Ok "init.lua -> bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\"
+                $instHash = (Get-FileHash (Join-Path $destSpeedo 'init.lua') -Algorithm SHA256).Hash
+                Write-Ok "installed hash: $instHash"
+                if ($instHash -ne $srcHash) {
+                    Write-Bad "the installed file does not match the repo - the copy did not take"
+                    exit 1
+                }
+
+                # the hash recorded in the repo for this build. If the installed file does not match
+                # it, the game is running something other than what was reviewed.
+                $stampFile = "$speedoLua.sha256"
+                if (Test-Path $stampFile) {
+                    $want = (Get-Content $stampFile -Raw).Trim().ToUpper()
+                    Write-Ok "expected hash : $want"
+                    if ($instHash -eq $want) {
+                        Write-Ok "HASH VERIFIED - the game will load exactly this build"
+                    } else {
+                        Write-Bad "HASH MISMATCH: installed $instHash, expected $want"
+                        Write-Bad "the repo file and its .sha256 stamp disagree - do not trust this install"
+                        exit 1
+                    }
+                } else {
+                    Write-Warn2 "no $stampFile - cannot verify against a recorded build hash"
+                }
                 $pairs += ,@($speedoLua, (Join-Path $destSpeedo 'init.lua'))
 
                 # the old separate probe is gone: the shipped mod is that file

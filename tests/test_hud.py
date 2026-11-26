@@ -373,6 +373,31 @@ class ProbeHudTests(unittest.TestCase):
         self.lua.eval("_G.__events['onDraw']")()
         self.assertIsNone(self.lua.eval("_G.__setWindowPosCalls"), "a pin must ignore the mouse")
 
+    def test_a_saved_pin_from_an_older_build_cannot_trap_the_window(self):
+        """The exact report: an old settings file said position=bottom, so every new build pinned it
+        and dragging silently did nothing. It must be visible, and one click must free it."""
+        self.open_overlay()
+        self.lua.eval("_G.__events['onOverlayClose']")()      # write whatever is current
+        (self.tmp / "unit.txt").write_text("unit=km/h\nposition=bottom\n")
+        self.fresh()
+        self.open_overlay()
+        self.lua.eval("_G.__events['onDraw']")()
+        modes = [t for t in self.texts() if t.startswith("Position:")]
+        self.assertTrue(modes, f"the overlay must name the mode, got {self.texts()}")
+        self.assertIn("bottom", modes[0])
+
+        # and switching to free must actually free it
+        self.open_overlay()
+        self.lua.execute("_G.__picks = { Position = 'free' }; _G.__openCombo = true")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.lua.execute("_G.__picks = nil; _G.__openCombo = false")
+        self.lua.eval("_G.__events['onDraw']")()
+
+        self.lua.execute("_G.__winX = 500; _G.__winY = 400; _G.__hovered = true; _G.__mouseDown = true")
+        self.lua.execute("_G.__dragX = 40; _G.__dragY = 25")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual((self.lua.eval("_G.__winX"), self.lua.eval("_G.__winY")), (540, 425))
+
     def test_a_drag_is_what_gets_remembered(self):
         """Only a real drag may overwrite the remembered position."""
         self.open_overlay()
@@ -405,10 +430,10 @@ class ProbeHudTests(unittest.TestCase):
     def test_the_overlay_signals_that_it_is_running(self):
         self.open_overlay()
         self.lua.eval("_G.__events['onDraw']")()
-        self.assertTrue(any("PHOENIX PROBE OK" in t for t in self.texts()), self.texts())
+        self.assertTrue(any(t.startswith("BUILD ") for t in self.texts()), self.texts())
         self.lua.eval("_G.__events['onOverlayClose']")()
         self.lua.eval("_G.__events['onDraw']")()
-        self.assertFalse(any("PHOENIX PROBE OK" in t for t in self.texts()),
+        self.assertFalse(any(t.startswith("BUILD ") for t in self.texts()),
                          "closed, it must be only the number")
 
     # -- the readout ------------------------------------------------------
@@ -490,6 +515,23 @@ class ProbeHudTests(unittest.TestCase):
                     declared.add(name)
         undeclared = sorted(assigned - declared - allowed)
         self.assertEqual(undeclared, [], f"assigned but never declared (silent nil): {undeclared}")
+
+    def test_the_recorded_hash_matches_the_file(self):
+        """The .sha256 stamp is what the installer verifies against. A stale stamp would make it lie."""
+        import hashlib
+        stamp = INIT.with_suffix(".lua.sha256")
+        self.assertTrue(stamp.exists(), f"missing {stamp}")
+        want = stamp.read_text().strip().upper()
+        data = INIT.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+        got = hashlib.sha256(data).hexdigest().upper()
+        self.assertEqual(want, got, "init.lua changed but its .sha256 stamp did not")
+
+    def test_the_build_stamp_is_present_and_shown(self):
+        code = INIT.read_text(encoding="utf-8")
+        self.assertIn('local BUILD = "', code)
+        self.open_overlay()
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertTrue(any(t.startswith("BUILD ") for t in self.texts()), self.texts())
 
     def test_the_installer_copies_this_exact_file(self):
         ps = (ROOT / "tools/update.ps1").read_text(encoding="utf-8", errors="replace")
