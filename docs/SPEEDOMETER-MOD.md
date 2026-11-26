@@ -30,18 +30,56 @@ is not what gets installed.
 | draws with no vehicle | yes | yes (`-- km/h`) |
 | hotkeys, settings window, other mods | none | none |
 | unit dropdown | — | **yes** |
-| remembers the unit | — | yes (`unit.txt`) |
+| movable / pinnable window | — | **yes** |
+| remembers the unit and the position | — | yes (`unit.txt`) |
 
 ## Turning it on
 
 Nothing to bind and nothing to enable. The window is on screen from the moment CET loads the file,
 including in the main menu and on foot, showing `-- km/h` when there is nothing to read.
 
-Pick a unit in the dropdown: `km/h`, `mph`, `m/s`, `knots`, `ft/s`, `Mach`. The choice is written to
-`unit.txt` beside `init.lua` and read back on the next launch. If that file cannot be written the
-dropdown still works for the session.
+It starts **bottom middle**, which is out of the way of the game's own speedometer.
 
-There is no separate probe anymore: the mod is the probe.
+## The unit
+
+Press `~` (CET's overlay) and the window shows two dropdowns. Pick a unit: `km/h`, `mph`, `m/s`,
+`knots`, `ft/s`, `Mach`. The choice is written to `unit.txt` beside `init.lua` and read back on the
+next launch. If that file cannot be written the dropdown still works for the session.
+
+## Moving the window
+
+Three positions, in the second dropdown:
+
+| position | behaviour |
+|---|---|
+| `free` | drag it anywhere. **Dragging only works while `~` is open** — see below |
+| `top` | pinned, horizontally centred, 20 px from the top edge |
+| `bottom` | pinned, horizontally centred, 20 px from the bottom edge (the default) |
+
+A dragged position is remembered: it is written to `unit.txt` when the overlay closes and restored
+on the next launch.
+
+**Why dragging needs `~` open.** CET routes input to ImGui only while its own overlay is open — that
+is the behaviour of CET itself, not of this mod. While the overlay is closed the window carries
+`NoMove` and `NoInputs`, so the mouse passes straight through and nothing steals a click while
+you drive. While it is open it has neither flag, so it can be grabbed by its body and moved.
+
+```lua
+-- closed: decoration removed, no input, cannot be moved
+flags = AlwaysAutoResize + NoSavedSettings + NoDecoration + NoMove + NoInputs
+-- open:   no decoration and movable/clickable
+flags = AlwaysAutoResize + NoSavedSettings + NoCollapse
+```
+
+What the pinned math actually does, measured in the harness at 1920×1080:
+
+```
+bottom -> x = (1920 - 120) / 2 = 900,  y = 1080 - 24 - 20 = 1036
+top    -> x = 900,                     y = 20
+```
+
+There is no separate probe anymore: the mod is the probe, and `PHOENIX PROBE OK  frames=N` appears
+in the window while the overlay is open, so there is always a sign it is alive.
 
 ## What it reads
 
@@ -96,6 +134,10 @@ Proven, by running the file:
 - it draws with no vehicle, and shows `--` rather than a stale number
 - every unit reaches the screen; a click changes the unit on the next frame (immediate mode draws the
   text before the dropdown)
+- bottom and top pin to the horizontal centre with the measured coordinates above
+- a position set to `free` stops being forced — the one line that made dragging snap back
+- `NoMove`/`NoInputs` while closed, absent while open, so the mouse is only ever captured in `~`
+- a dragged position round-trips through `unit.txt` and is restored after a reload
 - the chosen unit survives a reload; a corrupt or unwritable `unit.txt` does not stop the HUD
 - a throwing ImGui call or a throwing vehicle read cannot escape `onDraw`
 - 19 tests, passing on **Lua 5.1** (CET's LuaJIT) and 5.5

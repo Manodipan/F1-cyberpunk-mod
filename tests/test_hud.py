@@ -62,6 +62,7 @@ ImGuiWindowFlags = {
   NoInputs = 1024,
 }
 ImGuiCol = { Text = 0 }
+ImGuiCond = { None = 0, Always = 1, Once = 2, FirstUseEver = 4, Appearing = 8 }
 
 ImGui = {
   Begin = function(name, flags)
@@ -71,8 +72,14 @@ ImGui = {
     return _G.__beginVisible ~= false
   end,
   End = function() _G.__ends = (_G.__ends or 0) + 1 end,
+  GetWindowPos = function() return _G.__winX or 500, _G.__winY or 700 end,
+  GetWindowSize = function() return _G.__winW or 120, _G.__winH or 24 end,
   Text = function(s) _G.__texts[#_G.__texts + 1] = s end,
-  SetNextWindowPos = function(x, y) _G.__pos = { x = x, y = y } end,
+  SetNextWindowPos = function(x, y, cond)
+    _G.__pos = { x = x, y = y, cond = cond }
+    _G.__posCalls = (_G.__posCalls or 0) + 1
+    if _G.__posNil then return nil end
+  end,
   SetWindowFontScale = function(s) _G.__scale = s end,
   PushStyleColor = function(index, a, b, c, d)
     if _G.__failColour then error("no colour for you") end
@@ -103,15 +110,21 @@ ImGui = {
   end,
   Selectable = function(entry, selected)
     _G.__offered = (_G.__offered or "") .. entry .. ","
-    if _G.__pick ~= nil and entry == _G.__pick then
-      _G.__pick = nil                        -- one click only, like a real mouse
+    -- __picks is a per-widget map, because more than one dropdown can be open in the same frame and
+    -- a real mouse can only be in one of them
+    local picks = _G.__picks
+    if picks and picks[_G.__combo] == entry then
+      picks[_G.__combo] = nil
       return true
     end
     return false
   end,
   BeginCombo = function(label)
+    _G.__combo = label                       -- which dropdown Selectable is inside
     _G.__widgets[#_G.__widgets + 1] = { kind = "combo", label = label }
-    return _G.__openCombo == true            -- a closed combo draws nothing until it is clicked
+    -- real ImGui: BeginCombo returns true while the popup is open. A click on the dropdown opens it,
+    -- so a test sets __openCombo to model "the user just clicked the dropdown open".
+    return _G.__openCombo == true
   end,
   EndCombo = function() end,
   SetItemDefaultFocus = function() end,
@@ -185,13 +198,19 @@ class ProbeHudTests(unittest.TestCase):
         self.assertEqual(self.lua.eval("_G.__begins"), 1)
         self.assertIn("-- km/h", self.texts())
 
-    def test_drawing_has_no_hotkey_or_overlay_dependency(self):
+    def test_it_draws_whether_the_overlay_is_open_or_closed(self):
+        """The overlay adds controls and dragging; it must never be required for the number."""
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("212 km/h", self.texts())
+        self.open_overlay()
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertIn("212 km/h", self.texts())
         self.assertEqual(len(self.lua.eval("_G.__hotkeys")), 0, "no hotkey is needed")
-        # opening or closing the overlay must not matter: no such handler is registered
-        self.assertIsNone(self.lua.eval("_G.__events['onOverlayOpen']"))
 
     # -- the one added feature --------------------------------------------
     def test_the_dropdown_offers_every_unit(self):
+        self.open_overlay()
         self.lua.execute("_G.__openCombo = true")
         self.lua.eval("_G.__events['onDraw']")()
         offered = self.lua.eval("_G.__offered") or ""
@@ -199,26 +218,28 @@ class ProbeHudTests(unittest.TestCase):
             self.assertIn(unit, offered, f"the dropdown never offered {unit}")
 
     def test_picking_a_unit_changes_the_readout(self):
+        self.open_overlay()
         self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
-        self.lua.execute("_G.__openCombo = true; _G.__pick = 'mph'")
+        self.lua.execute("_G.__openCombo = true; _G.__picks = { Unit = 'mph' }")
         self.lua.eval("_G.__events['onDraw']")()      # the click lands here
         self.lua.eval("_G.__events['onDraw']")()      # the new unit is drawn next frame
         self.assertIn("132 mph", self.texts())
 
     def test_the_unit_text_updates_on_the_frame_after_the_click(self):
         """Immediate mode: the number is drawn before the dropdown, so a click lands one frame later."""
+        self.open_overlay()
         self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
-        self.lua.execute("_G.__openCombo = true; _G.__pick = 'mph'")
+        self.lua.execute("_G.__openCombo = true; _G.__picks = { Unit = 'mph' }")
         self.lua.eval("_G.__events['onDraw']")()
-        self.assertEqual(self.lua.eval("(function() return 1 end)()"), 1)
         self.assertEqual(self.mod_unit(), "mph")
 
     def test_the_chosen_unit_is_remembered(self):
+        self.open_overlay()
         self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
-        self.lua.execute("_G.__openCombo = true; _G.__pick = 'knots'")
+        self.lua.execute("_G.__openCombo = true; _G.__picks = { Unit = 'knots' }")
         self.lua.eval("_G.__events['onDraw']")()
-        self.assertEqual((self.tmp / "unit.txt").read_text().strip(), "knots")
-        self.lua.execute("_G.__openCombo = false; _G.__pick = nil")
+        self.assertEqual(self.mod_unit(), "knots")
+        self.lua.execute("_G.__openCombo = false; _G.__picks = nil")
         self.fresh()
         self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
         self.lua.eval("_G.__events['onDraw']")()
@@ -232,14 +253,95 @@ class ProbeHudTests(unittest.TestCase):
         self.assertIn("212 km/h", self.texts())
 
     def test_an_unwritable_unit_file_still_draws(self):
+        self.open_overlay()
         self.lua.execute("""
           io.open = function() error("no disk for you") end
         """)
         self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
-        self.lua.execute("_G.__openCombo = true; _G.__pick = 'mph'")
+        self.lua.execute("_G.__openCombo = true; _G.__picks = { Unit = 'mph' }")
         self.lua.eval("_G.__events['onDraw']")()
         self.lua.eval("_G.__events['onDraw']")()
         self.assertIn("132 mph", self.texts())
+
+    # -- moving the window -------------------------------------------------
+    def test_it_defaults_to_bottom_middle(self):
+        self.lua.execute("_G.__vehicle = makeVehicle(); _G.__velocity = 58.8")
+        self.lua.eval("_G.__events['onDraw']")()
+        pos = self.lua.eval("_G.__pos")
+        self.assertIsNotNone(pos, "a pinned position must be applied")
+        self.assertAlmostEqual(pos["y"], 1080 - 24 - 20, delta=1, msg="not near the bottom")
+        self.assertAlmostEqual(pos["x"], (1920 - 120) / 2, delta=1, msg="not horizontally centred")
+
+    def test_picking_top_pins_it_to_the_centre_of_the_top_edge(self):
+        self.pick_position("top")
+        self.lua.eval("_G.__events['onDraw']")()
+        pos = self.lua.eval("_G.__pos")
+        self.assertEqual(pos["y"], 20)
+        self.assertAlmostEqual(pos["x"], (1920 - 120) / 2, delta=1)
+
+    def test_picking_bottom_pins_it_to_the_centre_of_the_bottom_edge(self):
+        self.pick_position("bottom")
+        self.lua.eval("_G.__events['onDraw']")()
+        pos = self.lua.eval("_G.__pos")
+        self.assertAlmostEqual(pos["y"], 1080 - 24 - 20, delta=1)
+        self.assertAlmostEqual(pos["x"], (1920 - 120) / 2, delta=1)
+
+    def test_the_position_choice_survives_a_restart(self):
+        self.pick_position("top")
+        self.open_overlay()
+        self.lua.eval("_G.__events['onOverlayClose']")()
+        self.assertIn("position=top", (self.tmp / "unit.txt").read_text())
+        self.fresh()
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("_G.__pos")["y"], 20, "top was lost on reload")
+
+    def test_a_dragged_window_is_remembered_and_restored(self):
+        """Drag = ImGui reports a different window position; that must survive a reload."""
+        self.pick_position("free")
+        self.lua.execute("_G.__winX = 300; _G.__winY = 400")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.open_overlay()
+        self.lua.eval("_G.__events['onOverlayClose']")()
+        ini = (self.tmp / "unit.txt").read_text()
+        self.assertIn("position=free", ini)
+        self.assertIn("x=300", ini)
+        self.assertIn("y=400", ini)
+
+        self.fresh()
+        self.lua.eval("_G.__events['onDraw']")()
+        pos = self.lua.eval("_G.__pos")
+        self.assertEqual((pos["x"], pos["y"]), (300, 400), "the dragged place was not restored")
+        # and only once: a remembered position must not be forced every frame, or dragging is dead
+        before = self.lua.eval("_G.__posCalls")
+        self.lua.execute("_G.__winX = 350")
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertEqual(self.lua.eval("_G.__posCalls"), before, "dragging would be fought every frame")
+
+    def test_the_window_is_locked_when_the_overlay_is_closed(self):
+        """Closed overlay = CET routes no input, so the flags must say nobody can move it."""
+        self.lua.eval("_G.__events['onDraw']")()
+        flags = self.lua.eval("_G.__begin.flags")
+        for name in ("NoMove", "NoInputs"):
+            bit = self.lua.eval(f"ImGuiWindowFlags.{name}")
+            self.assertGreaterEqual(flags % (bit * 2), bit, f"{name} missing")
+
+    def test_it_becomes_movable_while_the_overlay_is_open(self):
+        self.open_overlay()
+        self.lua.eval("_G.__events['onDraw']")()
+        flags = self.lua.eval("_G.__begin.flags")
+        # Lua 5.1 has no bitwise operators: a bit is set iff (flags % 2*bit) >= bit
+        for name in ("NoMove", "NoInputs"):
+            bit = self.lua.eval(f"ImGuiWindowFlags.{name}")
+            self.assertLess(flags % (bit * 2), bit, f"still {name}")
+
+    def test_the_overlay_signals_that_it_is_running(self):
+        self.open_overlay()
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertTrue(any("PHOENIX PROBE OK" in t for t in self.texts()), self.texts())
+        self.lua.eval("_G.__events['onOverlayClose']")()
+        self.lua.eval("_G.__events['onDraw']")()
+        self.assertFalse(any("PHOENIX PROBE OK" in t for t in self.texts()),
+                         "closed, it must be only the number")
 
     # -- the readout ------------------------------------------------------
     def test_three_significant_figures(self):
@@ -303,7 +405,25 @@ class ProbeHudTests(unittest.TestCase):
 
     def mod_unit(self):
         path = self.tmp / "unit.txt"
-        return path.read_text().strip() if path.exists() else None
+        if not path.exists():
+            return None
+        for line in path.read_text().splitlines():
+            if line.startswith("unit="):
+                return line.split("=", 1)[1]
+        return None
+
+    def pick_position(self, choice):
+        """Click an entry in the Position dropdown, the way a mouse would. Like every immediate-mode
+        control the effect lands on the following frame."""
+        self.open_overlay()
+        self.lua.execute(f"_G.__picks = {{ Position = '{choice}' }}; _G.__openCombo = true")
+        self.lua.eval("_G.__events['onDraw']")()   # the dropdown is open, the click lands here
+        self.lua.execute("_G.__picks = nil; _G.__openCombo = false")
+        self.lua.eval("_G.__events['onDraw']")()   # the new position is applied here
+
+    def open_overlay(self):
+        """Input (and therefore the controls) only exist while CET's overlay is open."""
+        self.lua.eval("_G.__events['onOverlayOpen']")()
 
 
 if __name__ == "__main__":
