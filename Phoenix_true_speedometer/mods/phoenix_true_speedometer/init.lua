@@ -158,7 +158,9 @@ local function clampSettings()
       end
     end
   end
-  if cfg.slot1 ~= "custom" and FACTORS[cfg.slot1] == nil then
+  -- "" (off) is a real setting for either slot: clamping it back to the default silently undid the
+  -- user's choice on every restart
+  if cfg.slot1 ~= "" and cfg.slot1 ~= "custom" and FACTORS[cfg.slot1] == nil then
     cfg.slot1 = DEFAULTS.slot1
   end
   if cfg.slot2 ~= "" and cfg.slot2 ~= "custom" and FACTORS[cfg.slot2] == nil then
@@ -272,7 +274,9 @@ function M.render(mps, c)
     parts[#parts + 1] = second
   end
   if #parts == 0 then
-    return M.format(mps) .. " m/s"
+    -- both slots deliberately blanked: honour that instead of quietly printing m/s, which made the
+    -- unit look stuck. The caller still gets nil so nothing is drawn.
+    return nil
   end
   return table.concat(parts, "   ")
 end
@@ -600,7 +604,11 @@ local function setSlot(key, unit)
     return false
   end
   if unit ~= "" and unit ~= "custom" and FACTORS[unit] == nil then
+    reported("ignored an unknown unit for " .. tostring(key) .. ": " .. tostring(unit))
     return false
+  end
+  if cfg[key] == unit then
+    return true
   end
   cfg[key] = unit
   M.saveSettings()
@@ -900,7 +908,11 @@ function M.start()
       reported("1 s in: hud=" .. tostring(cfg.enabled)
         .. " vehicle=" .. tostring(veh ~= nil)
         .. " driver=" .. tostring(veh ~= nil and isDriving(veh) or false)
-        .. " speed=" .. tostring(mps))
+        .. " speed=" .. tostring(mps)
+        .. " | slot1=" .. tostring(cfg.slot1 == "" and "off" or cfg.slot1)
+        .. " slot2=" .. tostring(cfg.slot2 == "" and "off" or cfg.slot2)
+        .. " labels=" .. tostring(cfg.showLabels)
+        .. " text=\"" .. tostring(M.render(mps or 0, cfg)) .. "\"")
     end
   end)
 

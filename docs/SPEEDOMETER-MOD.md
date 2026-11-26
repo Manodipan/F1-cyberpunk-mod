@@ -64,6 +64,26 @@ that the old build used plays no part here — that row disappeared with the `.r
 
 Everything is saved the moment it changes.
 
+### If the unit looks stuck
+
+Two bugs produced exactly that symptom and are both fixed:
+
+- **A blank slot was undone on reload.** `off` was saved correctly but the loader treated it as an
+  invalid unit for Slot 1 and clamped it back to `km/h`. Only Slot 2 accepted `off`. Now either slot
+  accepts it, and `off` survives a restart.
+- **Both slots off printed `m/s` anyway.** An empty readout fell back to a hardcoded
+  `m/s`, which is by definition "locked to m/s" and ignores every setting. Now both slots off draws
+  nothing at all, which is what "off" means.
+
+The `1 s in:` line now names the units it is actually using, so nothing has to be inferred:
+
+```
+[Phoenix True Speedometer] 1 s in: ... | slot1=mph slot2=off labels=true text="132 mph"
+```
+
+If `slot1=` there disagrees with what the Mods tab shows, the setting is not reaching the mod;
+if `text=` is right but the screen is not, the failure is between the mod and CET.
+
 ## Input
 
 **The HUD does not take your mouse or keyboard.** CET only traps input for ImGui while its own

@@ -174,6 +174,12 @@ class HudLuaTests(unittest.TestCase):
         self.mod = self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
         # deliberately no start() call: CET does not call anything, so loading must be enough
 
+    def fresh_load(self):
+        """A second load in the same folder with a clean state - what a game restart does."""
+        self.lua = LuaRuntime(unpack_returned_tuples=True)
+        self.lua.execute(STUBS)
+        return self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
+
     def tearDown(self):
         os.chdir(self._cwd)
         shutil.rmtree(self.tmp, ignore_errors=True)
@@ -246,6 +252,43 @@ class HudLuaTests(unittest.TestCase):
         self.assertEqual(self.mod.render(58.8, cfg), "212   58.8")
         cfg.slot2 = ""
         self.assertEqual(self.mod.render(58.8, cfg), "212")
+
+    def test_every_unit_reaches_the_screen(self):
+        """The reported bug: "it looks locked to m/s". Sweep every unit through the real render path."""
+        cfg = self.mod.config()
+        expected = {
+            "m/s": "58.8 m/s", "km/h": "212 km/h", "mph": "132 mph", "knots": "114 kn",
+            "ft/s": "193 ft/s", "Mach": "0.171 Mach",
+        }
+        for unit, want in expected.items():
+            cfg.slot1 = unit
+            cfg.slot2 = ""
+            self.assertEqual(self.mod.render(58.8, cfg), want, f"unit {unit}")
+
+    def test_a_selected_unit_is_still_there_after_a_restart(self):
+        """Every unit, written to disk and read back by a fresh load - not just 'off'."""
+        for unit in ("km/h", "mph", "knots", "ft/s", "Mach", "custom"):
+            self.mod.setSlot("slot1", unit)
+            self.mod.setSlot("slot2", "")
+            self.mod.saveSettings()
+            fresh = self.fresh_load()
+            self.assertEqual(fresh.config().slot1, unit, f"{unit} lost on reload")
+            self.assertEqual(fresh.config().slot2, "", "a blank slot came back on reload")
+
+    def test_off_survives_a_restart_in_either_slot(self):
+        """Blank was a real setting but the loader clamped slot1 back to km/h, undoing it."""
+        for key in ("slot1", "slot2"):
+            self.mod.setSlot(key, "")
+            self.mod.saveSettings()
+            fresh = self.fresh_load()
+            self.assertEqual(fresh.config()[key], "", f"{key}=off was undone on reload")
+
+    def test_both_slots_off_draws_nothing_rather_than_guessing_m_s(self):
+        """With both slots blank the old render() hardcoded m/s, which reads as a stuck unit."""
+        cfg = self.mod.config()
+        cfg.slot1 = ""
+        cfg.slot2 = ""
+        self.assertIsNone(self.mod.render(58.8, cfg))
 
     def test_an_unknown_unit_falls_back_to_ms(self):
         cfg = self.mod.config()
