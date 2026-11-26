@@ -706,153 +706,15 @@ function M.drawSettings()
 end
 
 -- ---------------------------------------------------------------------------
--- optional Native Settings UI tab (in the game's Mods menu, like V's Vehicle Computer)
+-- settings reset
 -- ---------------------------------------------------------------------------
-local function unitIndex(unit)
-  for i = 1, #UNIT_ORDER do
-    if UNIT_ORDER[i] == unit then
-      return i
-    end
-  end
-  return nil
-end
-
--- Native Settings UI, from its own source and official example:
---   addTab(path, label)                      addSubcategory(path, label)
---   addSwitch(path, label, desc, current, default, cb)
---   addSelectorString(path, label, desc, elements, index, defaultIndex, cb)   cb receives the index
---   addRangeFloat(path, label, desc, min, max, step, format, current, default, cb)
---   addButton(path, label, desc, buttonText, textSize, cb)
---   setOption(optionTable, value)             switch: bool, range: number, selector: index
---   registerRestoreDefaultsCallback(path, override, cb)
-local nativeOptions = {}
-local nativeSettingsRef = nil
-
-local function nsValue(entry)
-  if entry.kind == "selector" then
-    if cfg[entry.key] == "" or cfg[entry.key] == "off" then
-      for i = 1, #OVERLAY_UNITS do
-        if OVERLAY_UNITS[i] == "off" then
-          return i
-        end
-      end
-    end
-    return unitIndex(cfg[entry.key]) or 1
-  end
-  return cfg[entry.key]
-end
-
--- one reset for both surfaces, so the Mods tab widgets never go stale behind the overlay's button
+-- One reset, no second surface to keep in sync: every control lives in this mod's own CET window,
+-- so CET is the only dependency and there is nothing that can disagree with itself.
 function M.resetToDefaults()
   for k, v in pairs(DEFAULTS) do
     cfg[k] = v
   end
   M.saveSettings()
-  local settings = nativeSettingsRef
-  if settings and type(settings.setOption) == "function" then
-    for _, entry in ipairs(nativeOptions) do
-      pcall(settings.setOption, entry.option, nsValue(entry))
-    end
-  end
-end
-
-local function addNativeSettings()
-  local ok, nativeSettings = pcall(function()
-    return GetMod("nativeSettings")
-  end)
-  if not ok or type(nativeSettings) ~= "table" or type(nativeSettings.addTab) ~= "function" then
-    return false
-  end
-  local path = "/phoenix_speedometer"
-
-  nativeSettingsRef = nativeSettings
-  local resetToDefaults = M.resetToDefaults
-
-  pcall(nativeSettings.addTab, path, "Phoenix Speedometer")
-
-  -- HUD -------------------------------------------------------------------
-  pcall(nativeSettings.addSubcategory, path .. "/hud", "HUD")
-  local toggles = {
-    { "Show the HUD", "Draws its own readout; the game's HUD is untouched.", "enabled" },
-    { "Print the units", "Append the unit to each number.", "showLabels" },
-    { "First person only", "Hide in third person and photo mode.", "fppOnly" },
-  }
-  for _, row in ipairs(toggles) do
-    local label, description, key = row[1], row[2], row[3]
-    pcall(function()
-      local option = nativeSettings.addSwitch(path .. "/hud", label, description, cfg[key],
-        DEFAULTS[key], function(state)
-          if type(state) == "boolean" then
-            cfg[key] = state
-            M.saveSettings()
-          end
-        end)
-      nativeOptions[#nativeOptions + 1] = { option = option, kind = "switch", key = key }
-    end)
-  end
-
-  -- units -----------------------------------------------------------------
-  pcall(nativeSettings.addSubcategory, path .. "/units", "Units")
-  for _, row in ipairs({ { "Slot 1 unit", "slot1" }, { "Slot 2 unit", "slot2" } }) do
-    local label, key = row[1], row[2]
-    pcall(function()
-      local option = nativeSettings.addSelectorString(path .. "/units", label,
-        "The numbers on the HUD. Pick off to leave that slot empty.",
-        OVERLAY_UNITS, nsValue({ kind = "selector", key = key }), unitIndex(DEFAULTS[key]) or 1,
-        function(index)
-          local unit = (type(index) == "number") and OVERLAY_UNITS[index] or index
-          setSlot(key, unit == "off" and "" or unit)
-        end)
-      nativeOptions[#nativeOptions + 1] = { option = option, kind = "selector", key = key }
-    end)
-  end
-
-  local ranges = {
-    { path .. "/units", "Slot 1 custom multiplier", "custom1", 0.0001, 1000.0, 0.01, "%.3f",
-      "Used when Slot 1 is custom: speed x this." },
-    { path .. "/units", "Slot 2 custom multiplier", "custom2", 0.0001, 1000.0, 0.01, "%.3f",
-      "Used when Slot 2 is custom: speed x this." },
-    { path .. "/look", "Text size", "scale", 0.5, 6.0, 0.05, "%.2f", "Font scale of the readout." },
-    { path .. "/look", "Horizontal position", "posX", 0.0, 1.0, 0.01, "%.2f",
-      "0 is the left edge of the screen, 1 the right." },
-    { path .. "/look", "Vertical position", "posY", 0.0, 1.0, 0.01, "%.2f",
-      "0 is the top edge of the screen, 1 the bottom." },
-    { path .. "/look", "Colour red", "colorR", 0.0, 1.0, 0.01, "%.2f", "Text colour." },
-    { path .. "/look", "Colour green", "colorG", 0.0, 1.0, 0.01, "%.2f", "Text colour." },
-    { path .. "/look", "Colour blue", "colorB", 0.0, 1.0, 0.01, "%.2f", "Text colour." },
-    { path .. "/look", "Fallback smoothing", "smooth", 0.02, 1.0, 0.01, "%.2f",
-      "Only used if the velocity methods are unavailable." },
-  }
-  pcall(nativeSettings.addSubcategory, path .. "/look", "Position and look")
-  for _, row in ipairs(ranges) do
-    local where, label, key = row[1], row[2], row[3]
-    local low, high, step, format = row[4], row[5], row[6], row[7]
-    local description = row[8]
-    pcall(function()
-      local option = nativeSettings.addRangeFloat(where, label, description, low, high, step,
-        format, cfg[key], DEFAULTS[key], function(value)
-          if type(value) == "number" then
-            cfg[key] = value
-            M.saveSettings()
-          end
-        end)
-      nativeOptions[#nativeOptions + 1] = { option = option, kind = "range", key = key }
-    end)
-  end
-
-  -- reset -----------------------------------------------------------------
-  pcall(function()
-    nativeSettings.addButton(path, "Reset to defaults",
-      "Put every option back to its shipped value.", "Reset", 45, function()
-        resetToDefaults()
-      end)
-  end)
-  pcall(function()
-    nativeSettings.registerRestoreDefaultsCallback(path, false, function()
-      resetToDefaults()
-    end)
-  end)
-  return true
 end
 
 local function installStubs()
@@ -875,7 +737,6 @@ function M.start()
 
   registerForEvent("onInit", function()
     M.saveSettings()
-    addNativeSettings()                  -- Native Settings UI expects mods to add their tab here
   end)
 
   registerForEvent("onUpdate", function(delta)

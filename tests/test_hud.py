@@ -45,8 +45,8 @@ _G.__hotkeys = {}
 _G.__texts = {}
 _G.__pushes = 0
 _G.__pops = 0
+_G.__widgets = {}
 _G.__begins = 0
-_G.__nativeSettings = nil
 
 registerForEvent = function(event, fn) _G.__events[event] = fn end
 registerHotkey = function(id, label, fn) _G.__hotkeys[id] = { label = label, fn = fn } end
@@ -82,18 +82,26 @@ ImGui = {
   Separator = function() end,
   -- CET order: value first, changed second
   Checkbox = function(label, v)
+    _G.__widgets[#_G.__widgets + 1] = { kind = "checkbox", label = label }
     if _G.__checkboxNil then return nil, true end
     if _G.__clickCheckbox then return not v, true end
     return v, false
   end,
   DragFloat = function(label, v, step, low, high)
+    _G.__widgets[#_G.__widgets + 1] = { kind = "drag", label = label, low = low, high = high }
     if _G.__clickDrag then return low, true end
     if _G.__dragNil then return nil, true end
     return v, false
   end,
-  Button = function() return false end,
+  Button = function(label)
+    _G.__widgets[#_G.__widgets + 1] = { kind = "button", label = label }
+    return false
+  end,
   Selectable = function() return false end,
-  BeginCombo = function() return false end,
+  BeginCombo = function(label)
+    _G.__widgets[#_G.__widgets + 1] = { kind = "combo", label = label }
+    return _G.__openCombo == true            -- a closed combo draws nothing until it is clicked
+  end,
   EndCombo = function() end,
   SetItemDefaultFocus = function() end,
 }
@@ -121,43 +129,10 @@ Game = {
   GetPlayer = function() return {} end,
   ["GetMountedVehicle;GameObject"] = function() return _G.__vehicle end,
 }
-GetMod = function(name) return _G.__nativeSettings end
 """
 
 
-NS_STUB = """
-_G.__ns = { switches = {}, selectors = {}, ranges = {}, buttons = 0, setOption = 0, restore = nil }
-_G.__nativeSettings = {
-    addTab = function(path, label) _G.__ns.tab = path; _G.__ns.tabLabel = label end,
-    addSubcategory = function(path, label)
-        _G.__ns.subs = _G.__ns.subs or {}
-        _G.__ns.subs[#_G.__ns.subs + 1] = path
-    end,
-    addSwitch = function(path, label, desc, current, default, cb)
-        assert(type(current) == "boolean", "addSwitch current must be a bool, got " .. type(current))
-        assert(type(default) == "boolean", "addSwitch default must be a bool")
-        _G.__ns.switches[#_G.__ns.switches + 1] = { label = label, cb = cb }
-    end,
-    addSelectorString = function(path, label, desc, elements, selected, default, cb)
-        assert(type(selected) == "number", "selector needs an index, got " .. type(selected))
-        assert(type(default) == "number", "selector default needs an index")
-        _G.__ns.selectors[#_G.__ns.selectors + 1] =
-            { label = label, cb = cb, elements = elements, selected = selected }
-    end,
-    addRangeFloat = function(path, label, desc, min, max, step, fmt, current, default, cb)
-        assert(type(min) == "number" and type(max) == "number" and min < max, "range bounds")
-        assert(type(fmt) == "string" and fmt:find("%%"), "range needs a format string")
-        assert(type(current) == "number" and type(default) == "number", "range values must be numbers")
-        _G.__ns.ranges[#_G.__ns.ranges + 1] = { label = label, cb = cb, min = min, max = max }
-    end,
-    addButton = function(path, label, desc, text, size, cb)
-        _G.__ns.buttons = _G.__ns.buttons + 1
-        _G.__ns.buttonCb = cb
-    end,
-    registerRestoreDefaultsCallback = function(path, override, cb) _G.__ns.restore = cb end,
-    setOption = function(option, value) _G.__ns.setOption = _G.__ns.setOption + 1 end,
-}
-"""
+
 
 
 @unittest.skipUnless(HAVE_LUA, "lupa not installed - Lua tests need it")
@@ -479,61 +454,83 @@ class HudLuaTests(unittest.TestCase):
         self.assertFalse(self.mod.setSlot("slot1", "furlongs"))
         self.assertEqual(self.mod.config().slot1, "km/h")
 
-    def boot_with_native_settings(self):
-        self.lua.execute(NS_STUB)
+    def test_no_other_mod_is_required(self):
+        """CET alone must be enough: the whole file loads and starts with Native Settings absent."""
+        self.lua.execute("_G.__nativeSettings = nil")
         mod = self.lua.execute(f'return dofile("{self.tmp / "init.lua"}")')
-        self.lua.eval("_G.__events['onInit']")()             # the tab is registered here
-        return mod
+        self.lua.eval("_G.__events['onInit']")()
+        self.assertTrue(self.lua.eval("_G.__events['onDraw'] ~= nil"))
+        self.assertEqual(mod.render(58.8, mod.config()), "212 km/h   58.8 m/s")
 
-    def test_the_mods_tab_is_complete(self):
-        self.boot_with_native_settings()
-        self.assertEqual(self.lua.eval("_G.__ns.tab"), "/phoenix_speedometer")
-        self.assertEqual(len(self.lua.eval("_G.__ns.switches")), 3)
-        self.assertEqual(len(self.lua.eval("_G.__ns.selectors")), 2)
-        self.assertEqual(len(self.lua.eval("_G.__ns.ranges")), 9)
-        self.assertEqual(self.lua.eval("_G.__ns.buttons"), 1)
-        self.assertIsNotNone(self.lua.eval("_G.__ns.restore"))
+    def test_it_never_reaches_for_another_mod(self):
+        """No GetMod, no Native Settings calls: the dependency was removed, not made optional."""
+        code = INIT.read_text(encoding="utf-8")
+        for banned in ("GetMod(", "nativeSettings", "nativeSettingsRef", "setOption",
+                       "addTab", "addSubcategory", "addSelectorString", "addRangeFloat",
+                       "registerRestoreDefaultsCallback"):
+            self.assertNotIn(banned, code, f"{banned} is a Native Settings UI dependency")
 
-    def test_the_mods_tab_selectors_offer_off(self):
-        self.boot_with_native_settings()
-        selector = self.lua.eval("_G.__ns.selectors")[1]
-        self.assertEqual(list(selector["elements"].values()),
-                         ["m/s", "km/h", "mph", "knots", "ft/s", "Mach", "custom", "off"])
-        self.assertEqual(selector["selected"], 2)            # km/h sits at index 2
+    def test_the_overlay_offers_every_setting_that_was_on_the_old_tab(self):
+        """The tab is gone, so the overlay must carry all of it - counted, not assumed."""
+        body = INIT.read_text(encoding="utf-8")
+        window = body.split("local function settingsBody()", 1)[1].split("\nend\n", 1)[0]
+        # three switches
+        for label in ('uiCheckbox("enabled"', 'uiCheckbox("showLabels"', 'uiCheckbox("fppOnly"'):
+            self.assertIn(label, window, label)
+        # both unit selectors, with off
+        self.assertEqual(window.count('uiUnitSelector("Slot'), 2)
+        # the nine numbers that were sliders on the Mods tab
+        for key in ("custom1", "custom2", "scale", "posX", "posY",
+                    "colorR", "colorG", "colorB", "smooth"):
+            self.assertIn(f'uiDragFloat("{key}"', window, key)
+        # and a reset
+        self.assertIn("M.resetToDefaults()", window)
 
-    def test_off_from_the_mods_tab_blanks_the_slot(self):
-        mod = self.boot_with_native_settings()
-        self.lua.eval("_G.__ns.selectors")[2]["cb"](8)       # slot 2 -> off
-        self.assertEqual(mod.config().slot2, "")
+    def test_every_setting_is_reachable_in_the_overlay(self):
+        """The Mods tab is gone, so the CET window must contain all 14 settings - by label."""
+        self.lua.eval("_G.__events['onOverlayOpen']")()
+        self.lua.eval("_G.__events['onDraw']")()
+        widgets = list(self.lua.eval("_G.__widgets").values())
+        labels = [w["label"] for w in widgets]
+        kinds = [w["kind"] for w in widgets]
+        self.assertEqual(kinds.count("checkbox"), 3, labels)
+        self.assertEqual(kinds.count("drag"), 9, labels)    # the nine numeric settings
+        self.assertEqual(kinds.count("combo"), 2, labels)   # two unit selectors
+        self.assertEqual(kinds.count("button"), 1, labels)  # reset
+        for want in ("Show the HUD", "Print the units", "First person only", "Slot 1 unit",
+                     "Slot 2 unit", "Slot 1 custom multiplier", "Slot 2 custom multiplier",
+                     "Text size", "Reset to defaults"):
+            self.assertTrue(any(want in l for l in labels), f"missing widget: {want}")
+
+    def test_picking_an_entry_in_the_open_combo_sets_the_unit(self):
+        """The path a real click takes: open the combo, click the entry, unit changes and persists."""
+        self.lua.eval("_G.__events['onOverlayOpen']")()
+        self.lua.execute("_G.__openCombo = true; _G.__pick = 'mph'")
+        # both combos are open in this frame; the second one must not pick the same entry twice
+        self.lua.execute("""
+          ImGui.Selectable = function(entry, selected)
+            _G.__offered = (_G.__offered or '') .. entry .. ','
+            if entry ~= _G.__pick then return false end
+            _G.__picks = (_G.__picks or 0) + 1
+            if _G.__picks == 1 then return true end   -- slot 1 only
+            return false
+          end
+        """)
+        self.lua.eval("_G.__events['onDraw']")()
+        offered = self.lua.eval("_G.__offered")
+        for unit in ("m/s", "km/h", "mph", "knots", "ft/s", "Mach", "custom", "off"):
+            self.assertIn(unit + ",", offered, f"the combo never offered {unit}")
+        self.assertEqual(self.mod.config().slot1, "mph")
+        self.assertEqual(self.mod.render(58.8, self.mod.config()), "132 mph   58.8 m/s")
+        self.assertIn("slot1=mph", self.ini())
+
+    def test_the_overlay_selector_offers_off_and_writes_it(self):
+        """The one unit list left in the mod: it must include off, and off must persist."""
+        code = INIT.read_text(encoding="utf-8")
+        self.assertIn('"custom", "off" }', code)
+        mod = self.mod
+        mod.setSlot("slot2", "")
         self.assertEqual(mod.render(58.8, mod.config()), "212 km/h")
-
-    def test_a_range_from_the_mods_tab_writes_and_saves(self):
-        mod = self.boot_with_native_settings()
-        ranges = {r["label"]: r for r in self.lua.eval("_G.__ns.ranges").values()}
-        ranges["Text size"]["cb"](3.4)
-        self.assertAlmostEqual(mod.config().scale, 3.4, places=3)
-        self.assertIn("scale=3.400000", self.ini())
-
-    def test_reset_from_the_mods_tab_restores_defaults_and_syncs_widgets(self):
-        mod = self.boot_with_native_settings()
-        mod.config().scale = 5.0
-        mod.config().slot1 = "knots"
-        self.lua.eval("_G.__ns.buttonCb")()
-        self.assertAlmostEqual(mod.config().scale, 2.2, places=3)
-        self.assertEqual(mod.config().slot1, "km/h")
-        self.assertEqual(self.lua.eval("_G.__ns.setOption"), 14, "every widget re-synced")
-        mod.config().scale = 4.0
-        self.lua.eval("_G.__ns.restore")()                   # Native Settings' own restore
-        self.assertAlmostEqual(mod.config().scale, 2.2, places=3)
-
-    def test_the_overlay_reset_also_syncs_the_mods_tab(self):
-        mod = self.boot_with_native_settings()
-        mod.config().posX = 0.9
-        before = self.lua.eval("_G.__ns.setOption")
-        mod.resetToDefaults()
-        self.assertAlmostEqual(mod.config().posX, 0.6, places=3)
-        self.assertGreater(self.lua.eval("_G.__ns.setOption"), before,
-                           "overlay reset must not leave Mods widgets stale")
 
     # -- persistence -------------------------------------------------------
     def test_settings_round_trip(self):

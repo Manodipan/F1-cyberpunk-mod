@@ -8,8 +8,8 @@ this one on when you want it.
 bin\x64\plugins\cyber_engine_tweaks\mods\phoenix_true_speedometer\init.lua
 ```
 
-Requires **Cyber Engine Tweaks**. If **Native Settings UI** is installed the same options also appear
-in the game's own Mods menu; without it everything is in the CET overlay.
+Requires **Cyber Engine Tweaks**, and nothing else. The complete settings surface is the mod's own
+CET overlay window - no Native Settings UI, no second mod, no version chasing.
 
 ## Why a HUD instead of the old override
 
@@ -41,23 +41,21 @@ The state is remembered in `settings.ini` next to `init.lua`, so it survives a r
 
 ## Where the options live
 
-Two places, both writing the same `settings.ini`:
+**One place: the CET overlay.** Press `~` and a *Phoenix True Speedometer* window is drawn with every
+setting in it — nothing else has to be installed.
 
-1. **CET overlay** (`~`) — a *Phoenix True Speedometer* window, drawn whenever the overlay is open.
-   Needs nothing but CET.
-2. **Settings → Mods** — a *Phoenix Speedometer* tab, in three subcategories plus a reset:
+| section | widgets |
+|---|---|
+| HUD | Show the HUD · Print the units · First person only |
+| Units | Slot 1 unit · Slot 2 unit (both offer `off`) · two custom multipliers |
+| Position and look | text size · X · Y · colour R/G/B · fallback smoothing |
+| bottom | **Reset to defaults** |
 
-   | subcategory | widgets |
-   |---|---|
-   | HUD | Show the HUD · Print the units · First person only |
-   | Units | Slot 1 unit · Slot 2 unit (both offer `off`) · two custom multipliers |
-   | Position and look | text size · X · Y · colour R/G/B · fallback smoothing |
-   | (tab root) | **Reset to defaults** — also wired into Native Settings' own restore-defaults |
+The whole dependency list is CET. There is no `GetMod`, no `require`, no second mod's API in the
+file, so there is nothing to be out of date or missing.
 
-   That page is supplied by **Native Settings UI**
-   ([Nexus 3518](https://www.nexusmods.com/cyberpunk2077/mods/3518)); without it the tab simply does
-   not appear and nothing else changes. Resetting from either surface updates both, so the Mods tab
-   never shows a stale value.
+Every value is written to `settings.ini` next to `init.lua` the moment it changes, and read back on
+load, so the overlay reopens showing what you left it at.
 
 The redscript "Mod Settings" mod ([Nexus 4885](https://www.nexusmods.com/cyberpunk2077/mods/4885))
 that the old build used plays no part here — that row disappeared with the `.reds`.
@@ -81,8 +79,8 @@ The `1 s in:` line now names the units it is actually using, so nothing has to b
 [Phoenix True Speedometer] 1 s in: ... | slot1=mph slot2=off labels=true text="132 mph"
 ```
 
-If `slot1=` there disagrees with what the Mods tab shows, the setting is not reaching the mod;
-if `text=` is right but the screen is not, the failure is between the mod and CET.
+If `slot1=` there disagrees with what the overlay shows, the setting is not reaching the mod; if
+`text=` is right but the screen is not, the failure is between the mod and CET.
 
 ## Input
 
@@ -170,11 +168,10 @@ CET's own source.
 | `veh:GetLinearVelocity()`, `GetWorldForward()`, `GetWorldPosition()`, `IsPlayerDriver()`, `GetCameraManager()` | CET class dump of `vehicleCarBaseObject` |
 | `cameraManager:IsTPPActive()` | CET class dump of `vehicleCameraManager` |
 | `Vector4` instances expose `.x/.y/.z/.w` | CyberpunkVRPort geometry code (`p.x, p.y, p.z`) |
-| Native Settings UI: `addTab`, `addSubcategory`, `addSwitch(path, label, desc, current, default, cb)`, `addSelectorString(path, label, desc, elements, index, defaultIndex, cb)` — selector callback receives the **index** | Native Settings UI's own `init.lua` and its official example |
 
 ## Verified
 
-The Lua is executed against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`): **57 tests**,
+The Lua is executed against stubbed CET/ImGui/Game APIs (`tests/test_hud.py`, via `lupa`): **64 tests**,
 all passing, and the harness deliberately reproduces CET's restrictions — `debug` is removed, the
 working directory is the mod folder, and the stubs use CET's real return shapes. Putting
 `debug.traceback` back into `guard()` fails 17 of them.
@@ -184,6 +181,10 @@ Speed and digits:
 - digits at 0, 0.01714, 0.171, 9.876, 58.83, 100, 212.4, 999.6, plus `NaN` and a non-number
 - every unit factor and label, custom-multiplier clamps, an unknown unit falling back to m/s
 - the default readout is exactly `212 km/h   58.8 m/s` at 58.8 m/s; labels off, slot 2 off
+- every unit through the render path and back through a save+reload; `off` survives a restart in
+  either slot; both slots off draws nothing rather than falling back to a hardcoded `m/s`
+- the overlay builds all 14 settings (3 switches, 2 unit combos, 9 numbers, reset), and clicking an
+  entry in the open combo actually changes the unit
 - speed from body velocity; reverse travel reads positive
 - position-difference fallback: 5.88 m in 0.1 s → 58.8 m/s, no speed on the first frame, none from a
   nonsense delta; missing velocity methods fall through instead of throwing
@@ -204,7 +205,8 @@ Drawing and settings:
 - the unit setter accepts a name or an index and rejects nonsense; a slot can be blanked to `off`
 - settings round-trip; a corrupt line keeps the default; a hand-edited file cannot hide the HUD
   (`scale=99`, `posX=5.5`, `posY=-3`, unknown units → clamped); an unwritable file is not fatal
-- Native Settings UI receives `addSwitch` and index-based selectors, and its callbacks move the slot
+- the file contains no `GetMod`, no `nativeSettings` and no `setOption`, so it cannot depend on
+  another mod being installed (a test asserts this against the source)
 
 Startup:
 
@@ -225,9 +227,9 @@ Static:
   console (`~`) names the file and line — that is the first place to look.
 - **Removing the old `.reds` triggers one redscript cache rebuild on the next launch.** That is
   normal, happens once, and is not a compile of this mod.
-- **CET reload, not restart:** reloading CET while the game runs re-registers the Native Settings UI
-  tab, which can leave a duplicate tab until the next launch. The overlay window and hotkeys are
-  unaffected. A full restart is the clean path.
+- **CET reload works:** the mod holds no state outside its own Lua environment, so a CET reload
+  re-registers its events and hotkeys cleanly. There is no second mod to re-register with, which was
+  the only reason a reload needed care.
 - **First person only** uses `IsTPPActive()`; if a future CET drops it the option turns inert and the
   HUD shows in every view — it fails visible, not invisible.
 
@@ -306,7 +308,7 @@ wanted:
 
 | | |
 |---|---|
-| **Native Settings UI only** | The settings pages would still work — they are a native menu — but the speed readout itself would have to come from somewhere else. Without a drawing surface there is no speed number. |
+| **Native Settings UI only** | A native settings page could still be written, but the speed readout itself would have to come from somewhere else. Without a drawing surface there is no number, which is why the settings now live in the CET overlay instead. |
 
 Conclusion: if the probe does not appear, the answer is to fix CET, not to replace it. Changing the
 layer would mean giving up the "own overlay, vanilla HUD untouched" requirement, which was the first
